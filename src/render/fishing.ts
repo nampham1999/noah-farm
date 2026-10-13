@@ -2,6 +2,10 @@ import * as THREE from 'three'
 import type { PlayerState } from '../core/state.ts'
 import { fishing } from '../systems/fishing.ts'
 
+/** Giây từ lúc bắt đầu quăng tới lúc nhả phao, và thời gian phao bay. */
+const CAST_RELEASE = 0.32
+const CAST_FLIGHT = 0.45
+
 export interface FishingView {
   /** rodTip: vị trí đầu cần câu trong tay nhân vật (null thì ước lượng trước mặt). */
   update(player: PlayerState, time: number, rodTip: THREE.Vector3 | null): void
@@ -30,11 +34,39 @@ export function createFishingView(scene: THREE.Scene): FishingView {
 
   scene.add(bobber, ring, line)
 
+  // Lúc quăng cần: chờ nhân vật vung cần rồi mới cho phao bay vòng cung xuống nước.
+  let castAt = -1
+  const from = new THREE.Vector3()
+  const to = new THREE.Vector3()
+
   return {
     update(player, time, rodTip) {
       const active = fishing.phase !== 'idle'
+      if (!active) castAt = -1
+      else if (castAt < 0) castAt = time
       bobber.visible = ring.visible = line.visible = active
       if (!active) return
+
+      const hx = rodTip?.x ?? player.pos[0] + Math.sin(player.rotY) * 0.45
+      const hy = rodTip?.y ?? 1.25
+      const hz = rodTip?.z ?? player.pos[2] + Math.cos(player.rotY) * 0.45
+      const since = time - castAt
+      if (since < CAST_RELEASE) {
+        // Đang vung cần: chưa có dây, chưa có phao.
+        bobber.visible = ring.visible = line.visible = false
+        return
+      }
+      if (since < CAST_RELEASE + CAST_FLIGHT) {
+        // Phao bay từ đầu cần theo đường vòng cung, dây kéo theo.
+        const k = (since - CAST_RELEASE) / CAST_FLIGHT
+        from.set(hx, hy, hz)
+        bobber.position.lerpVectors(from, to.set(fishing.x, 0.06, fishing.z), k)
+        bobber.position.y += Math.sin(k * Math.PI) * 1.2
+        ring.visible = false
+        linePos.set([hx, hy, hz, bobber.position.x, bobber.position.y + 0.19, bobber.position.z])
+        lineGeo.attributes.position.needsUpdate = true
+        return
+      }
 
       const bite = fishing.phase === 'bite'
       const reeling = fishing.phase === 'reeling'
@@ -47,9 +79,6 @@ export function createFishingView(scene: THREE.Scene): FishingView {
       ;(ring.material as THREE.MeshBasicMaterial).opacity = (1 - pulse) * 0.8
 
       // Dây câu từ đầu cần (nếu biết) xuống phao.
-      const hx = rodTip?.x ?? player.pos[0] + Math.sin(player.rotY) * 0.45
-      const hy = rodTip?.y ?? 1.25
-      const hz = rodTip?.z ?? player.pos[2] + Math.cos(player.rotY) * 0.45
       linePos.set([hx, hy, hz, fishing.x, y + 0.19, fishing.z])
       lineGeo.attributes.position.needsUpdate = true
     },
