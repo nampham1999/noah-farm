@@ -125,5 +125,21 @@
   "animal.collected": "+{qty} {item} (+{xp} XP)",
   "animal.bought": "🎉 Chào {name}, {animal} mới của bạn!",
   "animal.coopBuilt": "🏠 Đã xây chuồng ({n} chỗ)",
-  "animal.coopUpgraded": "🏠 Chuồng đã nâng cấp ({n} chỗ)"
+  "animal.coopUpgraded": "🏠 Chuồng đã nâng cấp ({n} chỗ)",
+  "fish.carp": "Cá chép",
+  "fish.perch": "Cá rô",
+  "fish.crucian": "Cá diếc",
+  "fish.snakehead": "Cá lóc",
+  "fish.koi": "Cá koi",
+  "fish.golden_catfish": "Cá tra vàng",
+  "fish.needRod": "Cần có cần câu",
+  "fish.waiting": "🎣 Chờ phao chìm…",
+  "fish.bite": "❗ Chạm ngay!",
+  "fish.reelHint": "Giữ để kéo vùng xanh theo con cá",
+  "fish.tooEarly": "Giật sớm quá, cá chưa cắn",
+  "fish.missed": "Cá ăn mồi rồi chạy mất",
+  "fish.escaped": "🐟 Cá giãy thoát rồi!",
+  "fish.caught": "🎣 Câu được {item}! (+{xp} XP)",
+  "fish.caughtNew": "🎉 Loài mới: {item}! Đã ghi vào sổ cá (+{xp} XP)",
+  "fish.tooFar": "Lại gần hồ hơn để thả cần"
 }

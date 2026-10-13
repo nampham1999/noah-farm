@@ -3,6 +3,7 @@ import balanceJson from './balance.json'
 import cropsJson from './crops.json'
 import itemsJson from './items.json'
 import animalsJson from './animals.json'
+import fishJson from './fish.json'
 
 export interface CropDef {
   id: string
@@ -19,7 +20,7 @@ export interface CropDef {
   model: string
 }
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product'
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish'
 
 export interface ItemDef {
   id: string
@@ -52,6 +53,26 @@ export interface AnimalDef {
 export const animalData = animalsJson as Omit<typeof animalsJson, 'animals'> & { animals: AnimalDef[] }
 export const ANIMAL_BY_ID = new Map(animalData.animals.map((a) => [a.id, a]))
 
+export interface FishDef {
+  id: string
+  /** Mùa có cá; rỗng là mùa nào cũng có. */
+  seasons: Season[]
+  /** Khung giờ [bắt đầu, kết thúc) có cá; null là cả ngày. Có thể vắt qua nửa đêm. */
+  hours: [number, number] | null
+  level: number
+  price: number
+  xp: number
+  /** Tỉ lệ cắn câu so với các loài khác đang có. */
+  weight: number
+  /** Độ cao vùng xanh trong mini-game (0..1); nhỏ là khó. */
+  zone: number
+  /** Tốc độ cá chạy trong mini-game. */
+  speed: number
+  icon: string
+}
+
+export const FISH = fishJson as FishDef[]
+
 /** Độ dài một ngày trong game, tính bằng mili giây thật. */
 export const DAY_MS = balance.dayRealMinutes * 60_000
 export const CROPS = cropsJson as CropDef[]
@@ -63,6 +84,11 @@ for (const def of itemsJson as ItemDef[]) ITEMS.set(def.id, def)
 for (const c of CROPS) {
   ITEMS.set(`seed_${c.id}`, { id: `seed_${c.id}`, kind: 'seed', icon: c.icon, cropId: c.id, buyPrice: c.seedPrice })
   ITEMS.set(`crop_${c.id}`, { id: `crop_${c.id}`, kind: 'crop', icon: c.icon, cropId: c.id, sellPrice: c.sellPrice, energy: c.energy })
+}
+
+// Cá câu được (fish_x) sinh từ fish.json.
+for (const f of FISH) {
+  ITEMS.set(`fish_${f.id}`, { id: `fish_${f.id}`, kind: 'fish', icon: f.icon, sellPrice: f.price })
 }
 
 export function item(id: string): ItemDef {

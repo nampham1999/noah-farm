@@ -1,0 +1,8 @@
+[
+  { "id": "carp", "seasons": [], "hours": null, "level": 1, "price": 20, "xp": 8, "weight": 10, "zone": 0.34, "speed": 0.7, "icon": "🐟" },
+  { "id": "perch", "seasons": [], "hours": null, "level": 1, "price": 30, "xp": 10, "weight": 8, "zone": 0.3, "speed": 0.9, "icon": "🐠" },
+  { "id": "crucian", "seasons": ["spring", "summer"], "hours": null, "level": 1, "price": 25, "xp": 9, "weight": 7, "zone": 0.32, "speed": 0.8, "icon": "🐟" },
+  { "id": "snakehead", "seasons": ["summer", "autumn"], "hours": null, "level": 3, "price": 40, "xp": 14, "weight": 5, "zone": 0.26, "speed": 1.2, "icon": "🐡" },
+  { "id": "koi", "seasons": ["spring", "summer"], "hours": [6, 18], "level": 5, "price": 150, "xp": 30, "weight": 2, "zone": 0.2, "speed": 1.7, "icon": "🎏" },
+  { "id": "golden_catfish", "seasons": ["autumn", "winter"], "hours": [18, 6], "level": 5, "price": 300, "xp": 40, "weight": 1.5, "zone": 0.16, "speed": 2.0, "icon": "🐡" }
+]

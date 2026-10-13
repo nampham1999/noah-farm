@@ -147,6 +147,11 @@ function normalize(data: Record<string, unknown>): GameState {
     plots,
     coopLevel,
     animals,
+    journal: {
+      fish: Object.fromEntries(
+        Object.entries(obj(obj(data.journal).fish)).filter(([, v]) => typeof v === 'number' && v > 0),
+      ) as Record<string, number>,
+    },
     settings: { ...base.settings, ...obj(data.settings) },
   } as GameState
 }

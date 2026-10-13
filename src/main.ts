@@ -12,6 +12,7 @@ import { attachPointer } from './input/pointer.ts'
 import { FollowCamera } from './render/camera.ts'
 import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
+import { createFishingView } from './render/fishing.ts'
 import { createFarmer } from './render/models.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
@@ -19,6 +20,8 @@ import { createWorld } from './render/scene.ts'
 import { loadModels } from './render/assets.ts'
 import { animalPose, animalsNewDay, updateAnimals, updateWander } from './systems/animals.ts'
 import { advanceClock } from './systems/clock.ts'
+import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from './systems/fishing.ts'
+import { createFishingUi } from './ui/fishing.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -73,6 +76,7 @@ async function start(): Promise<void> {
   const farmer = createFarmer(models.farmer)
   world.scene.add(farmer.root)
   const animalsView = createAnimalsView(world.scene, models)
+  const fishingView = createFishingView(world.scene)
 
   const autosaver = new AutoSaver(store, state)
   autosaver.start()
@@ -93,6 +97,7 @@ async function start(): Promise<void> {
     openMenu: () => togglePanel(menuPanel),
     backupDue: () => backupDue(state),
   })
+  const fishingUi = createFishingUi(ui, state)
 
   if (offline.elapsed > WELCOME_BACK_MS) {
     bus.emit('notify', { key: 'save.welcomeBack', params: { time: formatDuration(offline.elapsed) }, good: true })
@@ -106,6 +111,8 @@ async function start(): Promise<void> {
 
   bus.on('tap', ({ x, y }) => {
     if (isPanelOpen()) return
+    // Đang câu: chạm là giật cần (sớm quá thì thu cần).
+    if (isFishing()) return strike(state)
     const animal = animalsView.hitTest(followCam.camera, x, y)
     if (animal) return interaction.tapAnimal(animal)
     const hit = pickGround(followCam.camera, x, y)
@@ -127,6 +134,8 @@ async function start(): Promise<void> {
     if (isModalOpen()) return
     // Khi đang mở cửa sổ, chỉ cho đóng cửa sổ hoặc chuyển qua túi đồ.
     if (isPanelOpen() && action !== 'menu' && action !== 'inventory') return
+    if (isFishing() && (action === 'useTool' || action === 'interact')) return strike(state)
+    if (isFishing() && action === 'menu') return stopFishing()
     switch (action) {
       case 'useTool':
         return interaction.useFront()
@@ -156,6 +165,7 @@ async function start(): Promise<void> {
         state,
         /** Đồng hồ của game (đã tính ?speed). */
         now,
+        fishing,
         /** Toạ độ màn hình của một con vật. */
         animalScreen(id: string) {
           const p = animalPose(id)
@@ -196,10 +206,15 @@ async function start(): Promise<void> {
 
     // Tự điều khiển (WASD/joystick) thì huỷ việc tự đi tới chỗ đã chạm.
     const manual = isPanelOpen() ? { x: 0, y: 0 } : input.moveVector()
+    updateFishing(state, dt)
     let dir
     if (Math.hypot(manual.x, manual.y) > 0.05) {
       interaction.cancel()
+      // Tự đi thì thu cần.
+      if (isFishing()) stopFishing()
       dir = cameraRelative(manual, followCam.yaw)
+    } else if (isFishing()) {
+      dir = { x: 0, z: 0 }
     } else {
       dir = interaction.autoWalk(dt)
     }
@@ -211,6 +226,8 @@ async function start(): Promise<void> {
     farmer.animate(dt, Math.min(1, speed / WALK_SPEED))
     farmView.update(state, interaction.focusPlot(), clock.getElapsed())
     animalsView.update(state, t, clock.getElapsed(), dt)
+    fishingView.update(state.player, clock.getElapsed())
+    fishingUi.update()
 
     followCam.update(dt, playerPos, input.zoomScale)
     state.settings.zoom = followCam.zoom

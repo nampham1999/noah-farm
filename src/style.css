@@ -35,6 +35,11 @@
   box-sizing: border-box;
 }
 
+/* Thuộc tính hidden luôn thắng, kể cả khi class đặt display. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -1338,5 +1343,133 @@ button {
 @media (orientation: portrait) and (max-width: 400px) {
   .clock-card__date {
     display: none;
+  }
+}
+
+/* ---------- Câu cá ---------- */
+
+.fishing {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.fishing.is-reeling,
+.fishing.is-bite {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#ui .fishing__stop {
+  position: absolute;
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: 190px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.fishing__hint {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--hud-dark);
+  border: 2px solid rgb(255 255 255 / 0.25);
+  color: #fff;
+  font: 700 15px var(--display);
+  white-space: nowrap;
+}
+
+.fishing__bang {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  transform: translateX(-50%);
+  font: 900 84px var(--display);
+  color: var(--gold);
+  text-shadow: var(--outline), 0 6px 0 var(--wood-ink);
+  animation: bang 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes bang {
+  to {
+    transform: translateX(-50%) scale(1.25) rotate(6deg);
+  }
+}
+
+.fishing__reel {
+  position: absolute;
+  right: 22%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(var(--wood-light), var(--wood));
+  border: 3px solid var(--wood-dark);
+  box-shadow: var(--shadow);
+}
+
+.fishing__track {
+  position: relative;
+  width: 46px;
+  height: min(300px, 50vh);
+  border-radius: 12px;
+  background: linear-gradient(#6fd2e6, #2f86c4);
+  box-shadow: inset 0 3px 8px rgb(0 0 0 / 0.3);
+  overflow: hidden;
+}
+
+.fishing__zone {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 9px;
+  background: rgb(143 224 77 / 0.55);
+  border: 3px solid #d9ffb8;
+}
+
+.fishing__zone.is-on {
+  background: rgb(143 224 77 / 0.85);
+  box-shadow: 0 0 12px #b6ff7a;
+}
+
+.fishing__fish {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28px;
+  text-align: center;
+  font-size: 24px;
+  line-height: 28px;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.3));
+}
+
+.fishing__progress {
+  position: relative;
+  width: 14px;
+  border-radius: 7px;
+  background: rgb(0 0 0 / 0.3);
+  overflow: hidden;
+}
+
+.fishing__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(var(--gold-top), var(--green));
+}
+
+@media (orientation: portrait) and (max-width: 720px) {
+  .fishing__reel {
+    right: 50%;
+    transform: translate(50%, -50%);
   }
 }

@@ -125,5 +125,21 @@
   "animal.collected": "+{qty} {item} (+{xp} XP)",
   "animal.bought": "🎉 Say hi to {name}, your new {animal}!",
   "animal.coopBuilt": "🏠 Coop built ({n} spots)",
-  "animal.coopUpgraded": "🏠 Coop upgraded ({n} spots)"
+  "animal.coopUpgraded": "🏠 Coop upgraded ({n} spots)",
+  "fish.carp": "Carp",
+  "fish.perch": "Perch",
+  "fish.crucian": "Crucian carp",
+  "fish.snakehead": "Snakehead",
+  "fish.koi": "Koi",
+  "fish.golden_catfish": "Golden catfish",
+  "fish.needRod": "You need a fishing rod",
+  "fish.waiting": "🎣 Wait for the bobber to dip…",
+  "fish.bite": "❗ Tap now!",
+  "fish.reelHint": "Hold to keep the green zone on the fish",
+  "fish.tooEarly": "Too early, nothing was biting",
+  "fish.missed": "The fish stole the bait",
+  "fish.escaped": "🐟 It got away!",
+  "fish.caught": "🎣 Caught a {item}! (+{xp} XP)",
+  "fish.caughtNew": "🎉 New species: {item}! Added to your fish log (+{xp} XP)",
+  "fish.tooFar": "Get closer to the pond to cast"
 }

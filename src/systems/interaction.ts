@@ -1,7 +1,8 @@
 import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
-import { plotAt, plotCenter, STALL } from '../core/world.ts'
+import { isWater, plotAt, plotCenter, STALL } from '../core/world.ts'
+import { cast } from './fishing.ts'
 import { balance } from '../data/index.ts'
 import { actOnPlot, isRipe } from './farming.ts'
 import { turnToward, type Dir } from './movement.ts'
@@ -16,6 +17,10 @@ type Goal =
   | { kind: 'plot'; plot: PlotState }
   | { kind: 'stall' }
   | { kind: 'animal'; id: string }
+  | { kind: 'fish'; x: number; z: number }
+
+/** Thả cần xa tối đa chừng này (m) tính từ chỗ đứng. */
+const CAST_RANGE = 4.5
 
 /** Đứng cách con vật chừng này thì tương tác được. */
 const ANIMAL_REACH = 1.3
@@ -46,6 +51,10 @@ export class Interaction {
   /** Người chơi chạm vào điểm (wx, wz) trên mặt đất; onStall là chạm trúng quầy hàng. */
   tapWorld(wx: number, wz: number, onStall: boolean): void {
     if (onStall) return this.setGoal({ kind: 'stall' })
+    if (isWater(wx, wz)) {
+      if (this.distTo(wx, wz) <= CAST_RANGE) return this.castAt(wx, wz)
+      return this.setGoal({ kind: 'fish', x: wx, z: wz })
+    }
     const cell = plotAt(wx, wz)
     if (cell) return this.setGoal({ kind: 'plot', plot: this.plotAtCell(cell.x, cell.z) })
     this.setGoal({ kind: 'walk', x: wx, z: wz })
@@ -57,10 +66,24 @@ export class Interaction {
     this.setGoal({ kind: 'animal', id })
   }
 
-  /** Space / nút "Dùng": làm việc với ô đất trước mặt. */
+  /** Space / nút "Dùng": cầm cần câu và đứng sát nước thì thả cần; không thì làm ô đất trước mặt. */
   useFront(): void {
+    const held = this.state.inventory.slots[this.state.inventory.selected]
+    if (held?.id === 'tool_fishing_rod') {
+      const { pos, rotY } = this.state.player
+      const x = pos[0] + Math.sin(rotY) * 2.5
+      const z = pos[2] + Math.cos(rotY) * 2.5
+      if (isWater(x, z)) return this.castAt(x, z)
+    }
     const plot = this.frontPlot()
     if (plot) this.act(plot)
+  }
+
+  private castAt(x: number, z: number): void {
+    const p = this.state.player.pos
+    turnToward(this.state.player, x - p[0], z - p[2])
+    this.goal = null
+    cast(this.state, x, z)
   }
 
   /** E / nút "Tương tác": mở cửa hàng nếu đứng gần quầy, không thì như useFront. */
@@ -107,6 +130,7 @@ export class Interaction {
       this.stuckFor = 0
     } else if ((this.stuckFor += dt) > STUCK_SECONDS) {
       this.goal = null
+      if (goal.kind === 'fish') bus.emit('notify', { key: 'fish.tooFar' })
       return { x: 0, z: 0 }
     }
 
@@ -132,6 +156,8 @@ export class Interaction {
         const c = plotCenter(goal.plot.x, goal.plot.z)
         return [c.x, c.z, balance.reach - 0.4]
       }
+      case 'fish':
+        return [goal.x, goal.z, CAST_RANGE - 0.3]
       case 'animal': {
         const p = animalPose(goal.id)
         return p ? [p.x, p.z, ANIMAL_REACH - 0.2] : [this.state.player.pos[0], this.state.player.pos[2], 1]
@@ -146,6 +172,8 @@ export class Interaction {
       this.hooks.openShop()
     } else if (goal.kind === 'plot') {
       this.act(goal.plot)
+    } else if (goal.kind === 'fish') {
+      this.castAt(goal.x, goal.z)
     } else if (goal.kind === 'animal') {
       const animal = this.state.animals.find((a) => a.id === goal.id)
       if (animal) this.actAnimal(animal)

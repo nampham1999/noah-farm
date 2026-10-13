@@ -93,6 +93,8 @@ export interface GameState {
   /** Cấp chuồng: 0 là chưa có chuồng. */
   coopLevel: number
   animals: AnimalState[]
+  /** Nhật ký (GDD mục 3.7): sổ cá ghi số con đã câu của từng loài. */
+  journal: { fish: Record<string, number> }
   settings: Settings
 }
 
@@ -124,6 +126,7 @@ export function createInitialState(): GameState {
     plots,
     coopLevel: 0,
     animals: [],
+    journal: { fish: {} },
     settings: { volume: 0.7, quality: 'auto', lang: detectLang(), zoom: 1 },
   }
 }
