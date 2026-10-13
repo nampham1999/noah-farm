@@ -59,7 +59,7 @@ import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
 import { attachNotifications } from './systems/notifications.ts'
-import { loadFriendFarm, sendHelp, startOnline } from './online/online.ts'
+import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.ts'
 import { askUseCloud } from './ui/online.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
@@ -374,6 +374,8 @@ async function start(): Promise<void> {
         act: (name: ActionName) => farmer.playAction?.(name),
         setWeather: (w: Weather) => setWeather(state, w),
         fox,
+        online,
+        saveNow: () => autosaver.saveNow(),
         /** Dụng cụ đang cầm: kích thước thật trong thế giới (để kiểm tra tỉ lệ, hướng). */
         heldTool: () => {
           let info: { name: string; size: number[]; center: number[] } | null = null
@@ -660,7 +662,7 @@ function registerServiceWorker(): void {
 
 // Dán link thăm vào thanh địa chỉ khi đang mở game: tải lại để vào chế độ thăm.
 window.addEventListener('hashchange', () => {
-  if (/[#&]visit=/.test(location.hash)) location.reload()
+  if (/[#&](visit|friend)=/.test(location.hash)) location.reload()
 })
 
 registerServiceWorker()

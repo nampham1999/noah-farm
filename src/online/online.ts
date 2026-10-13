@@ -34,6 +34,8 @@ export const online = {
   error: null as CloudErrorCode | null,
   cloud: null as Cloud | null,
   friends: [] as Profile[],
+  /** Lần gửi bản lưu lên mây gần nhất (0 là chưa). */
+  uploadedAt: 0,
 }
 
 function setStatus(status: OnlineStatus, error: CloudErrorCode | null = null): void {
@@ -99,19 +101,28 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
     console.warn('Online sync failed', e)
   }
 
-  // Gửi bản lưu lên sau khi lưu trên máy (thưa nhất mỗi phút).
+  // Gửi bản lưu lên sau khi lưu trên máy (thưa nhất mỗi phút), và một lần ngay bây giờ
+  // để bạn bè thăm được bản mới nhất.
   let lastUpload = 0
   let uploading = false
-  autosaver.onSaved = (savedAt) => {
-    if (uploading || savedAt - lastUpload < UPLOAD_EVERY_MS && document.visibilityState === 'visible') return
+  const upload = (savedAt: number) => {
     uploading = true
     lastUpload = savedAt
     void encodeSave(state, savedAt)
       .then((data) => cloud.uploadSave(data, savedAt))
-      .then(() => syncProfile(state))
+      .then(() => {
+        online.uploadedAt = savedAt
+        return syncProfile(state)
+      })
       .catch((e: unknown) => console.warn('Cloud upload failed', e))
       .finally(() => (uploading = false))
   }
+  autosaver.onSaved = (savedAt) => {
+    if (uploading || (savedAt - lastUpload < UPLOAD_EVERY_MS && document.visibilityState === 'visible')) return
+    upload(savedAt)
+  }
+  // Lưu trên máy ngay (onSaved gửi lên mây cùng mốc thời gian, để lần sau không bị hỏi nhầm "bản mới hơn").
+  void autosaver.saveNow()
 
   const checkInbox = () => void readInbox(state).catch((e: unknown) => console.warn('Inbox failed', e))
   checkInbox()
