@@ -1,5 +1,5 @@
 import type { PlayerState } from '../core/state.ts'
-import { FARM_HALF, isWater, OBSTACLES, ROOM, roomCorner } from '../core/world.ts'
+import { FARM_HALF, FIELD_FENCE, isWater, OBSTACLES, ROOM, roomCorner } from '../core/world.ts'
 import type { Rect } from './house.ts'
 
 export const WALK_SPEED = 4.5
@@ -7,6 +7,7 @@ const PLAYER_RADIUS = 0.35
 const TURN_RATE = 12
 /** Đứng cách mép nước tối thiểu chừng này (âm là được bước hẳn ra mép bọt sóng). */
 const SHORE_MARGIN = -0.15
+const FENCE_HALF_THICKNESS = 0.1
 
 export interface Dir {
   x: number
@@ -49,6 +50,16 @@ export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: 
   x = Math.min(limit, Math.max(-limit, x))
   z = Math.min(limit, Math.max(-limit, z))
 
+  // Rào ruộng: không đi xuyên, trượt dọc theo rào; vào ruộng qua cổng.
+  if (hitsFence(x, z)) {
+    if (!hitsFence(x, player.pos[2])) z = player.pos[2]
+    else if (!hitsFence(player.pos[0], z)) x = player.pos[0]
+    else {
+      x = player.pos[0]
+      z = player.pos[2]
+    }
+  }
+
   // Không lội xuống hồ: thử trượt theo từng trục để men theo bờ thay vì đứng khựng.
   if (isWater(x, z, SHORE_MARGIN)) {
     if (!isWater(x, player.pos[2], SHORE_MARGIN)) z = player.pos[2]
@@ -65,6 +76,18 @@ export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: 
   turnToward(player, dir.x, dir.z, Math.min(1, TURN_RATE * dt))
 
   return dt > 0 ? moved / dt : 0
+}
+
+const FENCE_RECTS = FIELD_FENCE.map(({ from, to }) => ({
+  x0: Math.min(from[0], to[0]) - FENCE_HALF_THICKNESS,
+  x1: Math.max(from[0], to[0]) + FENCE_HALF_THICKNESS,
+  z0: Math.min(from[1], to[1]) - FENCE_HALF_THICKNESS,
+  z1: Math.max(from[1], to[1]) + FENCE_HALF_THICKNESS,
+}))
+
+function hitsFence(x: number, z: number): boolean {
+  const m = PLAYER_RADIUS
+  return FENCE_RECTS.some((r) => x > r.x0 - m && x < r.x1 + m && z > r.z0 - m && z < r.z1 + m)
 }
 
 /** Trong nhà: giữ trong tường phòng, không đi xuyên đồ đạc (trượt theo từng trục). */

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import type { ClockState, Season } from '../core/state.ts'
 import {
-  BUSHES, FARM_HALF, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
+  BUSHES, FARM_HALF, FIELD_FENCE, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
 } from '../core/world.ts'
 import type { Models } from './assets.ts'
 import { instanceModel, placeMatrix, staticModel } from './instancing.ts'
@@ -63,6 +63,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
   const pond = createPond(scene, models)
   addBuildings(scene, models)
   addFence(scene, models)
+  addFieldFence(scene, models)
   const trees = addTrees(scene, models)
   const decor = addDecor(scene, models)
   const snow = createSnow()
@@ -322,6 +323,29 @@ function seasonal(scene: THREE.Scene, build: (season: Season, group: THREE.Group
       for (const [s, g] of Object.entries(groups)) g.visible = s === season
     },
   }
+}
+
+/** Rào quanh khu ruộng: dựng tấm rào dọc theo từng đoạn trong FIELD_FENCE, chừa cổng. */
+function addFieldFence(scene: THREE.Scene, models: Models): void {
+  const panel = 1.19
+  const placements: THREE.Matrix4[] = []
+  for (const { from, to } of FIELD_FENCE) {
+    const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+    const n = Math.max(1, Math.round(len / panel))
+    const step = len / n
+    // Mô hình tấm rào nằm dọc trục Z; đoạn chạy theo trục X thì xoay 90 độ.
+    const alongX = Math.abs(to[0] - from[0]) > Math.abs(to[1] - from[1])
+    for (let k = 0; k < n; k++) {
+      const t = (k + 0.5) / n
+      const m = placeMatrix(from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, alongX ? Math.PI / 2 : 0, 1)
+      placements.push(m.scale(new THREE.Vector3(1, 1, step / panel)))
+    }
+  }
+  const fence = instanceModel(models.fieldFence.scene, placements.length, { shadows: true })
+  placements.forEach((m, i) => fence.setMatrixAt(i, m))
+  fence.setCount(placements.length)
+  fence.commit()
+  scene.add(fence.group)
 }
 
 /** Cây trong nông trại dùng mô hình chi tiết, rừng bên ngoài dùng bản nhẹ (lo); mỗi mùa một bộ. */

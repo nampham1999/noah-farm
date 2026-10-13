@@ -1,7 +1,9 @@
 import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
-import { HOUSE_DOOR, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL } from '../core/world.ts'
+import {
+  FIELD_GATE, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
+} from '../core/world.ts'
 import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
@@ -175,12 +177,22 @@ export class Interaction {
     const goal = this.goal
     if (!goal) return { x: 0, z: 0 }
 
-    const [tx, tz, stopAt] = this.goalPoint(goal)
-    const dist = this.distTo(tx, tz)
-    if (dist <= stopAt) {
+    const [gx, gz, stopAt] = this.goalPoint(goal)
+    const goalDist = this.distTo(gx, gz)
+    // Ở hai phía rào ruộng thì đi vòng qua cổng: tới cổng phía mình, qua cổng, rồi tới đích.
+    const via = this.viaGate(gx, gz)
+    if (!via && goalDist <= stopAt) {
       this.goal = null
       this.arrive(goal)
       return { x: 0, z: 0 }
+    }
+    const [tx, tz] = via ?? [gx, gz]
+    const dist = via ? this.distTo(tx, tz) : goalDist
+    // Đổi điểm đang đi tới (cổng phía này, cổng phía kia, rồi đích): tính lại "bị kẹt" từ đầu.
+    if (via !== this.lastVia) {
+      this.lastVia = via
+      this.bestDist = Infinity
+      this.stuckFor = 0
     }
 
     if (dist < this.bestDist - 0.01) {
@@ -193,12 +205,27 @@ export class Interaction {
     }
 
     const p = this.state.player.pos
-    // Đi chậm lại khi gần tới để không vượt quá đích.
-    const speed = Math.min(1, (dist - stopAt) * 3 + 0.3)
+    // Đi chậm lại khi gần tới để không vượt quá đích (điểm qua cổng thì đi đều).
+    const speed = via ? 1 : Math.min(1, (dist - stopAt) * 3 + 0.3)
     return { x: ((tx - p[0]) / dist) * speed, z: ((tz - p[2]) / dist) * speed }
   }
 
+  private lastVia: [number, number] | null = null
+
+  /** Điểm cần đi qua trước (cổng ruộng) nếu người chơi và đích ở hai phía rào; null nếu đi thẳng được. */
+  private viaGate(tx: number, tz: number): [number, number] | null {
+    const [px, , pz] = this.state.player.pos
+    if (this.state.player.indoors || insideField(px, pz) === insideField(tx, tz)) return null
+    const mine = insideField(px, pz) ? FIELD_GATE_IN : FIELD_GATE_OUT
+    const other = insideField(px, pz) ? FIELD_GATE_OUT : FIELD_GATE_IN
+    // Đã tới cổng phía mình thì bước sang phía bên kia.
+    const atGate = Math.hypot(px - mine.x, pz - mine.z) < 0.5 || Math.abs(pz - FIELD_GATE.z) < FIELD_GATE.half - 0.3 && Math.abs(px - (FIELD_GATE_IN.x + FIELD_GATE_OUT.x) / 2) < 1.4
+    const p = atGate ? other : mine
+    return this.lastVia && this.lastVia[0] === p.x && this.lastVia[1] === p.z ? this.lastVia : [p.x, p.z]
+  }
+
   private setGoal(goal: Goal): void {
+    this.lastVia = null
     this.goal = goal
     this.bestDist = Infinity
     this.stuckFor = 0

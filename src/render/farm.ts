@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { mulberry32 } from '../core/random.ts'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameState, PlotState } from '../core/state.ts'
-import { blockCenter, LAND_BLOCKS, PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
+import { blockCells, blockCenter, LAND_BLOCKS, PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
 import { nextLandPrice } from '../systems/land.ts'
 import { cropOf, isRipe, needsWater } from '../systems/farming.ts'
 import { instanceModel, placeMatrix, staticModel, type InstancedModel } from './instancing.ts'
@@ -46,6 +46,15 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
   )
   outlines.frustumCulled = false
 
+  // Khu chưa mua (bên trong rào): viền ô thật mờ, để thấy trước chỗ mở rộng được.
+  const lockedOutlines = new THREE.InstancedMesh(
+    outlinePlane,
+    new THREE.MeshBasicMaterial({ map: outlineTexture(), transparent: true, opacity: 0.35, depthWrite: false }),
+    n,
+  )
+  lockedOutlines.frustumCulled = false
+  let lockedLevel = -1
+
   const drops = new THREE.InstancedMesh(
     new THREE.OctahedronGeometry(0.12, 0),
     new THREE.MeshStandardMaterial({ color: 0x4fb3ff, emissive: 0x1a5fa0, roughness: 0.3 }),
@@ -68,7 +77,7 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
   const scarecrowMesh = staticModel(scarecrow)
   scarecrowMesh.position.copy(scarecrow.position)
   scarecrowMesh.rotation.copy(scarecrow.rotation)
-  scene.add(soil, outlines, drops, highlight, scarecrowMesh, lockSign)
+  scene.add(soil, outlines, lockedOutlines, drops, highlight, scarecrowMesh, lockSign)
 
   // Mỗi biến thể cây (vd. carrot_3) là một nhóm InstancedMesh, tạo khi cần lần đầu.
   const variants = new Map<string, { inst: InstancedModel; count: number }>()
@@ -128,6 +137,19 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
       outlines.instanceMatrix.needsUpdate = true
       soil.instanceMatrix.needsUpdate = true
       if (soil.instanceColor) soil.instanceColor.needsUpdate = true
+
+      if (lockedLevel !== state.landLevel) {
+        lockedLevel = state.landLevel
+        let k = 0
+        for (let b = state.landLevel + 1; b < LAND_BLOCKS.length; b++) {
+          for (const cell of blockCells(b)) {
+            const c = plotCenter(cell.x, cell.z)
+            lockedOutlines.setMatrixAt(k++, m.makeTranslation(c.x, 0.015, c.z))
+          }
+        }
+        lockedOutlines.count = k
+        lockedOutlines.instanceMatrix.needsUpdate = true
+      }
 
       const price = nextLandPrice(state)
       const key = `${state.landLevel}|${price}`

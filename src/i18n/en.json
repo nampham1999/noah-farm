@@ -1,6 +1,6 @@
 {
   "game.title": "Noah Farm",
-  "hint.desktop": "Click a plot or the stall · Hold and drag or WASD to walk · Wheel: switch tool · Ctrl + wheel: zoom",
+  "hint.desktop": "Click a plot or the stall · Hold and drag or WASD to walk · Wheel: zoom · 1–9: switch tool",
   "hint.touch": "Hold and drag a finger to walk · Tap a plot or the stall to use · Pinch to zoom",
   "webgl.error": "This browser does not support WebGL, so the game cannot run.",
   "close": "Close",

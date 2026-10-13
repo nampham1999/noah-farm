@@ -29,6 +29,7 @@ export const MODELS = {
   bushFlower: 'models/bush-flower.glb',
   bushSnow: 'models/bush-snow.glb',
   fence: 'models/fence-1.glb',
+  fieldFence: 'models/fence-2.glb',
   grass: 'models/grass.glb',
   crops: 'models/crops.glb',
   debris: 'models/debris.glb',

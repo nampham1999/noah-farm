@@ -1,6 +1,6 @@
 {
   "game.title": "Noah Farm",
-  "hint.desktop": "Click vào ô đất hoặc quầy hàng · Giữ chuột kéo hoặc WASD để đi · Lăn: đổi công cụ · Ctrl + lăn: zoom",
+  "hint.desktop": "Click vào ô đất hoặc quầy hàng · Giữ chuột kéo hoặc WASD để đi · Lăn chuột: zoom · 1–9: đổi công cụ",
   "hint.touch": "Giữ và kéo ngón tay để đi · Chạm vào ô đất hoặc quầy hàng để dùng · Chụm hai ngón để zoom",
   "webgl.error": "Trình duyệt này không hỗ trợ WebGL nên không chạy được game.",
   "close": "Đóng",

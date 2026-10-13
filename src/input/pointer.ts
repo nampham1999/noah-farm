@@ -2,14 +2,14 @@ import { bus } from '../core/events.ts'
 import type { Input } from './input.ts'
 import { createSteer } from './steer.ts'
 
-/** Chụm hai ngón: tỉ lệ khoảng cách hai ngón đổi thẳng thành tỉ lệ zoom. */
-const WHEEL_ZOOM_SPEED = 0.01
+/** Mỗi đơn vị deltaY của bánh xe chuột đổi zoom chừng này (theo hàm mũ, mượt). */
+const WHEEL_ZOOM_SPEED = 0.004
 
 /**
  * Chuột và cảm ứng trên canvas, cùng một kiểu điều khiển như bản cũ:
  * - Ấn giữ rồi kéo ở bất kỳ đâu để đi (joystick nổi hiện ở chỗ ấn).
  * - Chạm hoặc click nhanh để dùng lên chỗ đó.
- * - Hai ngón: chụm để zoom. Chuột: lăn để đổi ô công cụ, Ctrl + lăn để zoom.
+ * - Hai ngón: chụm để zoom. Chuột: lăn để zoom, Shift + lăn để đổi ô công cụ.
  * - Rê chuột thì tô sáng ô dưới con trỏ.
  */
 export function attachPointer(input: Input, canvas: HTMLCanvasElement, ui: HTMLElement): void {
@@ -109,9 +109,9 @@ export function attachPointer(input: Input, canvas: HTMLCanvasElement, ui: HTMLE
     (e) => {
       e.preventDefault()
       if (e.deltaY === 0) return
-      // Ctrl + lăn (và chụm trên touchpad, trình duyệt gửi kèm ctrlKey) để zoom.
-      if (e.ctrlKey || e.metaKey) input.zoomScale *= Math.exp(e.deltaY * WHEEL_ZOOM_SPEED)
-      else bus.emit('cycleSlot', Math.sign(e.deltaY))
+      // Lăn chuột (và chụm trên touchpad) để zoom; Shift + lăn để đổi ô công cụ.
+      if (e.shiftKey) bus.emit('cycleSlot', Math.sign(e.deltaY || e.deltaX))
+      else input.zoomScale *= Math.exp(Math.max(-60, Math.min(60, e.deltaY)) * WHEEL_ZOOM_SPEED)
     },
     { passive: false },
   )

@@ -3,7 +3,7 @@
  * Hiển thị, giao diện và lưu trữ chỉ đọc hoặc ghi đối tượng này.
  */
 import { balance, type AnimalType } from '../data/index.ts'
-import { blockCells } from './world.ts'
+import { blockCells, SPAWN } from './world.ts'
 
 export type Lang = 'vi' | 'en'
 export type Quality = 'auto' | 'low' | 'high'
@@ -175,8 +175,8 @@ export function createInitialState(): GameState {
       xp: 0,
       level: 1,
       stamina: balance.staminaMax,
-      pos: [0, 0, 6],
-      rotY: Math.PI,
+      pos: [SPAWN.x, 0, SPAWN.z],
+      rotY: SPAWN.rotY,
       indoors: false,
     },
     clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
