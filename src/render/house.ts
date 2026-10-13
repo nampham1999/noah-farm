@@ -52,7 +52,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
   room.add(floor, grid, north, west, east, base)
 
   if (windowModel) {
-    for (const dx of [-2, 2]) {
+    for (const dx of [-ROOM.w / 4, ROOM.w / 4]) {
       const win = windowModel.clone()
       win.position.set(ROOM.x + dx, 1.0, c.z + 0.05)
       room.add(win)
@@ -64,7 +64,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
   mat.position.set(ROOM.x, 0.035, c.z + ROOM.d - 0.35)
   room.add(mat)
 
-  const lamp = new THREE.PointLight(0xffd6a0, 6, 10, 1.6)
+  const lamp = new THREE.PointLight(0xffd6a0, 8, Math.max(ROOM.w, ROOM.d) * 1.3, 1.6)
   lamp.position.set(ROOM.x, 2.4, ROOM.z)
   room.add(lamp)
   scene.add(room)

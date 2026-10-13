@@ -34,7 +34,7 @@ export const HOUSE_DOOR = { x: -6, z: -8.9 }
  * Trong nhà: một phòng W x D ô (1 ô = 1 m), dựng ở xa nông trại để khỏi thấy nhau.
  * Ô (cx, cz) tính từ góc tây bắc; cửa ra ở giữa cạnh nam (phía camera).
  */
-export const ROOM = { x: 0, z: -200, w: 8, d: 6 }
+export const ROOM = { x: 0, z: -200, w: 12, d: 9 }
 
 /** Toạ độ thế giới của góc tây bắc phòng. */
 export function roomCorner(): { x: number; z: number } {
