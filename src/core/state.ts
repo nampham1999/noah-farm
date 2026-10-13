@@ -3,7 +3,7 @@
  * Hiển thị, giao diện và lưu trữ chỉ đọc hoặc ghi đối tượng này.
  */
 import { balance, type AnimalType } from '../data/index.ts'
-import { PLOT_AREA } from './world.ts'
+import { blockCells } from './world.ts'
 
 export type Lang = 'vi' | 'en'
 export type Quality = 'auto' | 'low' | 'high'
@@ -90,6 +90,8 @@ export interface GameState {
   clock: ClockState
   inventory: InventoryState
   plots: PlotState[]
+  /** Số khu ruộng đã mua thêm (0..4); khu thứ i dùng LAND_BLOCKS[i]. */
+  landLevel: number
   /** Cấp chuồng: 0 là chưa có chuồng. */
   coopLevel: number
   animals: AnimalState[]
@@ -102,12 +104,7 @@ export function createInitialState(): GameState {
   const slots: (ItemStack | null)[] = Array.from({ length: balance.inventorySize }, () => null)
   balance.startItems.forEach((stack, i) => (slots[i] = { ...stack }))
 
-  const plots: PlotState[] = []
-  for (let x = 0; x < PLOT_AREA.cols; x++) {
-    for (let z = 0; z < PLOT_AREA.rows; z++) {
-      plots.push({ x, z, tilled: false, crop: null, stage: 0, stageStartedAt: 0, wateredAt: null })
-    }
-  }
+  const plots = blockPlots(0)
 
   return {
     version: 1,
@@ -124,6 +121,7 @@ export function createInitialState(): GameState {
     clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
     inventory: { slots, selected: 0 },
     plots,
+    landLevel: 0,
     coopLevel: 0,
     animals: [],
     journal: { fish: {} },
@@ -133,4 +131,9 @@ export function createInitialState(): GameState {
 
 function detectLang(): Lang {
   return navigator.language.toLowerCase().startsWith('vi') ? 'vi' : 'en'
+}
+
+/** Ô đất trống (cỏ) của khu ruộng thứ i. */
+export function blockPlots(i: number): PlotState[] {
+  return blockCells(i).map(({ x, z }) => ({ x, z, tilled: false, crop: null, stage: 0, stageStartedAt: 0, wateredAt: null }))
 }

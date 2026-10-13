@@ -186,7 +186,7 @@ async function start(): Promise<void> {
     if (!h || isPanelOpen() || performance.now() - h.at > 2500) return null
     const hit = pickGround(followCam.camera, h.x, h.y)
     const cell = hit && !hit.onStall ? plotAt(hit.x, hit.z) : null
-    return cell ? interaction.plotAtCell(cell.x, cell.z) : null
+    return (cell && interaction.plotAtCell(cell.x, cell.z)) ?? null
   }
 
   const playerPos = new THREE.Vector3()

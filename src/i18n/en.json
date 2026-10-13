@@ -108,7 +108,7 @@
   "animal.pig": "Pig",
   "animal.cow": "Cow",
   "shop.tab.buy": "Seeds",
-  "shop.tab.animals": "Animals",
+  "shop.tab.animals": "Farm",
   "shop.tab.sell": "Sell",
   "shop.coopBuild": "Build a coop",
   "shop.coopUpgrade": "Upgrade coop",
@@ -141,5 +141,10 @@
   "fish.escaped": "🐟 It got away!",
   "fish.caught": "🎣 Caught a {item}! (+{xp} XP)",
   "fish.caughtNew": "🎉 New species: {item}! Added to your fish log (+{xp} XP)",
-  "fish.tooFar": "Get closer to the pond to cast"
+  "fish.tooFar": "Get closer to the pond to cast",
+  "shop.land": "Expand field (+16 plots)",
+  "shop.landSub": "You have {n} plots",
+  "shop.landMax": "Fully expanded ({n} plots)",
+  "land.bought": "🌱 Field expanded! You now have {n} plots",
+  "land.locked": "🔒 Not yours yet; buy it at the stall for {price} gold"
 }

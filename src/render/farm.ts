@@ -2,7 +2,8 @@ import * as THREE from 'three'
 import { mulberry32 } from '../core/random.ts'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameState, PlotState } from '../core/state.ts'
-import { PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
+import { blockCenter, LAND_BLOCKS, PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
+import { nextLandPrice } from '../systems/land.ts'
 import { cropOf, isRipe, needsWater } from '../systems/farming.ts'
 import { instanceModel, placeMatrix, type InstancedModel } from './instancing.ts'
 
@@ -23,7 +24,7 @@ function cropVariant(model: string, stage: number, ripe: boolean): string {
 
 /** Ô đất, cây trồng (mô hình của bản cũ), dấu "cần tưới" và khung tô sáng ô đang nhắm. */
 export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
-  const n = PLOT_AREA.cols * PLOT_AREA.rows
+  const n = PLOT_AREA.cols * PLOT_AREA.rows * LAND_BLOCKS.length
   const size = PLOT_AREA.size * 0.9
 
   // Đất đã cuốc: khối đất có luống (texture vẽ bằng canvas).
@@ -59,7 +60,11 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
   )
   highlight.rotation.x = -Math.PI / 2
   highlight.scale.set(Math.SQRT2, Math.SQRT2, 1)
-  scene.add(soil, outlines, drops, highlight, createScarecrow())
+  // Biển 🔒 và giá ở giữa khu ruộng kế tiếp chưa mua.
+  const lockSign = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
+  lockSign.scale.set(2.4, 1.2, 1)
+  let lockKey = ''
+  scene.add(soil, outlines, drops, highlight, createScarecrow(), lockSign)
 
   // Mỗi biến thể cây (vd. carrot_3) là một nhóm InstancedMesh, tạo khi cần lần đầu.
   const variants = new Map<string, { inst: InstancedModel; count: number }>()
@@ -119,6 +124,20 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
       outlines.instanceMatrix.needsUpdate = true
       soil.instanceMatrix.needsUpdate = true
       if (soil.instanceColor) soil.instanceColor.needsUpdate = true
+
+      const price = nextLandPrice(state)
+      const key = `${state.landLevel}|${price}`
+      if (key !== lockKey) {
+        lockKey = key
+        lockSign.visible = price !== null
+        if (price !== null) {
+          const c = blockCenter(state.landLevel + 1)
+          lockSign.position.set(c.x, 0.9, c.z)
+          ;(lockSign.material as THREE.SpriteMaterial).map = lockTexture(price)
+          ;(lockSign.material as THREE.SpriteMaterial).needsUpdate = true
+        }
+      }
+      lockSign.position.y = 0.9 + Math.sin(time * 2) * 0.06
 
       highlight.visible = focus !== null
       if (focus) {
@@ -212,4 +231,27 @@ function createScarecrow(): THREE.Group {
   g.position.set(SCARECROW.x, 0, SCARECROW.z)
   g.rotation.y = -0.5
   return g
+}
+
+/** Biển gỗ "🔒 500g" trên khu ruộng chưa mua. */
+function lockTexture(price: number): THREE.CanvasTexture {
+  const c = document.createElement('canvas')
+  c.width = 256
+  c.height = 128
+  const g = c.getContext('2d')!
+  g.fillStyle = 'rgba(176,110,51,0.95)'
+  g.strokeStyle = '#4e2a0c'
+  g.lineWidth = 8
+  g.beginPath()
+  g.roundRect(8, 16, 240, 96, 22)
+  g.fill()
+  g.stroke()
+  g.fillStyle = '#fff9e6'
+  g.font = 'bold 52px Fredoka, Nunito, sans-serif'
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  g.fillText(`🔒 ${price}g`, 128, 66)
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
 }

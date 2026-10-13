@@ -3,6 +3,7 @@ import { animalData, CROP_BY_ID, item } from '../data/index.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { now } from '../core/time.ts'
 import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
+import { buyLand, nextLandPrice } from '../systems/land.ts'
 import { countItem } from '../systems/inventory.ts'
 import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems/shop.ts'
 import { itemIconHtml } from './icons.ts'
@@ -66,6 +67,12 @@ export function createShopPanel(state: GameState): PanelSpec {
 
   function renderAnimals(list: HTMLElement, refresh: () => void): void {
     const p = state.player
+    // Mở rộng ruộng.
+    const landPrice = nextLandPrice(state)
+    const landRow = iconRow('🌱', t('shop.land'), landPrice === null ? t('shop.landMax', { n: state.plots.length }) : t('shop.landSub', { n: state.plots.length }))
+    if (landPrice !== null) landRow.append(button(`${landPrice}g`, 'btn small gold', () => buyLand(state) && refresh(), p.gold < landPrice))
+    list.append(landRow)
+
     // Chuồng: xây mới hoặc nâng cấp.
     const next = animalData.coopLevels[state.coopLevel]
     const coopRow = iconRow('🏠', t(state.coopLevel === 0 ? 'shop.coopBuild' : 'shop.coopUpgrade'),

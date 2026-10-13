@@ -39,5 +39,11 @@
   "reach": 1.6,
   "dayRealMinutes": 12,
   "daysPerSeason": 7,
-  "dayStartMinute": 360
+  "dayStartMinute": 360,
+  "landPrices": [
+    500,
+    1000,
+    2000,
+    4000
+  ]
 }

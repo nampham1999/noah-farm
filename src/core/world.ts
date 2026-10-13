@@ -42,14 +42,40 @@ export function isWater(x: number, z: number, margin = 0): boolean {
   return Math.hypot(dx, dz) < pondRadius(Math.atan2(dz, dx)) + margin
 }
 
-/** Khu ô đất 4x4 (16 ô, GDD mục 7.3). */
+/** Một khu ruộng là 4x4 ô (16 ô, GDD mục 7.3); khu đầu tiên có sẵn, các khu sau mua thêm. */
 export const PLOT_AREA = { x: 0, z: -3, cols: 4, rows: 4, size: 1.4 }
+/** Khoảng cách giữa tâm hai khu ruộng liền nhau. */
+const BLOCK_STEP = { x: 6.2, z: 6.4 }
+/** Vị trí các khu theo thứ tự mở: giữa, đông, tây, bắc, đông bắc (đơn vị: khu). */
+export const LAND_BLOCKS: { bx: number; bz: number }[] = [
+  { bx: 0, bz: 0 },
+  { bx: 1, bz: 0 },
+  { bx: -1, bz: 0 },
+  { bx: 0, bz: -1 },
+  { bx: 1, bz: -1 },
+]
+
+/** Tâm của khu ruộng thứ i. */
+export function blockCenter(i: number): { x: number; z: number } {
+  const b = LAND_BLOCKS[i]
+  return { x: PLOT_AREA.x + b.bx * BLOCK_STEP.x, z: PLOT_AREA.z + b.bz * BLOCK_STEP.z }
+}
+
+/** Các ô (cột, hàng toàn cục) của khu ruộng thứ i. */
+export function blockCells(i: number): { x: number; z: number }[] {
+  const b = LAND_BLOCKS[i]
+  const cells: { x: number; z: number }[] = []
+  for (let c = 0; c < PLOT_AREA.cols; c++) {
+    for (let r = 0; r < PLOT_AREA.rows; r++) cells.push({ x: b.bx * PLOT_AREA.cols + c, z: b.bz * PLOT_AREA.rows + r })
+  }
+  return cells
+}
 /** Chuồng (dựng khi mua) và bãi thả quanh chuồng nơi vật nuôi đi lại. */
 export const COOP = { x: 12, z: -13.5, r: 2.3 }
-export const PEN = { x: 11, z: -8, r: 3.6 }
+export const PEN = { x: 12.6, z: -8.4, r: 3.2 }
 
 /** Bù nhìn ở góc khu ruộng. */
-export const SCARECROW = { x: 3.7, z: -6.5, r: 0.35 }
+export const SCARECROW = { x: -3.4, z: 0.9, r: 0.35 }
 /** Quầy hàng (mô hình shop, rộng khoảng 5,4 m), mặt quầy quay về phía +Z. r là vùng chạm để mở. */
 export const STALL = { x: -7, z: 3, r: 2.2 }
 /** Nửa chiều rộng quầy, để chặn hai đầu quầy khi đi. */
@@ -65,21 +91,29 @@ export const PATHS: { from: [number, number]; to: [number, number]; width: numbe
 /** Chỗ hở trên hàng rào phía nam, nơi đường đất đi ra. */
 export const GATE = { x: 0, halfWidth: 1.4 }
 
-/** Toạ độ thế giới của tâm ô đất ở cột x, hàng z. */
+/** Toạ độ thế giới của tâm ô đất ở cột x, hàng z (toàn cục, khu nào cũng dùng chung lưới này). */
 export function plotCenter(x: number, z: number): { x: number; z: number } {
   const { size, cols, rows } = PLOT_AREA
+  const bx = Math.floor(x / cols)
+  const bz = Math.floor(z / rows)
   return {
-    x: PLOT_AREA.x + (x - (cols - 1) / 2) * size,
-    z: PLOT_AREA.z + (z - (rows - 1) / 2) * size,
+    x: PLOT_AREA.x + bx * BLOCK_STEP.x + (x - bx * cols - (cols - 1) / 2) * size,
+    z: PLOT_AREA.z + bz * BLOCK_STEP.z + (z - bz * rows - (rows - 1) / 2) * size,
   }
 }
 
-/** Ô đất (cột, hàng) chứa điểm thế giới; null nếu nằm ngoài khu ô đất. */
-export function plotAt(wx: number, wz: number): { x: number; z: number } | null {
+/** Ô đất (cột, hàng) và khu chứa điểm thế giới; null nếu không nằm trong khu ruộng nào. */
+export function plotAt(wx: number, wz: number): { x: number; z: number; block: number } | null {
   const { size, cols, rows } = PLOT_AREA
-  const x = Math.floor((wx - PLOT_AREA.x) / size + cols / 2)
-  const z = Math.floor((wz - PLOT_AREA.z) / size + rows / 2)
-  return x >= 0 && x < cols && z >= 0 && z < rows ? { x, z } : null
+  for (let i = 0; i < LAND_BLOCKS.length; i++) {
+    const c = blockCenter(i)
+    const lx = Math.floor((wx - c.x) / size + cols / 2)
+    const lz = Math.floor((wz - c.z) / size + rows / 2)
+    if (lx >= 0 && lx < cols && lz >= 0 && lz < rows) {
+      return { x: LAND_BLOCKS[i].bx * cols + lx, z: LAND_BLOCKS[i].bz * rows + lz, block: i }
+    }
+  }
+  return null
 }
 
 export interface Tree extends Circle {
@@ -112,7 +146,7 @@ export const PROPS: Prop[] = [
   { model: 'barrel', x: -10.3, z: 3.3, rotY: 1, r: 0.4 },
   { model: 'crate', x: -3.7, z: 2.3, rotY: 0.4, r: 0.45 },
   { model: 'sack', x: -3.8, z: 3.3, rotY: 1.2, r: 0 },
-  { model: 'wheelbarrow', x: 4.3, z: -1.4, rotY: -0.6, r: 0.6 },
+  { model: 'wheelbarrow', x: 8.6, z: 1.8, rotY: -0.6, r: 0.6 },
   { model: 'pallet', x: -8.6, z: -8.4, rotY: 0.2, r: 0 },
   { model: 'sack', x: -8.5, z: -8.5, rotY: 0.6, r: 0 },
   { model: 'lumber', x: -14.6, z: -8.8, rotY: 1.4, r: 1.1 },
@@ -183,8 +217,12 @@ function isReserved(x: number, z: number, margin: number): boolean {
     { x: 0, z: 6, r: 1.5 },
   ]
   if (areas.some((c) => Math.hypot(x - c.x, z - c.z) < c.r + margin * 0.5)) return true
+  // Chừa chỗ cho mọi khu ruộng, kể cả khu chưa mua.
   const half = (PLOT_AREA.cols * PLOT_AREA.size) / 2 + 0.6
-  if (Math.abs(x - PLOT_AREA.x) < half + margin * 0.5 && Math.abs(z - PLOT_AREA.z) < half + margin * 0.5) return true
+  for (let i = 0; i < LAND_BLOCKS.length; i++) {
+    const c = blockCenter(i)
+    if (Math.abs(x - c.x) < half + margin * 0.5 && Math.abs(z - c.z) < half + margin * 0.5) return true
+  }
   return PATHS.some((p) => distToSegment(x, z, p.from, p.to) < p.width / 2 + margin * 0.3)
 }
 

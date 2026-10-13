@@ -3,6 +3,7 @@ import type { AnimalState, GameState, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
 import { isWater, plotAt, plotCenter, STALL } from '../core/world.ts'
 import { cast } from './fishing.ts'
+import { nextLandPrice } from './land.ts'
 import { balance } from '../data/index.ts'
 import { actOnPlot, isRipe } from './farming.ts'
 import { turnToward, type Dir } from './movement.ts'
@@ -56,7 +57,13 @@ export class Interaction {
       return this.setGoal({ kind: 'fish', x: wx, z: wz })
     }
     const cell = plotAt(wx, wz)
-    if (cell) return this.setGoal({ kind: 'plot', plot: this.plotAtCell(cell.x, cell.z) })
+    const plot = cell && this.plotAtCell(cell.x, cell.z)
+    if (plot) return this.setGoal({ kind: 'plot', plot })
+    // Khu chưa mua: báo giá, vẫn đi tới đó.
+    if (cell) {
+      const price = nextLandPrice(this.state)
+      if (price !== null && cell.block === this.state.landLevel + 1) bus.emit('notify', { key: 'land.locked', params: { price } })
+    }
     this.setGoal({ kind: 'walk', x: wx, z: wz })
   }
 
@@ -217,7 +224,8 @@ export class Interaction {
   private frontPlot(): PlotState | null {
     const { pos, rotY } = this.state.player
     const ahead = plotAt(pos[0] + Math.sin(rotY) * 0.9, pos[2] + Math.cos(rotY) * 0.9)
-    if (ahead) return this.plotAtCell(ahead.x, ahead.z)
+    const aheadPlot = ahead && this.plotAtCell(ahead.x, ahead.z)
+    if (aheadPlot) return aheadPlot
 
     let best: PlotState | null = null
     let bestDist: number = balance.reach
@@ -232,8 +240,9 @@ export class Interaction {
     return best
   }
 
-  plotAtCell(x: number, z: number): PlotState {
-    return this.state.plots.find((p) => p.x === x && p.z === z)!
+  /** Ô đất đã mua ở (cột, hàng); undefined nếu ô đó thuộc khu chưa mua. */
+  plotAtCell(x: number, z: number): PlotState | undefined {
+    return this.state.plots.find((p) => p.x === x && p.z === z)
   }
 
   private distTo(x: number, z: number): number {

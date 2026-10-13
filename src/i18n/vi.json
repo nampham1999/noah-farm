@@ -108,7 +108,7 @@
   "animal.pig": "Lợn",
   "animal.cow": "Bò",
   "shop.tab.buy": "Hạt giống",
-  "shop.tab.animals": "Chuồng trại",
+  "shop.tab.animals": "Nông trại",
   "shop.tab.sell": "Bán",
   "shop.coopBuild": "Xây chuồng",
   "shop.coopUpgrade": "Nâng cấp chuồng",
@@ -141,5 +141,10 @@
   "fish.escaped": "🐟 Cá giãy thoát rồi!",
   "fish.caught": "🎣 Câu được {item}! (+{xp} XP)",
   "fish.caughtNew": "🎉 Loài mới: {item}! Đã ghi vào sổ cá (+{xp} XP)",
-  "fish.tooFar": "Lại gần hồ hơn để thả cần"
+  "fish.tooFar": "Lại gần hồ hơn để thả cần",
+  "shop.land": "Mở rộng ruộng (+16 ô)",
+  "shop.landSub": "Đang có {n} ô",
+  "shop.landMax": "Đã mở hết ({n} ô)",
+  "land.bought": "🌱 Đã mở thêm ruộng! Giờ có {n} ô",
+  "land.locked": "🔒 Khu này chưa mua; mở ở quầy hàng với {price} vàng"
 }

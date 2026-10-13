@@ -1,4 +1,5 @@
-import { createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState } from '../core/state.ts'
+import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState } from '../core/state.ts'
+import { LAND_BLOCKS } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
 
@@ -107,7 +108,9 @@ function normalize(data: Record<string, unknown>): GameState {
     const pl = obj(raw)
     savedPlots.set(`${pl.x},${pl.z}`, pl)
   }
-  const plots = base.plots.map((def): PlotState => {
+  const landLevel = Math.max(0, Math.min(LAND_BLOCKS.length - 1, Math.floor(typeof data.landLevel === 'number' ? data.landLevel : 0)))
+  const expected = Array.from({ length: landLevel + 1 }, (_, i) => blockPlots(i)).flat()
+  const plots = expected.map((def): PlotState => {
     const pl = savedPlots.get(`${def.x},${def.z}`)
     if (!pl) return def
     const crop = typeof pl.crop === 'string' && CROP_BY_ID.has(pl.crop) ? pl.crop : null
@@ -145,6 +148,7 @@ function normalize(data: Record<string, unknown>): GameState {
     clock: { ...base.clock, ...obj(data.clock) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
+    landLevel,
     coopLevel,
     animals,
     journal: {
