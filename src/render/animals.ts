@@ -64,6 +64,8 @@ export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsVi
           })
           const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
           bubble.scale.set(0.55, 0.55, 1)
+          // Chưa có biểu tượng thì ẩn, nếu không sprite trống hiện thành ô vuông trắng.
+          bubble.visible = false
           bubble.position.y = 1.1 * animalDef(a).scale + 0.3
           root.add(bubble)
           rig = { root, legs, bubble, bubbleIcon: '', phase: Math.random() * 6, heartUntil: 0 }
