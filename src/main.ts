@@ -51,6 +51,8 @@ import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updat
 import { createHorseView } from './render/horse.ts'
 import { createOrchardView } from './render/orchard.ts'
 import { createFestivalView } from './render/festival.ts'
+import { createFoxView } from './render/fox.ts'
+import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
 import { updateCrops } from './systems/farming.ts'
@@ -144,6 +146,7 @@ async function start(): Promise<void> {
   const horseView = createHorseView(world.scene, models)
   const orchardView = createOrchardView(world.scene, models)
   const festivalView = createFestivalView(world.scene)
+  const foxView = createFoxView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
   let houseView: HouseView | null = null
@@ -273,6 +276,7 @@ async function start(): Promise<void> {
     if (npc) return interaction.tapNpc(npc)
     const animal = animalsView.hitTest(followCam.camera, x, y)
     if (animal) return interaction.tapAnimal(animal)
+    if (foxView.hitTest(followCam.camera, x, y)) return scareFox(state)
     if (petView.hitTest(followCam.camera, x, y)) return interaction.tapPet()
     if (!ridingAnimal() && horseView.hitTest(followCam.camera, x, y)) return interaction.tapHorse()
     const machine = machinesView.hitTest(followCam.camera, x, y)
@@ -352,6 +356,7 @@ async function start(): Promise<void> {
         /** Cho nhân vật làm một động tác (để xem hoạt ảnh). */
         act: (name: ActionName) => farmer.playAction?.(name),
         setWeather: (w: Weather) => setWeather(state, w),
+        fox,
         /** Dụng cụ đang cầm: kích thước thật trong thế giới (để kiểm tra tỉ lệ, hướng). */
         heldTool: () => {
           let info: { name: string; size: number[]; center: number[] } | null = null
@@ -414,6 +419,7 @@ async function start(): Promise<void> {
     updateAnimals(state, t, lastT)
     updateMachines(state, t, lastT)
     updatePet(state, dt)
+    if (!visiting) updateFox(state, dt)
     updateWander(state, dt, ridingAnimal())
     updateNpcs(state, dt)
     lastT = t
@@ -458,6 +464,7 @@ async function start(): Promise<void> {
     horseView.update(state, clock.getElapsed(), dt)
     orchardView.update(state, t, clock.getElapsed())
     festivalView.update(state, clock.getElapsed())
+    foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {

@@ -46,6 +46,7 @@ export const MODELS = {
   dog: 'models/dog.glb',
   greenhouse: 'models/greenhouse.glb',
   horse: 'models/horse.glb',
+  fox: 'models/fox.glb',
   beehive: 'models/beehive.glb',
   lilyA: 'kaykit-hex/waterlily_A.gltf',
   lilyB: 'kaykit-hex/waterlily_B.gltf',

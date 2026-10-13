@@ -185,6 +185,8 @@ export interface GameState {
   greenhouse: boolean
   /** Đã mua ngựa. */
   horse: boolean
+  /** Đã rào bãi thả quanh chuồng (chặn cáo). */
+  coopFence: boolean
   orchard: OrchardTree[]
   /** Thử thách lễ hội hôm nay: stamp là dayStamp của ngày lễ hội. */
   festival: { stamp: number; progress: number; done: boolean } | null
@@ -236,6 +238,7 @@ export function createInitialState(): GameState {
     pet: null,
     greenhouse: false,
     horse: false,
+    coopFence: false,
     orchard: [],
     festival: null,
     friends: {},

@@ -10,6 +10,7 @@ import { countItem } from '../systems/inventory.ts'
 import { buyMachine } from '../systems/machines.ts'
 import { buyPet, PET_PRICE } from '../systems/pet.ts'
 import { buyHorse, HORSE_LEVEL, HORSE_PRICE } from '../systems/riding.ts'
+import { buyCoopFence, COOP_FENCE_PRICE } from '../systems/fox.ts'
 import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems/shop.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
@@ -90,6 +91,13 @@ export function createShopPanel(state: GameState): PanelSpec {
       coopRow.append(button(`${next.price}g`, 'btn small gold', () => buyCoopLevel(state) && refresh(), p.level < next.level || p.gold < next.price))
     }
     list.append(coopRow)
+
+    // Hàng rào bãi thả (chặn cáo đêm).
+    if (state.coopLevel > 0) {
+      const fenceRow = iconRow('🦊', t('fox.fenceName'), state.coopFence ? t('fox.fenceOwned') : t('fox.fenceSub'))
+      if (!state.coopFence) fenceRow.append(button(`${COOP_FENCE_PRICE}g`, 'btn small gold', () => buyCoopFence(state) && refresh(), p.gold < COOP_FENCE_PRICE))
+      list.append(fenceRow)
+    }
 
     // Vật nuôi.
     const room = coopCapacity(state) - state.animals.length

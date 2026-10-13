@@ -452,5 +452,12 @@
   "friend.thanks": "{name} thanks you for the {item}",
   "friend.heartUp": "❤️ You and {name} are closer: {n} hearts!",
   "friend.letter": "📮 Letter from {name}: {gold} gold and {qty} {item}",
-  "friend.hint": "Deliver orders and give gifts (once per person per day) to become friends. At 2, 3 and 5 hearts they send a letter with a gift."
+  "friend.hint": "Deliver orders and give gifts (once per person per day) to become friends. At 2, 3 and 5 hearts they send a letter with a gift.",
+  "fox.fenceName": "Pen fence",
+  "fox.fenceSub": "Keeps night foxes from stealing eggs",
+  "fox.fenceOwned": "Fenced: foxes can't get in",
+  "fox.fenceBuilt": "🦊 The pen is fenced, the hens can sleep easy!",
+  "fox.coming": "🦊 A fox is sneaking onto the farm! Tap it to chase it off",
+  "fox.scared": "🦊 The fox ran away!",
+  "fox.stole": "🦊 A fox stole an egg! Fence the pen at the shop to keep it out"
 }

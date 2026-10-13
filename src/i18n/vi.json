@@ -452,5 +452,12 @@
   "friend.thanks": "{name} cảm ơn vì {item}",
   "friend.heartUp": "❤️ {name} thân với bạn hơn: {n} tim!",
   "friend.letter": "📮 Thư từ {name}: tặng bạn {gold} vàng và {qty} {item}",
-  "friend.hint": "Giao đơn hàng và tặng quà (mỗi người một lần mỗi ngày) để thân hơn. Đủ 2, 3, 5 tim sẽ nhận thư kèm quà."
+  "friend.hint": "Giao đơn hàng và tặng quà (mỗi người một lần mỗi ngày) để thân hơn. Đủ 2, 3, 5 tim sẽ nhận thư kèm quà.",
+  "fox.fenceName": "Hàng rào bãi thả",
+  "fox.fenceSub": "Chặn cáo đêm lẻn vào trộm trứng",
+  "fox.fenceOwned": "Đã rào: cáo không vào được",
+  "fox.fenceBuilt": "🦊 Đã rào bãi thả, gà ngủ yên rồi!",
+  "fox.coming": "🦊 Có cáo lẻn vào nông trại! Chạm vào nó để đuổi đi",
+  "fox.scared": "🦊 Cáo sợ quá chạy mất!",
+  "fox.stole": "🦊 Cáo đã trộm mất trứng! Rào bãi thả ở quầy hàng để chặn cáo"
 }
