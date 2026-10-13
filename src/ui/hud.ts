@@ -25,6 +25,8 @@ export interface HudHooks {
 export interface Hud {
   /** Gọi mỗi khung hình; chỉ chạm vào DOM khi có thay đổi. */
   update(fps: number, pixelRatio: number): void
+  /** Ảnh chân dung nhân vật tự tạo cho avatar; null thì dùng biểu tượng nông dân. */
+  setPortrait(url: string | null): void
 }
 
 const TOAST_MS = 2600
@@ -159,6 +161,11 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   bus.on('langChanged', relabel)
 
   return {
+    setPortrait(url) {
+      face.classList.toggle('has-portrait', url !== null)
+      face.style.backgroundImage = url ? `url(${url}), radial-gradient(circle at 50% 35%, #bfe8ff, #6bbbe8)` : ''
+      face.textContent = url ? '' : '🧑‍🌾'
+    },
     update(fps, pixelRatio) {
       const p = state.player
       const need = xpToNext(p.level)

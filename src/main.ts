@@ -52,6 +52,7 @@ import { createHorseView } from './render/horse.ts'
 import { createOrchardView } from './render/orchard.ts'
 import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
+import { renderPortrait } from './render/portrait.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
@@ -230,6 +231,10 @@ async function start(): Promise<void> {
     openJournal: () => togglePanel(journalPanel),
     openSocial: () => togglePanel(socialPanel),
   })
+  // Avatar trên HUD: chân dung nhân vật tự tạo (mẫu gốc thì biểu tượng nông dân).
+  const updatePortrait = () => hud.setPortrait(state.player.look ? renderPortrait(state.player.look) : null)
+  updatePortrait()
+  bus.on('lookChanged', updatePortrait)
   if (visiting) showVisitBanner(ui, state)
   const fishingUi = createFishingUi(ui, state)
   const decorUi = createDecorUi(ui, state)

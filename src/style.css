@@ -131,6 +131,12 @@ button {
   border: 3px solid #fff;
 }
 
+.avatar__face.has-portrait {
+  background-size: cover, auto;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+}
+
 .avatar__lvl {
   position: absolute;
   right: -4px;
