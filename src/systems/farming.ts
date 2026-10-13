@@ -80,6 +80,10 @@ export function shiftTimestamps(state: GameState, delta: number): void {
   for (const m of state.machines) {
     if (m.output) m.readyAt += delta
   }
+  for (const tree of state.orchard) {
+    tree.plantedAt += delta
+    if (tree.pickedAt !== null) tree.pickedAt += delta
+  }
 }
 
 /** Hạt sẽ gieo: hạt đang chọn trên thanh công cụ, nếu không thì hạt đầu tiên gieo được. */

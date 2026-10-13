@@ -39,6 +39,8 @@ export function itemName(id: string): string {
   if (def.kind === 'furniture') return tKey(`furn.${id.slice('furn_'.length)}`)
   if (def.kind === 'jar') return t(JAR_FRUITS.has(def.cropId!) ? 'item.jam' : 'item.pickle', { crop: tKey(`crop.${def.cropId}`) })
   if (def.kind === 'food') return tKey(`food.${id.slice('food_'.length)}`)
+  if (def.kind === 'fruit') return tKey(`tree.fruit.${id.slice('fruit_'.length)}`)
+  if (def.kind === 'sapling') return t('item.sapling', { tree: tKey(`tree.fruit.${id.slice('sapling_'.length)}`) })
   return tKey(`item.${id}`)
 }
 

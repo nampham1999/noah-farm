@@ -3,7 +3,7 @@ import { WEATHERS } from '../systems/weather.ts'
 import { HOUSE_UPGRADES } from '../systems/house.ts'
 import { blockPlots, createInitialState, greenhousePlots, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
 import { FARM_HALF, isWater, LAND_BLOCKS, SPAWN } from '../core/world.ts'
-import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, MACHINE_BY_ID, type AnimalType, type MachineId } from '../data/index.ts'
+import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, MACHINE_BY_ID, ORCHARD, TREE_BY_ID, type AnimalType, type MachineId, type TreeId } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
 
 /**
@@ -159,6 +159,12 @@ function normalize(data: Record<string, unknown>): GameState {
     pet: normalizePet(data.pet),
     greenhouse,
     horse: data.horse === true,
+    orchard: (Array.isArray(data.orchard) ? data.orchard : []).flatMap((raw): GameState['orchard'] => {
+      const o = obj(raw)
+      const spot = Math.floor(num(o.spot, -1))
+      if (spot < 0 || spot >= ORCHARD.spots.length || typeof o.type !== 'string' || !TREE_BY_ID.has(o.type as TreeId)) return []
+      return [{ spot, type: o.type as TreeId, plantedAt: num(o.plantedAt, 0), pickedAt: typeof o.pickedAt === 'number' ? o.pickedAt : null }]
+    }).filter((t, i, all) => all.findIndex((o) => o.spot === t.spot) === i),
     machines: (Array.isArray(data.machines) ? data.machines : []).flatMap((raw): GameState['machines'] => {
       const m = obj(raw)
       if (typeof m.id !== 'string' || !MACHINE_BY_ID.has(m.id as MachineId)) return []

@@ -3,7 +3,7 @@
  * Đơn vị: mét. Trục Y hướng lên, nông trại nằm giữa gốc toạ độ.
  */
 
-import { MACHINES } from '../data/index.ts'
+import { MACHINES, ORCHARD } from '../data/index.ts'
 import { mulberry32 } from './random.ts'
 
 /** Nửa cạnh khu nông trại có hàng rào (nông trại 36 x 36 m, gọn để các khu gần nhau). */
@@ -284,6 +284,8 @@ export const FLOWERS: Decor[] = scatter(decorRand, 130, FARM_HALF - 0.8, 0.8)
 export const OBSTACLES: Circle[] = [
   HOUSE,
   GREENHOUSE,
+  // Gốc cây ăn quả ở các ô vườn.
+  ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 0.45 })),
   // Chái phía tây của nhà cấp 4, 5.
   { x: HOUSE.x - 2.8, z: HOUSE.z - 0.2, r: 1.3 },
   FISHING_HUT,
@@ -340,6 +342,7 @@ function isReserved(x: number, z: number, margin: number): boolean {
     ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 1.4 })),
     { x: GREENHOUSE.x, z: GREENHOUSE.z, r: GREENHOUSE.r + 0.6 },
     { x: GH_BED.x, z: GH_BED.z, r: 3.4 },
+    ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 1.8 })),
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },
     { x: SPAWN.x, z: SPAWN.z, r: 1.5 },
   ]

@@ -17,6 +17,7 @@ export const MODELS = {
   treeSpringLo: 'models/tree-spring-lo.glb',
   treeApple: 'models/tree-apple.glb',
   treeCitrus: 'models/tree-citrus.glb',
+  treeCherry: 'models/tree-cherry.glb',
   treeAutumn: 'models/tree-autumn.glb',
   treeBirchAutumn: 'models/tree-birch-autumn.glb',
   treeWinter: 'models/tree-winter.glb',

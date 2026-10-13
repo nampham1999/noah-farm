@@ -8,7 +8,8 @@ import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
-import { balance, MACHINE_BY_ID, type MachineId } from '../data/index.ts'
+import { balance, MACHINE_BY_ID, ORCHARD, type MachineId } from '../data/index.ts'
+import { actOnSpot } from './orchard.ts'
 import { actOnPet, petPose } from './pet.ts'
 import { horsePose, toggleRide } from './riding.ts'
 import { actOnPlot, isRipe } from './farming.ts'
@@ -31,6 +32,7 @@ type Goal =
   | { kind: 'machine'; id: MachineId }
   | { kind: 'pet' }
   | { kind: 'horse' }
+  | { kind: 'tree'; spot: number }
   | { kind: 'bed'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
@@ -121,6 +123,11 @@ export class Interaction {
   /** Chạm vào ngựa: đi tới rồi leo lên. */
   tapHorse(): void {
     this.setGoal({ kind: 'horse' })
+  }
+
+  /** Chạm vào ô vườn: đi tới rồi trồng cây / hái quả. */
+  tapTree(spot: number): void {
+    this.setGoal({ kind: 'tree', spot })
   }
 
   tapMachine(id: MachineId): void {
@@ -303,6 +310,10 @@ export class Interaction {
         const h = horsePose()
         return [h.x, h.z, 1.5]
       }
+      case 'tree': {
+        const p = ORCHARD.spots[goal.spot]
+        return [p.x, p.z, 1.5]
+      }
       case 'machine': {
         const m = MACHINE_BY_ID.get(goal.id)!
         return [m.x, m.z, MACHINE_REACH]
@@ -338,6 +349,11 @@ export class Interaction {
       actOnPet(this.state)
     } else if (goal.kind === 'horse') {
       toggleRide(this.state)
+    } else if (goal.kind === 'tree') {
+      const p = ORCHARD.spots[goal.spot]
+      const me = this.state.player.pos
+      turnToward(this.state.player, p.x - me[0], p.z - me[2])
+      actOnSpot(this.state, goal.spot, this.hooks.now())
     } else if (goal.kind === 'machine') {
       const m = MACHINE_BY_ID.get(goal.id)!
       const me = this.state.player.pos

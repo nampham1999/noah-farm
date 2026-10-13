@@ -49,6 +49,7 @@ import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from '
 import { createFishingUi } from './ui/fishing.ts'
 import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { createHorseView } from './render/horse.ts'
+import { createOrchardView } from './render/orchard.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -138,6 +139,7 @@ async function start(): Promise<void> {
   const petView = createPetView(world.scene, models)
   const greenhouseView = createGreenhouseView(world.scene, models)
   const horseView = createHorseView(world.scene, models)
+  const orchardView = createOrchardView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
   let houseView: HouseView | null = null
@@ -266,6 +268,8 @@ async function start(): Promise<void> {
     if (!ridingAnimal() && horseView.hitTest(followCam.camera, x, y)) return interaction.tapHorse()
     const machine = machinesView.hitTest(followCam.camera, x, y)
     if (machine) return interaction.tapMachine(machine)
+    const spot = orchardView.hitTest(followCam.camera, x, y)
+    if (spot >= 0) return interaction.tapTree(spot)
     const hit = pickGround(followCam.camera, x, y)
     if (hit?.onBoard) return interaction.tapBoard()
     if (hit) interaction.tapWorld(hit.x, hit.z, hit.onStall, hit.onHouse)
@@ -443,6 +447,7 @@ async function start(): Promise<void> {
     petView.update(state, clock.getElapsed())
     greenhouseView.update(state)
     horseView.update(state, clock.getElapsed(), dt)
+    orchardView.update(state, t, clock.getElapsed())
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {

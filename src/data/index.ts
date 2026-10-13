@@ -6,6 +6,7 @@ import animalsJson from './animals.json'
 import fishJson from './fish.json'
 import furnitureJson from './furniture.json'
 import machinesJson from './machines.json'
+import treesJson from './trees.json'
 
 export interface CropDef {
   id: string
@@ -22,7 +23,7 @@ export interface CropDef {
   model: string
 }
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish' | 'furniture' | 'jar' | 'food'
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish' | 'furniture' | 'jar' | 'food' | 'fruit' | 'sapling'
 
 export interface ItemDef {
   id: string
@@ -157,6 +158,31 @@ for (const r of RECIPES) {
   ITEMS.set(`food_${r.id}`, { id: `food_${r.id}`, kind: 'food', icon: r.icon, sellPrice: r.sellPrice, energy: r.energy })
 }
 ITEMS.set(HONEY.id, { id: HONEY.id, kind: 'product', icon: HONEY.icon, sellPrice: HONEY.sellPrice, energy: HONEY.energy })
+
+export type TreeId = 'apple' | 'orange' | 'cherry'
+
+export interface TreeDef {
+  id: TreeId
+  /** Mùa ra quả. */
+  seasons: Season[]
+  saplingPrice: number
+  level: number
+  fruitPrice: number
+  energy: number
+  icon: string
+  /** Tên mô hình cây trong Models. */
+  model: 'treeApple' | 'treeCitrus' | 'treeCherry'
+}
+
+export const FRUIT_TREES = treesJson.trees as TreeDef[]
+export const TREE_BY_ID = new Map(FRUIT_TREES.map((t) => [t.id, t]))
+export const ORCHARD = treesJson as Omit<typeof treesJson, 'trees'>
+
+// Cây giống (sapling_x) và quả (fruit_x).
+for (const tr of FRUIT_TREES) {
+  ITEMS.set(`sapling_${tr.id}`, { id: `sapling_${tr.id}`, kind: 'sapling', icon: '🌱', buyPrice: tr.saplingPrice })
+  ITEMS.set(`fruit_${tr.id}`, { id: `fruit_${tr.id}`, kind: 'fruit', icon: tr.icon, sellPrice: tr.fruitPrice, energy: tr.energy })
+}
 
 export function item(id: string): ItemDef {
   const def = ITEMS.get(id)

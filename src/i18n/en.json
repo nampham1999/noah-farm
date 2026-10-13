@@ -415,5 +415,16 @@
   "horse.shopSub": "Ride fast; tap 🐴 from anywhere and it gallops over",
   "horse.owned": "Your horse waits at the hitching post by the coop",
   "horse.bought": "🐴 You have a horse! Tap 🐴 (or R) to call and ride it",
-  "horse.called": "🐴 Your horse is on its way…"
+  "horse.called": "🐴 Your horse is on its way…",
+  "item.sapling": "{tree} sapling",
+  "tree.fruit.apple": "Apple",
+  "tree.fruit.orange": "Orange",
+  "tree.fruit.cherry": "Cherry",
+  "shop.saplingSub": "Fruits in {a} and {b} · {price}g each · plant at a staked orchard spot",
+  "tree.needSapling": "Buy a sapling at the shop (Farm tab) to plant here",
+  "tree.planted": "🌱 {name} tree planted! It grows up in about 30 minutes",
+  "tree.picked": "Picked {qty} {item}",
+  "tree.growing": "Still growing, about {minutes} min left",
+  "tree.tomorrow": "Already picked today, more fruit tomorrow",
+  "tree.offSeason": "This tree fruits in {a} and {b}"
 }

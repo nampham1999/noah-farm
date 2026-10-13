@@ -1,0 +1,17 @@
+{
+  "trees": [
+    { "id": "apple", "seasons": ["summer", "autumn"], "saplingPrice": 400, "level": 2, "fruitPrice": 45, "energy": 12, "icon": "🍎", "model": "treeApple" },
+    { "id": "orange", "seasons": ["winter", "spring"], "saplingPrice": 500, "level": 3, "fruitPrice": 55, "energy": 12, "icon": "🍊", "model": "treeCitrus" },
+    { "id": "cherry", "seasons": ["spring", "summer"], "saplingPrice": 650, "level": 4, "fruitPrice": 70, "energy": 10, "icon": "🍒", "model": "treeCherry" }
+  ],
+  "growMinutes": 30,
+  "fruitPerHarvest": 3,
+  "spots": [
+    { "x": -12.4, "z": -16.3 },
+    { "x": -9.4, "z": -16.4 },
+    { "x": -2.6, "z": -16.3 },
+    { "x": 0.6, "z": -16.4 },
+    { "x": 16.2, "z": -4.4 },
+    { "x": 16.2, "z": -1.4 }
+  ]
+}

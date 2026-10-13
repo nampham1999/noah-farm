@@ -415,5 +415,16 @@
   "horse.shopSub": "Cưỡi chạy nhanh; ở xa bấm 🐴 là ngựa phi tới đón",
   "horse.owned": "Ngựa đang ở cột buộc cạnh chuồng",
   "horse.bought": "🐴 Đã có ngựa! Bấm nút 🐴 (hoặc R) để gọi và cưỡi",
-  "horse.called": "🐴 Ngựa đang phi tới…"
+  "horse.called": "🐴 Ngựa đang phi tới…",
+  "item.sapling": "Cây giống {tree}",
+  "tree.fruit.apple": "Táo",
+  "tree.fruit.orange": "Cam",
+  "tree.fruit.cherry": "Anh đào",
+  "shop.saplingSub": "Ra quả mùa {a} và {b} · {price}g mỗi quả · trồng ở ô vườn có cọc gỗ",
+  "tree.needSapling": "Mua cây giống ở quầy hàng (tab Nông trại) để trồng ở đây",
+  "tree.planted": "🌱 Đã trồng cây {name}! Khoảng 30 phút nữa cây lớn",
+  "tree.picked": "Hái được {qty} {item}",
+  "tree.growing": "Cây đang lớn, còn khoảng {minutes} phút",
+  "tree.tomorrow": "Hôm nay đã hái rồi, mai cây ra lứa mới",
+  "tree.offSeason": "Cây ra quả vào mùa {a} và {b}"
 }

@@ -1,5 +1,5 @@
 import type { GameState } from '../core/state.ts'
-import { animalData, CROP_BY_ID, FURNITURE, item, MACHINES } from '../data/index.ts'
+import { animalData, CROP_BY_ID, FRUIT_TREES, FURNITURE, item, MACHINES } from '../data/index.ts'
 import { buyFurniture, nextHouseUpgrade, upgradeHouse } from '../systems/house.ts'
 import { ROOM_SIZES } from '../core/world.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
@@ -108,6 +108,18 @@ export function createShopPanel(state: GameState): PanelSpec {
     status.className = 'panel__hint'
     status.textContent = state.coopLevel === 0 ? t('animal.needCoop') : t('shop.coopSpace', { used: state.animals.length, n: coopCapacity(state) })
     list.append(status)
+
+    // Cây giống ăn quả (trồng ở các ô vườn có cọc gỗ).
+    for (const tree of FRUIT_TREES) {
+      const id = `sapling_${tree.id}`
+      const locked = p.level < tree.level
+      const row = shopRow(id, itemName(id), locked
+        ? t('notice.locked', { level: tree.level })
+        : t('shop.saplingSub', { a: tKey(`season.${tree.seasons[0]}`), b: tKey(`season.${tree.seasons[1]}`), price: tree.fruitPrice }))
+      if (locked) row.classList.add('locked')
+      row.append(button(`${tree.saplingPrice}g`, 'btn small gold', () => buy(state, { itemId: id, price: tree.saplingPrice, level: tree.level }, 1) && refresh(), locked || p.gold < tree.saplingPrice))
+      list.append(row)
+    }
 
     // Nhà kính.
     const ghRow = iconRow('🪴', t('shop.greenhouse'), state.greenhouse ? t('shop.greenhouseOwned') : p.level < GREENHOUSE_LEVEL ? t('notice.locked', { level: GREENHOUSE_LEVEL }) : t('shop.greenhouseSub'))

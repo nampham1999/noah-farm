@@ -2,7 +2,7 @@
  * Kho trạng thái duy nhất của game (GDD mục 5, 6.3).
  * Hiển thị, giao diện và lưu trữ chỉ đọc hoặc ghi đối tượng này.
  */
-import { balance, type AnimalType, type MachineId } from '../data/index.ts'
+import { balance, type AnimalType, type MachineId, type TreeId } from '../data/index.ts'
 import { blockCells, greenhouseCells, SPAWN } from './world.ts'
 import type { Look } from './look.ts'
 
@@ -120,6 +120,15 @@ export interface PetState {
   gift: { id: string; qty: number } | null
 }
 
+/** Cây ăn quả trồng ở ô vườn số spot. */
+export interface OrchardTree {
+  spot: number
+  type: TreeId
+  plantedAt: number
+  /** Lần hái gần nhất (dấu thời gian thật); null là chưa hái lần nào. */
+  pickedAt: number | null
+}
+
 export interface AnimalState {
   id: string
   type: AnimalType
@@ -176,6 +185,7 @@ export interface GameState {
   greenhouse: boolean
   /** Đã mua ngựa. */
   horse: boolean
+  orchard: OrchardTree[]
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**
@@ -222,6 +232,7 @@ export function createInitialState(): GameState {
     pet: null,
     greenhouse: false,
     horse: false,
+    orchard: [],
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },
