@@ -393,5 +393,13 @@
   "food.corn_bread": "Corn bread",
   "food.pumpkin_soup": "Pumpkin soup",
   "food.strawberry_cake": "Strawberry cake",
-  "food.honey_cake": "Honey cake"
+  "food.honey_cake": "Honey cake",
+  "pet.shopName": "Puppy",
+  "pet.shopSub": "Follows you around and often finds gifts in the morning",
+  "pet.owned": "{name} lives on the farm",
+  "pet.adopted": "🐶 Say hi to {name}! Your dog will follow you around the farm.",
+  "pet.petted": "❤️ {name} wags happily!",
+  "pet.happy": "{name} is already very happy",
+  "pet.gift": "🎁 {name} found {qty} {item}!",
+  "pet.giftGold": "🎁 {name} dug up {qty} gold!"
 }

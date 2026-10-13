@@ -42,6 +42,7 @@ export const MODELS = {
   cow: 'models/cow.glb',
   boat: 'models/boat.glb',
   jamJar: 'models/jam-jar.glb',
+  dog: 'models/dog.glb',
   beehive: 'models/beehive.glb',
   lilyA: 'kaykit-hex/waterlily_A.gltf',
   lilyB: 'kaykit-hex/waterlily_B.gltf',

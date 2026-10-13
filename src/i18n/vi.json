@@ -393,5 +393,13 @@
   "food.corn_bread": "Bánh ngô",
   "food.pumpkin_soup": "Súp bí đỏ",
   "food.strawberry_cake": "Bánh dâu",
-  "food.honey_cake": "Bánh mật ong"
+  "food.honey_cake": "Bánh mật ong",
+  "pet.shopName": "Chó con",
+  "pet.shopSub": "Đi theo bạn, mỗi sáng hay tìm được quà",
+  "pet.owned": "{name} đang ở nông trại",
+  "pet.adopted": "🐶 Chào {name}! Chú chó sẽ đi theo bạn khắp nông trại.",
+  "pet.petted": "❤️ {name} vẫy đuôi rối rít!",
+  "pet.happy": "{name} đang vui lắm rồi",
+  "pet.gift": "🎁 {name} tìm được {qty} {item}!",
+  "pet.giftGold": "🎁 {name} đào được {qty} vàng!"
 }

@@ -111,6 +111,15 @@ export interface MachineState {
   readyAt: number
 }
 
+/** Chó nuôi: theo chân người chơi, vuốt ve mỗi ngày, sáng ra hay tìm được quà. */
+export interface PetState {
+  name: string
+  /** dayStamp lần vuốt ve gần nhất. */
+  pettedDay: number
+  /** Quà đang ngậm chờ người chơi lấy: vật phẩm, hoặc vàng (id 'gold'). */
+  gift: { id: string; qty: number } | null
+}
+
 export interface AnimalState {
   id: string
   type: AnimalType
@@ -162,6 +171,7 @@ export interface GameState {
   coopLevel: number
   animals: AnimalState[]
   machines: MachineState[]
+  pet: PetState | null
   house: { furniture: PlacedFurniture[] }
   /**
    * Nhật ký (GDD mục 3.7): sổ cá và sổ cây ghi số con đã câu / cây đã thu của từng loài;
@@ -204,6 +214,7 @@ export function createInitialState(): GameState {
     coopLevel: 0,
     animals: [],
     machines: [],
+    pet: null,
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },

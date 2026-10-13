@@ -7,6 +7,7 @@ import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
 import { buyLand, nextLandPrice } from '../systems/land.ts'
 import { countItem } from '../systems/inventory.ts'
 import { buyMachine } from '../systems/machines.ts'
+import { buyPet, PET_PRICE } from '../systems/pet.ts'
 import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems/shop.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
@@ -105,6 +106,11 @@ export function createShopPanel(state: GameState): PanelSpec {
     status.className = 'panel__hint'
     status.textContent = state.coopLevel === 0 ? t('animal.needCoop') : t('shop.coopSpace', { used: state.animals.length, n: coopCapacity(state) })
     list.append(status)
+
+    // Chó nuôi.
+    const petRow = iconRow('🐶', t('pet.shopName'), state.pet ? t('pet.owned', { name: state.pet.name }) : t('pet.shopSub'))
+    if (!state.pet) petRow.append(button(`${PET_PRICE}g`, 'btn small gold', () => buyPet(state) && refresh(), p.gold < PET_PRICE))
+    list.append(petRow)
 
     // Máy chế biến (dựng ở góc xưởng cạnh nhà).
     for (const def of MACHINES) {

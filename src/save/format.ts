@@ -154,6 +154,7 @@ function normalize(data: Record<string, unknown>): GameState {
     landLevel,
     coopLevel,
     animals,
+    pet: normalizePet(data.pet),
     machines: (Array.isArray(data.machines) ? data.machines : []).flatMap((raw): GameState['machines'] => {
       const m = obj(raw)
       if (typeof m.id !== 'string' || !MACHINE_BY_ID.has(m.id as MachineId)) return []
@@ -254,4 +255,16 @@ function outdoorPos(p: Record<string, unknown>): { pos?: [number, number, number
 
 function normalizeWeather(v: unknown): GameState['clock']['weather'] {
   return WEATHERS.includes(v as GameState['clock']['weather']) ? (v as GameState['clock']['weather']) : 'sunny'
+}
+
+function normalizePet(v: unknown): GameState['pet'] {
+  if (!v || typeof v !== 'object') return null
+  const p = v as Record<string, unknown>
+  const g = p.gift as Record<string, unknown> | null | undefined
+  const gift = g && typeof g.id === 'string' && (g.id === 'gold' || ITEMS.has(g.id)) && typeof g.qty === 'number' && g.qty > 0 ? { id: g.id, qty: Math.floor(g.qty) } : null
+  return {
+    name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 16) : 'Lu',
+    pettedDay: typeof p.pettedDay === 'number' ? p.pettedDay : -1,
+    gift,
+  }
 }

@@ -9,6 +9,7 @@ import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
 import { balance, MACHINE_BY_ID, type MachineId } from '../data/index.ts'
+import { actOnPet, petPose } from './pet.ts'
 import { actOnPlot, isRipe } from './farming.ts'
 import { turnToward, type Dir } from './movement.ts'
 
@@ -27,6 +28,7 @@ type Goal =
   | { kind: 'npc'; id: string }
   | { kind: 'board' }
   | { kind: 'machine'; id: MachineId }
+  | { kind: 'pet' }
   | { kind: 'bed'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
@@ -107,6 +109,11 @@ export class Interaction {
 
   tapBoard(): void {
     this.setGoal({ kind: 'board' })
+  }
+
+  /** Chạm vào chó: đi tới rồi lấy quà / vuốt ve. */
+  tapPet(): void {
+    this.setGoal({ kind: 'pet' })
   }
 
   tapMachine(id: MachineId): void {
@@ -281,6 +288,10 @@ export class Interaction {
       }
       case 'board':
         return [ORDER_BOARD.x, ORDER_BOARD.z, NPC_REACH + 0.3]
+      case 'pet': {
+        const p = petPose()
+        return [p.x, p.z, ANIMAL_REACH]
+      }
       case 'machine': {
         const m = MACHINE_BY_ID.get(goal.id)!
         return [m.x, m.z, MACHINE_REACH]
@@ -309,6 +320,11 @@ export class Interaction {
       const me = this.state.player.pos
       turnToward(this.state.player, ORDER_BOARD.x - me[0], ORDER_BOARD.z - me[2])
       this.hooks.openBoard()
+    } else if (goal.kind === 'pet') {
+      const p = petPose()
+      const me = this.state.player.pos
+      turnToward(this.state.player, p.x - me[0], p.z - me[2])
+      actOnPet(this.state)
     } else if (goal.kind === 'machine') {
       const m = MACHINE_BY_ID.get(goal.id)!
       const me = this.state.player.pos

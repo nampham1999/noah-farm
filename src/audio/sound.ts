@@ -6,7 +6,7 @@
 export type SfxName =
   | 'till' | 'plant' | 'water' | 'harvest' | 'coin' | 'levelUp' | 'quest'
   | 'cast' | 'bite' | 'catch' | 'escape' | 'chicken' | 'cow' | 'pig'
-  | 'place' | 'error' | 'click' | 'newDay' | 'thunder'
+  | 'place' | 'error' | 'click' | 'newDay' | 'thunder' | 'dog'
 
 class Sound {
   ctx: AudioContext | null = null
@@ -157,6 +157,13 @@ class Sound {
         break
       case 'newDay':
         ;[784, 1047, 1319].forEach((f, i) => this.pluck(t + i * 0.12, f, 0.6, 0.2))
+        break
+      case 'dog':
+        // Hai tiếng "gâu" ngắn.
+        for (const d of [0, 0.22]) {
+          this.tone(t + d, 520, 300, 0.12, 'sawtooth', 0.22, 1400)
+          this.noiseBurst(t + d, 0.08, 'bandpass', 900, 500, 0.15)
+        }
         break
       case 'thunder':
         // Tiếng nổ ngắn rồi rền trầm kéo dài.
