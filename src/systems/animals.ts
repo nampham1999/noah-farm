@@ -70,6 +70,7 @@ export function actOnAnimal(state: GameState, a: AnimalState, t: number): boolea
     addItem(state.inventory, def.product, qty)
     a.progress = 0
     gainXp(state, def.xp)
+    bus.emit('progress', { type: 'collect', amount: qty })
     bus.emit('notify', { key: 'animal.collected', params: { qty, item: def.product, xp: def.xp }, good: true })
     return true
   }
@@ -109,6 +110,7 @@ export function buyCoopLevel(state: GameState): boolean {
   if (state.player.gold < next.price) return fail('notice.noGold')
   state.player.gold -= next.price
   state.coopLevel++
+  bus.emit('progress', { type: 'coop', amount: 1 })
   bus.emit('notify', { key: state.coopLevel === 1 ? 'animal.coopBuilt' : 'animal.coopUpgraded', params: { n: coopCapacity(state) }, good: true })
   bus.emit('saveRequest', undefined)
   return true

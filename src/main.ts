@@ -16,6 +16,8 @@ import { createFishingView } from './render/fishing.ts'
 import { createHouseView } from './render/house.ts'
 import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
+import { createJournalPanel } from './ui/journal.ts'
+import { checkAchievements, ensureDaily, onProgress } from './systems/quests.ts'
 import { createFarmer } from './render/models.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
@@ -92,6 +94,9 @@ async function start(): Promise<void> {
   const shopPanel = createShopPanel(state)
   const menuPanel = createMenuPanel(state, store, autosaver)
   const inventoryPanel = createInventoryPanel(state)
+  const journalPanel = createJournalPanel(state)
+  ensureDaily(state)
+  bus.on('progress', (ev) => onProgress(state, ev))
   const goInside = () => {
     if (ridingAnimal()) dismount(state)
     if (isFishing()) stopFishing()
@@ -111,6 +116,7 @@ async function start(): Promise<void> {
     rideState: () => (ridingAnimal() ? 'riding' : mountable(state) ? 'can' : 'none'),
     indoors: () => state.player.indoors,
     toggleDecor: () => decorUi.toggle(),
+    openJournal: () => togglePanel(journalPanel),
   })
   const fishingUi = createFishingUi(ui, state)
   const decorUi = createDecorUi(ui, state)
@@ -123,7 +129,12 @@ async function start(): Promise<void> {
   }
   if (backupDue(state)) bus.emit('notify', { key: 'save.remind' })
 
-  bus.on('newDay', () => animalsNewDay(state, now()))
+  bus.on('newDay', () => {
+    animalsNewDay(state, now())
+    ensureDaily(state)
+  })
+  // Thành tựu không gắn với một việc cụ thể (cấp, đất, vật nuôi): kiểm tra định kỳ.
+  window.setInterval(() => checkAchievements(state), 5000)
 
   bus.on('tap', ({ x, y }) => {
     if (isPanelOpen()) return
@@ -159,7 +170,7 @@ async function start(): Promise<void> {
   bus.on('action', (action) => {
     if (isModalOpen()) return
     // Khi đang mở cửa sổ, chỉ cho đóng cửa sổ hoặc chuyển qua túi đồ.
-    if (isPanelOpen() && action !== 'menu' && action !== 'inventory') return
+    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal') return
     if (isFishing() && (action === 'useTool' || action === 'interact')) return strike(state)
     if (isFishing() && action === 'menu') return stopFishing()
     switch (action) {
@@ -173,6 +184,8 @@ async function start(): Promise<void> {
         return togglePanel(inventoryPanel)
       case 'menu':
         return isPanelOpen() ? closePanel() : openPanel(menuPanel)
+      case 'journal':
+        return togglePanel(journalPanel)
       case 'ride':
         return state.player.indoors ? undefined : toggleRide(state)
       default:

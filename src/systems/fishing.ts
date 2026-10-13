@@ -149,6 +149,7 @@ function land(state: GameState, fish: FishDef): void {
   const first = !state.journal.fish[fish.id]
   state.journal.fish[fish.id] = (state.journal.fish[fish.id] ?? 0) + 1
   gainXp(state, fish.xp)
+  bus.emit('progress', { type: 'fish', amount: 1, id: fish.id })
   bus.emit('notify', { key: first ? 'fish.caughtNew' : 'fish.caught', params: { item: id, xp: fish.xp }, good: true })
   bus.emit('saveRequest', undefined)
 }

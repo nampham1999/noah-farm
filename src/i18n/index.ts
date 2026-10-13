@@ -49,7 +49,8 @@ export function noticeText(key: string, params?: Record<string, string | number>
   const p = { ...params }
   for (const [k, v] of Object.entries(p)) {
     if (typeof v !== 'string') continue
-    p[k] = k === 'item' ? itemName(v) : (dictionaries[current][v] ?? dictionaries.vi[v] ?? v)
+    // Tham số là khoá i18n thì dịch, và điền luôn các tham số khác vào (vd. "Cuốc {n} ô đất").
+    p[k] = k === 'item' ? itemName(v) : v in dictionaries.vi ? tKey(v, params) : v
   }
   return tKey(key, p)
 }

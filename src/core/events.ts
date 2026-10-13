@@ -18,6 +18,14 @@ export interface Notice {
   good?: boolean
 }
 
+/** Việc người chơi vừa làm, để tính nhiệm vụ và thành tựu. */
+export interface Progress {
+  type: 'till' | 'plant' | 'water' | 'harvest' | 'sell' | 'sellGold' | 'fish' | 'coop' | 'collect' | 'place'
+  amount: number
+  /** Loài cây / cá liên quan, nếu có. */
+  id?: string
+}
+
 export interface GameEvents {
   action: GameAction
   /** Số ô 1..9 trên thanh công cụ. */
@@ -27,6 +35,7 @@ export interface GameEvents {
   /** Chạm hoặc click (không kéo) lên canvas, toạ độ màn hình. */
   tap: { x: number; y: number }
   notify: Notice
+  progress: Progress
   levelUp: number
   /** Sang ngày mới trong game (số ngày trong mùa). */
   newDay: number

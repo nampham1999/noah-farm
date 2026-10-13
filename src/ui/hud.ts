@@ -3,6 +3,7 @@ import type { GameState } from '../core/state.ts'
 import { balance, xpToNext } from '../data/index.ts'
 import { getLang, itemName, noticeText, t, tKey } from '../i18n/index.ts'
 import { dayPhase, type DayPhase } from '../systems/clock.ts'
+import { currentTutorial } from '../systems/quests.ts'
 import { itemIconHtml } from './icons.ts'
 import { slotElement } from './inventory.ts'
 
@@ -16,6 +17,7 @@ export interface HudHooks {
   rideState(): 'none' | 'can' | 'riding'
   indoors(): boolean
   toggleDecor(): void
+  openJournal(): void
 }
 
 export interface Hud {
@@ -58,7 +60,16 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   const clock = el('div', 'clock-card', clockIco, el('span', 'clock-card__text', clockTime, clockDate))
   const menuBtn = el('button', 'round-btn', '☰')
   menuBtn.addEventListener('click', hooks.openMenu)
-  top.append(left, el('div', 'hud-right', gold, clock, menuBtn))
+  const journalBtn = el('button', 'round-btn round-btn--paper', '📖')
+  journalBtn.addEventListener('click', hooks.openJournal)
+  top.append(left, el('div', 'hud-right', gold, clock, journalBtn, menuBtn))
+
+  // Khung mục tiêu dưới avatar (như bản cũ): nhiệm vụ đang làm, chạm để mở nhật ký.
+  const objIcon = el('span', 'objective__icon')
+  const objText = el('span', 'objective__text')
+  const objCount = el('span', 'objective__count')
+  const objective = el('button', 'objective', objIcon, objText, objCount)
+  objective.addEventListener('click', hooks.openJournal)
 
   // Dưới giữa: tên vật phẩm đang cầm, thanh công cụ, gợi ý điều khiển.
   const heldName = el('div', 'held-name')
@@ -93,7 +104,7 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   const stats = el('div', 'hud-stats')
   stats.hidden = !debug
 
-  hud.append(top, bottom, actions, toasts)
+  hud.append(top, objective, bottom, actions, toasts)
   ui.append(hud, stats)
 
   const showToast = (text: string, good = false) => {
@@ -133,6 +144,7 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
     avatar.title = t('action.inventory')
     bagSlot.title = t('action.inventory')
     menuBtn.title = t('action.menu')
+    journalBtn.title = t('journal.title')
     energy.title = t('hud.stamina')
     interactBtn.title = t('action.interact')
     useBtn.title = t('action.useTool')
@@ -171,6 +183,20 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
       if (changed('indoors', `${hooks.indoors()}`)) {
         decorBtn.hidden = !hooks.indoors()
         decorBtn.title = t('decor.title')
+      }
+      const tut = currentTutorial(state)
+      const daily = state.quests.daily
+      const dailyDone = daily.list.filter((q) => q.progress >= q.target).length
+      if (changed('objective', `${tut?.id}|${state.quests.progress}|${dailyDone}/${daily.list.length}|${getLang()}`)) {
+        if (tut) {
+          objIcon.textContent = tut.icon
+          objText.textContent = tKey(`quest.${tut.id}`, { n: tut.target })
+          objCount.textContent = `${state.quests.progress}/${tut.target}`
+        } else {
+          objIcon.textContent = dailyDone === daily.list.length ? '✅' : '📋'
+          objText.textContent = t('journal.dailyShort')
+          objCount.textContent = `${dailyDone}/${daily.list.length}`
+        }
       }
       const ride = hooks.rideState()
       if (changed('ride', ride)) {

@@ -1,4 +1,4 @@
-import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState } from '../core/state.ts'
+import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState, type QuestState } from '../core/state.ts'
 import { LAND_BLOCKS } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
@@ -163,10 +163,36 @@ function normalize(data: Record<string, unknown>): GameState {
         }
       : base.house,
     journal: {
-      fish: Object.fromEntries(
-        Object.entries(obj(obj(data.journal).fish)).filter(([, v]) => typeof v === 'number' && v > 0),
-      ) as Record<string, number>,
+      fish: counts(obj(obj(data.journal).fish)),
+      crops: counts(obj(obj(data.journal).crops)),
+      achievements: (Array.isArray(obj(data.journal).achievements) ? (obj(data.journal).achievements as unknown[]) : []).filter((a): a is string => typeof a === 'string'),
     },
+    quests: normalizeQuests(obj(data.quests), base.quests),
+    stats: { ...base.stats, ...counts(obj(data.stats)) },
     settings: { ...base.settings, ...obj(data.settings) },
   } as GameState
+}
+
+/** Giữ các cặp khoá: số dương. */
+function counts(o: Record<string, unknown>): Record<string, number> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => typeof v === 'number' && v > 0)) as Record<string, number>
+}
+
+function normalizeQuests(q: Record<string, unknown>, base: QuestState): QuestState {
+  const daily = q.daily && typeof q.daily === 'object' ? (q.daily as Record<string, unknown>) : {}
+  const list = Array.isArray(daily.list) ? daily.list : []
+  return {
+    step: typeof q.step === 'number' ? Math.max(0, Math.floor(q.step)) : base.step,
+    progress: typeof q.progress === 'number' ? q.progress : 0,
+    daily: {
+      day: typeof daily.day === 'number' ? daily.day : -1,
+      bonusClaimed: daily.bonusClaimed === true,
+      list: list.flatMap((raw) => {
+        const d = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+        return typeof d.id === 'string' && typeof d.target === 'number'
+          ? [{ id: d.id, target: d.target, progress: typeof d.progress === 'number' ? d.progress : 0 }]
+          : []
+      }),
+    },
+  }
 }

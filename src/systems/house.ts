@@ -69,6 +69,7 @@ export function place(state: GameState, id: string, cx: number, cz: number, rot:
   if (!countItem(state.inventory, `furn_${id}`) || !canPlace(state, id, cx, cz, rot)) return false
   removeItem(state.inventory, `furn_${id}`, 1)
   state.house.furniture.push({ id, cx, cz, rot })
+  bus.emit('progress', { type: 'place', amount: 1, id })
   bus.emit('saveRequest', undefined)
   return true
 }

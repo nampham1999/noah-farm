@@ -108,6 +108,7 @@ export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean
     case 'till':
       if (!countItem(inv, 'tool_hoe')) return fail('notice.needHoe')
       plot.tilled = true
+      bus.emit('progress', { type: 'till', amount: 1 })
       useStamina(state, balance.staminaCost.till)
       gainXp(state, balance.xpPerAction.till)
       return true
@@ -121,6 +122,7 @@ export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean
       }
       removeItem(inv, seedId, 1)
       plot.crop = crop.id
+      bus.emit('progress', { type: 'plant', amount: 1, id: crop.id })
       plot.stage = 0
       plot.stageStartedAt = t
       plot.wateredAt = null
@@ -132,6 +134,7 @@ export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean
     case 'water':
       if (!countItem(inv, 'tool_watering_can')) return fail('notice.needCan')
       plot.wateredAt = t
+      bus.emit('progress', { type: 'water', amount: 1 })
       useStamina(state, balance.staminaCost.water)
       gainXp(state, balance.xpPerAction.water)
       return true
@@ -146,6 +149,7 @@ export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean
       plot.wateredAt = null
       useStamina(state, balance.staminaCost.harvest)
       gainXp(state, crop.xp)
+      bus.emit('progress', { type: 'harvest', amount: 1, id: crop.id })
       bus.emit('notify', { key: 'notice.harvested', params: { item: produce, xp: crop.xp }, good: true })
       return true
     }

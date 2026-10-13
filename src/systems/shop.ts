@@ -42,6 +42,8 @@ export function sell(state: GameState, itemId: string, qty: number): boolean {
   if (n <= 0) return false
   removeItem(state.inventory, itemId, n)
   state.player.gold += price * n
+  bus.emit('progress', { type: 'sell', amount: 1 })
+  bus.emit('progress', { type: 'sellGold', amount: price * n })
   bus.emit('saveRequest', undefined)
   bus.emit('notify', { key: 'notice.sold', params: { item: itemId, qty: n, gold: price * n }, good: true })
   return true
