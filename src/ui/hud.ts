@@ -70,10 +70,6 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   const actions = el('div', 'hud-actions', interactBtn, useBtn)
 
   const toasts = el('div', 'toasts')
-  const rotate = el('div', 'rotate-overlay')
-  const rotateTitle = el('strong', '')
-  const rotateBody = el('p', '')
-  rotate.append(rotateTitle, rotateBody)
 
   // Thêm ?debug vào URL để xem FPS và độ phân giải render.
   const debug = new URLSearchParams(location.search).has('debug')
@@ -81,7 +77,7 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   stats.hidden = !debug
 
   hud.append(top, bottom, actions, toasts)
-  ui.append(hud, rotate, stats)
+  ui.append(hud, stats)
 
   const showToast = (text: string, good = false) => {
     const toast = el('div', good ? 'toast toast--good' : 'toast', text)
@@ -123,8 +119,6 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
     energy.title = t('hud.stamina')
     interactBtn.title = t('action.interact')
     useBtn.title = t('action.useTool')
-    rotateTitle.textContent = t('rotate.title')
-    rotateBody.textContent = t('rotate.body')
     for (const key of Object.keys(last)) delete last[key]
   }
   relabel()

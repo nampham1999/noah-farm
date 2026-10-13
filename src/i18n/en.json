@@ -2,8 +2,6 @@
   "game.title": "Noah Farm",
   "hint.desktop": "Click a plot or the stall · Hold and drag or WASD to walk · Wheel: switch tool · Ctrl + wheel: zoom",
   "hint.touch": "Hold and drag a finger to walk · Tap a plot or the stall to use · Pinch to zoom",
-  "rotate.title": "Rotate your phone",
-  "rotate.body": "Noah Farm is played in landscape mode only.",
   "webgl.error": "This browser does not support WebGL, so the game cannot run.",
   "close": "Close",
   "action.useTool": "Use",

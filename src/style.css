@@ -66,7 +66,6 @@ body {
 
 #ui button,
 .panel-backdrop,
-.rotate-overlay,
 .loading,
 .fatal {
   pointer-events: auto;
@@ -984,34 +983,6 @@ button {
   text-align: center;
 }
 
-.rotate-overlay {
-  display: none;
-  position: absolute;
-  inset: 0;
-  z-index: 60;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 16px;
-  background: radial-gradient(circle at 50% 40%, #c9ecff, #8fcdf0);
-  text-align: center;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.rotate-overlay strong {
-  font: 700 26px var(--display);
-  color: #fff9e6;
-  text-shadow: var(--outline);
-}
-
-@media (orientation: portrait) and (pointer: coarse) {
-  .rotate-overlay {
-    display: flex;
-  }
-}
-
 .fatal {
   position: absolute;
   inset: 0;
@@ -1026,8 +997,8 @@ button {
 
 .hud-stats {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
+  top: 120px;
+  left: 10px;
   padding: 4px 8px;
   border-radius: 6px;
   background: rgb(0 0 0 / 0.5);
@@ -1212,6 +1183,159 @@ button {
 }
 
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 780px) {
+  .clock-card__date {
+    display: none;
+  }
+}
+
+/* ---------- Điện thoại cầm dọc ---------- */
+
+@media (orientation: portrait) and (max-width: 720px) {
+  .hud-top {
+    top: max(10px, env(safe-area-inset-top));
+    left: 10px;
+    right: 10px;
+    gap: 6px;
+  }
+
+  /* Thanh thể lực xuống dưới avatar cho đủ chỗ hàng trên. */
+  .hud-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .hud-right {
+    gap: 6px;
+  }
+
+  .avatar {
+    width: 54px;
+    height: 54px;
+    padding: 4px;
+  }
+
+  .avatar__face {
+    font-size: 25px;
+  }
+
+  .energy-pill {
+    height: 28px;
+    padding: 0 8px 0 5px;
+    font-size: 12px;
+  }
+
+  .energy-pill__bar {
+    width: 56px;
+  }
+
+  .res-pill {
+    height: 38px;
+    padding: 0 10px 0 3px;
+    font-size: 15px;
+  }
+
+  .coin-dot.big {
+    width: 28px;
+    height: 28px;
+  }
+
+  .coin-dot.big::after {
+    font-size: 13px;
+  }
+
+  .clock-card {
+    height: 38px;
+    padding: 0 9px 0 4px;
+    gap: 4px;
+  }
+
+  .clock-card__ico {
+    font-size: 18px;
+  }
+
+  .clock-card__time {
+    font-size: 13px;
+  }
+
+  .clock-card__date {
+    font-size: 9px;
+  }
+
+  .round-btn {
+    width: 38px;
+    height: 38px;
+    border-width: 2px;
+    font-size: 17px;
+  }
+
+  /* 9 ô công cụ và ô túi đồ chia đều bề ngang màn hình. */
+  .hotbar .slot {
+    width: min(42px, calc((100vw - 50px) / 10));
+    height: min(42px, calc((100vw - 50px) / 10));
+  }
+
+  .hotbar .icon {
+    width: 76%;
+    height: 76%;
+  }
+
+  .hotbar .icon.packet {
+    width: 62%;
+  }
+
+  /* Nút hành động xếp dọc ở góc phải, phía trên thanh công cụ. */
+  .hud-actions {
+    right: 12px;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 92px);
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .act-btn {
+    width: 54px;
+    height: 54px;
+  }
+
+  .act-btn.big {
+    width: 68px;
+    height: 68px;
+  }
+
+  .toasts {
+    bottom: 120px;
+    width: calc(100vw - 110px);
+  }
+
+  .toast {
+    font-size: 13px;
+    padding: 7px 12px;
+  }
+
+  .controls-hint {
+    display: none;
+  }
+
+  .panel {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 70px);
+  }
+
+  .panel-backdrop {
+    padding: 40px 10px 12px;
+  }
+
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .row-main {
+    min-width: 50%;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 400px) {
   .clock-card__date {
     display: none;
   }
