@@ -2,7 +2,7 @@ import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
 import {
-  FIELD_GATE, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
+  FARM_HALF, FIELD, FIELD_GATE, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
 } from '../core/world.ts'
 import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
@@ -212,16 +212,37 @@ export class Interaction {
 
   private lastVia: [number, number] | null = null
 
-  /** Điểm cần đi qua trước (cổng ruộng) nếu người chơi và đích ở hai phía rào; null nếu đi thẳng được. */
+  /**
+   * Điểm cần đi qua trước; null nếu đi thẳng tới đích được.
+   * - Người chơi và đích ở hai phía rào ruộng: tới cổng phía mình, rồi bước qua cổng.
+   * - Ở ngoài ruộng mà đường thẳng cắt ngang ruộng: đi vòng qua góc rào gần nhất.
+   */
   private viaGate(tx: number, tz: number): [number, number] | null {
     const [px, , pz] = this.state.player.pos
-    if (this.state.player.indoors || insideField(px, pz) === insideField(tx, tz)) return null
-    const mine = insideField(px, pz) ? FIELD_GATE_IN : FIELD_GATE_OUT
-    const other = insideField(px, pz) ? FIELD_GATE_OUT : FIELD_GATE_IN
-    // Đã tới cổng phía mình thì bước sang phía bên kia.
-    const atGate = Math.hypot(px - mine.x, pz - mine.z) < 0.5 || Math.abs(pz - FIELD_GATE.z) < FIELD_GATE.half - 0.3 && Math.abs(px - (FIELD_GATE_IN.x + FIELD_GATE_OUT.x) / 2) < 1.4
-    const p = atGate ? other : mine
-    return this.lastVia && this.lastVia[0] === p.x && this.lastVia[1] === p.z ? this.lastVia : [p.x, p.z]
+    if (this.state.player.indoors) return null
+    const inside = insideField(px, pz)
+    let next: { x: number; z: number } | null = null
+    if (inside !== insideField(tx, tz)) {
+      const mine = inside ? FIELD_GATE_IN : FIELD_GATE_OUT
+      const other = inside ? FIELD_GATE_OUT : FIELD_GATE_IN
+      // Đã tới cổng phía mình thì bước sang phía bên kia.
+      const atGate = Math.hypot(px - mine.x, pz - mine.z) < 0.5 || Math.abs(pz - FIELD_GATE.z) < FIELD_GATE.half - 0.3 && Math.abs(px - (FIELD_GATE_IN.x + FIELD_GATE_OUT.x) / 2) < 1.4
+      if (atGate) return this.keepVia(other.x, other.z)
+      // Trong ruộng (hình chữ nhật) thì đi thẳng tới cổng được.
+      if (inside) return this.keepVia(mine.x, mine.z)
+      next = mine
+    } else if (inside) {
+      return null
+    }
+    const [nx, nz] = next ? [next.x, next.z] : [tx, tz]
+    const corner = cornerAround(px, pz, nx, nz)
+    if (corner) return this.keepVia(corner[0], corner[1])
+    return next ? this.keepVia(next.x, next.z) : null
+  }
+
+  /** Giữ nguyên mảng điểm qua cũ nếu vẫn là điểm đó, để không tính lại "bị kẹt" mỗi khung hình. */
+  private keepVia(x: number, z: number): [number, number] {
+    return this.lastVia && this.lastVia[0] === x && this.lastVia[1] === z ? this.lastVia : [x, z]
   }
 
   private setGoal(goal: Goal): void {
@@ -370,3 +391,66 @@ export class Interaction {
     return Math.hypot(x - p[0], z - p[2])
   }
 }
+
+/** Lề quanh rào ruộng khi xét đường đi có cắt qua ruộng không, và độ lùi của các góc vòng qua. */
+const FIELD_MARGIN = 0.6
+const CORNER_OFFSET = 1.3
+
+/** Đoạn thẳng từ (ax, az) tới (bx, bz) có cắt khu ruộng (nới thêm lề) không. */
+function crossesField(ax: number, az: number, bx: number, bz: number): boolean {
+  const x0 = FIELD.x0 - FIELD_MARGIN
+  const x1 = FIELD.x1 + FIELD_MARGIN
+  const z0 = FIELD.z0 - FIELD_MARGIN
+  const z1 = FIELD.z1 + FIELD_MARGIN
+  let t0 = 0
+  let t1 = 1
+  const dx = bx - ax
+  const dz = bz - az
+  // Cắt đoạn thẳng theo từng cạnh (Liang-Barsky).
+  for (const [p, q] of [[-dx, ax - x0], [dx, x1 - ax], [-dz, az - z0], [dz, z1 - az]]) {
+    if (p === 0) {
+      if (q < 0) return false
+      continue
+    }
+    const r = q / p
+    if (p < 0) t0 = Math.max(t0, r)
+    else t1 = Math.min(t1, r)
+    if (t0 > t1) return false
+  }
+  return true
+}
+
+/** Góc rào ruộng nên đi vòng qua khi đường thẳng từ người chơi tới điểm kế tiếp cắt ngang ruộng. */
+function cornerAround(px: number, pz: number, nx: number, nz: number): [number, number] | null {
+  if (!crossesField(px, pz, nx, nz)) return null
+  // Đang đứng sát rào (ví dụ vừa ra khỏi cổng): bước ra xa rào theo cạnh gần nhất trước.
+  const gaps: [number, number, number][] = [
+    [px - (FIELD.x0 - FIELD_MARGIN), FIELD.x0 - FIELD_MARGIN - 0.4, pz],
+    [FIELD.x1 + FIELD_MARGIN - px, FIELD.x1 + FIELD_MARGIN + 0.4, pz],
+    [pz - (FIELD.z0 - FIELD_MARGIN), px, FIELD.z0 - FIELD_MARGIN - 0.4],
+    [FIELD.z1 + FIELD_MARGIN - pz, px, FIELD.z1 + FIELD_MARGIN + 0.4],
+  ]
+  if (gaps.every(([g]) => g > 0)) {
+    const [, ex, ez] = gaps.reduce((a, b) => (b[0] < a[0] ? b : a))
+    return [ex, ez]
+  }
+  const corners: [number, number][] = [
+    [FIELD.x0 - CORNER_OFFSET, FIELD.z0 - CORNER_OFFSET],
+    [FIELD.x1 + CORNER_OFFSET, FIELD.z0 - CORNER_OFFSET],
+    [FIELD.x0 - CORNER_OFFSET, FIELD.z1 + CORNER_OFFSET],
+    [FIELD.x1 + CORNER_OFFSET, FIELD.z1 + CORNER_OFFSET],
+  ]
+  let best: [number, number] | null = null
+  let bestLen = Infinity
+  for (const c of corners) {
+    if (Math.abs(c[0]) > FARM_HALF - 0.6 || Math.abs(c[1]) > FARM_HALF - 0.6) continue
+    if (crossesField(px, pz, c[0], c[1])) continue
+    const len = Math.hypot(c[0] - px, c[1] - pz) + Math.hypot(nx - c[0], nz - c[1])
+    if (len < bestLen) {
+      bestLen = len
+      best = c
+    }
+  }
+  return best
+}
+

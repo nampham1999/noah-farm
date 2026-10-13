@@ -5,8 +5,8 @@
 
 import { mulberry32 } from './random.ts'
 
-/** Nửa cạnh khu nông trại có hàng rào (nông trại 48 x 48 m). */
-export const FARM_HALF = 24
+/** Nửa cạnh khu nông trại có hàng rào (nông trại 36 x 36 m, gọn để các khu gần nhau). */
+export const FARM_HALF = 18
 
 /*
  * Bố cục (bắc ở trên, camera nhìn từ phía nam):
@@ -15,9 +15,9 @@ export const FARM_HALF = 24
  *   - Khu ruộng có rào ở phía tây đường chính, cổng mở ra đường ở cạnh đông.
  *   - Hồ cá ở phía đông; quầy hàng, bảng đơn hàng và dân làng gần lối vào.
  */
-export const MAIN_ROAD_X = 4
+export const MAIN_ROAD_X = 5
 /** Nửa cạnh mặt đất hiển thị (gồm cả rừng bên ngoài hàng rào). */
-export const GROUND_HALF = 60
+export const GROUND_HALF = 50
 
 export interface Circle {
   x: number
@@ -26,9 +26,9 @@ export interface Circle {
 }
 
 /** Nhà (mô hình house-1, khoảng 4,4 x 3,9 m), cửa quay về phía +Z. */
-export const HOUSE = { x: -6, z: -17, r: 2.7 }
+export const HOUSE = { x: -6, z: -12, r: 2.7 }
 /** Chỗ đứng trước cửa nhà để vào nhà, và chỗ ra lại sau khi ra khỏi nhà. */
-export const HOUSE_DOOR = { x: -6, z: -13.9 }
+export const HOUSE_DOOR = { x: -6, z: -8.9 }
 
 /**
  * Trong nhà: một phòng W x D ô (1 ô = 1 m), dựng ở xa nông trại để khỏi thấy nhau.
@@ -52,7 +52,7 @@ export function roomCellAt(wx: number, wz: number): { cx: number; cz: number } |
 /** Chỗ xuất hiện khi vào nhà (ngay trong cửa). */
 export const ROOM_ENTRY = { x: ROOM.x, z: ROOM.z + ROOM.d / 2 - 0.7 }
 /** Hồ cá: tâm và bán kính trung bình; viền thật uốn lượn theo pondRadius(). */
-export const POND = { x: 14, z: 8, r: 5 }
+export const POND = { x: 11.5, z: 4.5, r: 4.2 }
 
 /** Bán kính viền hồ theo góc (radian, tính bằng atan2(z, x) quanh tâm hồ). */
 export function pondRadius(angle: number): number {
@@ -63,9 +63,9 @@ export function pondRadius(angle: number): number {
 export const POND_MAX_R = POND.r + 1.4
 
 /** Cầu gỗ chìa ra hồ từ bờ phía tây; đi lên được để sau này câu cá. */
-export const DOCK = { x0: 8.3, x1: 11.9, z: 8, halfWidth: 0.65 }
+export const DOCK = { x0: 6.4, x1: 9.6, z: 4.5, halfWidth: 0.65 }
 /** Chòi câu cá trên bờ, cạnh chân cầu. */
-export const FISHING_HUT = { x: 7.2, z: 4.4, r: 1.5 }
+export const FISHING_HUT = { x: 8.6, z: -2, r: 1.5 }
 
 /** Điểm (x, z) có nằm dưới nước không (cầu gỗ không tính là nước). */
 export function isWater(x: number, z: number, margin = 0): boolean {
@@ -76,7 +76,7 @@ export function isWater(x: number, z: number, margin = 0): boolean {
 }
 
 /** Một khu ruộng là 4x4 ô (16 ô, GDD mục 7.3); khu đầu tiên có sẵn, các khu sau mua thêm. */
-export const PLOT_AREA = { x: -8, z: -3, cols: 4, rows: 4, size: 1.4 }
+export const PLOT_AREA = { x: -7, z: -1, cols: 4, rows: 4, size: 1.4 }
 /**
  * Khoảng cách giữa tâm hai khu ruộng liền nhau. bz âm là phía nam (z dương), để các khu
  * mua thêm xếp thành hai hàng gọn trong rào mà bản lưu cũ (đánh số theo bx, bz) vẫn khớp.
@@ -107,18 +107,18 @@ export function blockCells(i: number): { x: number; z: number }[] {
   return cells
 }
 /** Chuồng (dựng khi mua) và bãi thả quanh chuồng nơi vật nuôi đi lại. */
-export const COOP = { x: 14, z: -17, r: 2.3 }
-export const PEN = { x: 13.5, z: -9.8, r: 3.2 }
+export const COOP = { x: 11.5, z: -14, r: 2.3 }
+export const PEN = { x: 11, z: -7.2, r: 3 }
 
 /** Bảng đơn hàng của dân làng, cạnh lối vào; dân làng có đơn đi loanh quanh khu VILLAGE. */
-export const ORDER_BOARD = { x: 7.4, z: 16.4, r: 0.6 }
-export const VILLAGE = { x: 10.2, z: 18.6, r: 2.4 }
+export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.6 }
+export const VILLAGE = { x: 10.8, z: 14.6, r: 2.2 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
-export const TOM_SPOT = { x: 11.4, z: 7.6, rotY: Math.PI / 2 }
+export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
 
 /** Khu ruộng có rào: hình chữ nhật bao mọi khu (kể cả khu chưa mua), cổng ở cạnh đông. */
-export const FIELD = { x0: -17.7, x1: 1.7, z0: -6.5, z1: 6.9 }
-export const FIELD_GATE = { z: 0.2, half: 1.1 }
+export const FIELD = { x0: -16.7, x1: 2.7, z0: -4.5, z1: 8.9 }
+export const FIELD_GATE = { z: 2.2, half: 1.1 }
 /** Điểm đứng ngay ngoài và ngay trong cổng ruộng, để tự đi vòng qua cổng. */
 export const FIELD_GATE_OUT = { x: FIELD.x1 + 1.2, z: FIELD_GATE.z }
 export const FIELD_GATE_IN = { x: FIELD.x1 - 1.2, z: FIELD_GATE.z }
@@ -137,30 +137,30 @@ export const FIELD_FENCE: { from: [number, number]; to: [number, number] }[] = [
 ]
 
 /** Bù nhìn ở góc trống của khu ruộng. */
-export const SCARECROW = { x: -14.2, z: 3.4, r: 0.35 }
+export const SCARECROW = { x: -13.2, z: 5.4, r: 0.35 }
 /** Quầy hàng (mô hình shop, rộng khoảng 5,4 m), mặt quầy quay về phía +Z. r là vùng chạm để mở. */
-export const STALL = { x: -5, z: 14, r: 2.2 }
+export const STALL = { x: -4, z: 13.5, r: 2.2 }
 /** Nửa chiều rộng quầy, để chặn hai đầu quầy khi đi. */
 const STALL_HALF_WIDTH = 2.4
 
 /** Đường đất: các đoạn thẳng nối cổng, chỗ xuất hiện, quầy hàng và nhà. */
 export const PATHS: { from: [number, number]; to: [number, number]; width: number }[] = [
   // Đường chính từ cổng nam lên tới ngang nhà.
-  { from: [MAIN_ROAD_X, FARM_HALF], to: [MAIN_ROAD_X, -11.6], width: 2.4 },
+  { from: [MAIN_ROAD_X, FARM_HALF], to: [MAIN_ROAD_X, -6.8], width: 2.4 },
   // Rẽ trái tới cửa nhà.
-  { from: [MAIN_ROAD_X, -11.6], to: [HOUSE_DOOR.x, -11.6], width: 2 },
-  { from: [HOUSE_DOOR.x, -11.6], to: [HOUSE_DOOR.x, HOUSE_DOOR.z], width: 2 },
+  { from: [MAIN_ROAD_X, -6.8], to: [HOUSE_DOOR.x, -6.8], width: 2 },
+  { from: [HOUSE_DOOR.x, -6.8], to: [HOUSE_DOOR.x, HOUSE_DOOR.z], width: 2 },
   // Lối vào cổng ruộng.
   { from: [FIELD.x1, FIELD_GATE.z], to: [MAIN_ROAD_X, FIELD_GATE.z], width: 2 },
   // Sân trước quầy hàng.
-  { from: [STALL.x - 2.5, 16.8], to: [MAIN_ROAD_X, 16.8], width: 2 },
+  { from: [STALL.x - 2.5, 16.2], to: [MAIN_ROAD_X, 16.2], width: 2 },
   // Lối ra cầu câu cá.
   { from: [MAIN_ROAD_X, DOCK.z], to: [DOCK.x0, DOCK.z], width: 1.6 },
 ]
 /** Chỗ hở trên hàng rào phía nam, nơi đường đất đi ra. */
 export const GATE = { x: MAIN_ROAD_X, halfWidth: 1.6 }
 /** Chỗ người chơi mới xuất hiện: trên đường chính, gần lối vào. */
-export const SPAWN = { x: MAIN_ROAD_X, z: 19, rotY: Math.PI }
+export const SPAWN = { x: MAIN_ROAD_X, z: 15.8, rotY: Math.PI }
 
 /** Toạ độ thế giới của tâm ô đất ở cột x, hàng z (toàn cục, khu nào cũng dùng chung lưới này). */
 export function plotCenter(x: number, z: number): { x: number; z: number } {
@@ -212,18 +212,18 @@ export interface Prop {
 
 export const PROPS: Prop[] = [
   // Quanh nhà.
-  { model: 'well', x: -0.6, z: -15.4, rotY: 0.3, r: 1.2 },
-  { model: 'bucket', x: 0.7, z: -14.6, rotY: 0, r: 0 },
-  { model: 'pallet', x: -9.6, z: -14, rotY: 0.2, r: 0 },
-  { model: 'sack', x: -9.5, z: -14.1, rotY: 0.6, r: 0 },
-  { model: 'lumber', x: -12.6, z: -16.2, rotY: 1.4, r: 1.1 },
+  { model: 'well', x: -0.6, z: -10.6, rotY: 0.3, r: 1.2 },
+  { model: 'bucket', x: 0.7, z: -9.8, rotY: 0, r: 0 },
+  { model: 'pallet', x: -9.6, z: -9.2, rotY: 0.2, r: 0 },
+  { model: 'sack', x: -9.5, z: -9.3, rotY: 0.6, r: 0 },
+  { model: 'lumber', x: -12.6, z: -11.4, rotY: 1.4, r: 1.1 },
   // Quanh quầy hàng.
-  { model: 'barrel', x: -8.6, z: 13.4, rotY: 0, r: 0.4 },
-  { model: 'barrel', x: -8.7, z: 14.5, rotY: 1, r: 0.4 },
-  { model: 'crate', x: -1.4, z: 13.5, rotY: 0.4, r: 0.45 },
-  { model: 'sack', x: -1.3, z: 14.6, rotY: 1.2, r: 0 },
+  { model: 'barrel', x: -7.6, z: 12.9, rotY: 0, r: 0.4 },
+  { model: 'barrel', x: -7.7, z: 14, rotY: 1, r: 0.4 },
+  { model: 'crate', x: -0.4, z: 13, rotY: 0.4, r: 0.45 },
+  { model: 'sack', x: -0.3, z: 14.1, rotY: 1.2, r: 0 },
   // Góc trống trong ruộng.
-  { model: 'wheelbarrow', x: -12.4, z: 5.4, rotY: -0.6, r: 0.6 },
+  { model: 'wheelbarrow', x: -11.4, z: 7.4, rotY: -0.6, r: 0.6 },
 ]
 
 /** Cây trang trí, sinh ngẫu nhiên có hạt giống cố định để lần nào cũng giống nhau. */
@@ -231,11 +231,11 @@ export const TREES: Tree[] = generateTrees()
 
 const decorRand = mulberry32(7)
 /** Bụi cây và đá trong nông trại (có va chạm). */
-export const BUSHES: Decor[] = scatter(decorRand, 14, FARM_HALF - 1.5, 3)
-export const ROCKS: Decor[] = scatter(decorRand, 8, FARM_HALF - 1.5, 3)
+export const BUSHES: Decor[] = scatter(decorRand, 9, FARM_HALF - 1.5, 3)
+export const ROCKS: Decor[] = scatter(decorRand, 5, FARM_HALF - 1.5, 3)
 /** Bụi cỏ nhỏ và hoa dại để trang trí, đi xuyên qua được. */
-export const TUFTS: Decor[] = scatter(decorRand, 500, FARM_HALF - 0.5, 0.6)
-export const FLOWERS: Decor[] = scatter(decorRand, 220, FARM_HALF - 0.8, 0.8)
+export const TUFTS: Decor[] = scatter(decorRand, 300, FARM_HALF - 0.5, 0.6)
+export const FLOWERS: Decor[] = scatter(decorRand, 130, FARM_HALF - 0.8, 0.8)
 
 
 /** Vật cản hình tròn cho va chạm của nhân vật. */
@@ -268,7 +268,7 @@ function generateTrees(): Tree[] {
   }
   // Vài cây trong nông trại, tránh nhà, hồ, khu ô đất và chỗ nhân vật xuất hiện.
   let placed = 0
-  while (placed < 10) {
+  while (placed < 6) {
     const x = (rand() * 2 - 1) * (FARM_HALF - 2)
     const z = (rand() * 2 - 1) * (FARM_HALF - 2)
     if (isReserved(x, z, 3)) continue

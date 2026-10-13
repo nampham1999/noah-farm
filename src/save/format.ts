@@ -1,6 +1,6 @@
 import { normalizeLook } from '../core/look.ts'
 import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
-import { LAND_BLOCKS } from '../core/world.ts'
+import { FARM_HALF, isWater, LAND_BLOCKS, SPAWN } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
 
@@ -146,7 +146,7 @@ function normalize(data: Record<string, unknown>): GameState {
   return {
     version: SAVE_VERSION,
     meta: { ...base.meta, ...obj(data.meta) },
-    player: { ...base.player, ...p, look: normalizeLook(p.look) },
+    player: { ...base.player, ...p, look: normalizeLook(p.look), ...outdoorPos(p) },
     clock: { ...base.clock, ...obj(data.clock) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
@@ -226,4 +226,21 @@ function normalizeOrders(o: Record<string, unknown>, base: GameState['orders']):
     firstGiven: o.firstGiven === true,
     lastRefill: typeof o.lastRefill === 'number' ? o.lastRefill : -1,
   }
+}
+
+/**
+ * Vị trí ngoài trời đọc từ file lưu: nếu nằm ngoài rào hoặc dưới nước (ví dụ bố cục nông trại
+ * đã đổi từ lần chơi trước) thì đưa về chỗ xuất hiện.
+ */
+function outdoorPos(p: Record<string, unknown>): { pos?: [number, number, number]; rotY?: number } {
+  const pos = p.pos
+  if (p.indoors === true) return {}
+  const ok =
+    Array.isArray(pos) &&
+    pos.length === 3 &&
+    pos.every((v) => typeof v === 'number' && Number.isFinite(v)) &&
+    Math.abs(pos[0]) < FARM_HALF - 0.5 &&
+    Math.abs(pos[2]) < FARM_HALF - 0.5 &&
+    !isWater(pos[0], pos[2], 0.3)
+  return ok ? {} : { pos: [SPAWN.x, 0, SPAWN.z], rotY: SPAWN.rotY }
 }
