@@ -206,7 +206,7 @@ async function start(): Promise<void> {
 function showLoading(ui: HTMLElement): { progress(f: number): void; done(): void; fail(): void } {
   const el = document.createElement('div')
   el.className = 'loading'
-  el.innerHTML = `<div class="loading__title">🌱 Cozy Farm</div><div class="loading__bar"><div class="loading__fill"></div></div><div class="loading__text"></div>`
+  el.innerHTML = `<div class="loading__title">🌱 Noah Farm</div><div class="loading__bar"><div class="loading__fill"></div></div><div class="loading__text"></div>`
   const fill = el.querySelector<HTMLElement>('.loading__fill')!
   const text = el.querySelector<HTMLElement>('.loading__text')!
   text.textContent = t('loading')

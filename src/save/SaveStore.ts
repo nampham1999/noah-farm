@@ -27,6 +27,7 @@ export interface SaveStore {
   readonly location: string
 }
 
+/** Khoá lưu giữ tên cũ "cozyfarm" để không mất bản lưu đã có; người chơi không thấy khoá này. */
 export const KEYS = {
   main: 'cozyfarm.save.v1',
   backup: 'cozyfarm.save.backup',

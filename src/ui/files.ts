@@ -25,10 +25,10 @@ export function pickTextFile(): Promise<string | null> {
   })
 }
 
-/** Tên file sao lưu theo GDD mục 6.6: cozyfarm-YYYYMMDD.json. */
+/** Tên file sao lưu (GDD mục 6.6, đổi theo tên game): noahfarm-YYYYMMDD.json. */
 export function backupFilename(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `cozyfarm-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}.json`
+  return `noahfarm-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}.json`
 }
 
 /** Khoảng thời gian dạng ngắn gọn: "5 phút", "3 giờ", "2 ngày". */

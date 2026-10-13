@@ -3,7 +3,9 @@
  * bằng dán văn bản (GDD mục 6.6). Sau này cũng dùng cho link chia sẻ (mục 8.1).
  */
 
-const PREFIX = 'CF1.'
+const PREFIX = 'NF1.'
+/** Tiền tố của mã tạo trước khi đổi tên game thành Noah Farm; vẫn đọc được. */
+const LEGACY_PREFIXES = ['CF1.']
 
 export async function encodeCode(text: string): Promise<string> {
   const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
@@ -13,8 +15,9 @@ export async function encodeCode(text: string): Promise<string> {
 
 export async function decodeCode(code: string): Promise<string> {
   const trimmed = code.trim().replace(/\s+/g, '')
-  if (!trimmed.startsWith(PREFIX)) throw new Error('Not a Cozy Farm code')
-  const bytes = fromBase64Url(trimmed.slice(PREFIX.length))
+  const prefix = [PREFIX, ...LEGACY_PREFIXES].find((p) => trimmed.startsWith(p))
+  if (!prefix) throw new Error('Not a Noah Farm code')
+  const bytes = fromBase64Url(trimmed.slice(prefix.length))
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
   return new Response(stream).text()
 }
