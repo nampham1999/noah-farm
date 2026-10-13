@@ -89,7 +89,16 @@ GDD mục 8.3 đã chốt: dùng dịch vụ có sẵn và **đặt backend ở 
 | Firebase | Firestore và đăng nhập rất dễ dùng, SDK tốt cho web | Truy vấn dạng bảng (xếp hạng, chợ) kém linh hoạt; dễ tốn chi phí theo số lần đọc | 3.1–3.2 |
 | Cloudflare Durable Objects / PartyKit | Phòng chơi thời gian thực độ trễ thấp, rẻ | Phải tự lo lưu trữ và đăng nhập | 3.5, 3.6 |
 
-**Đề xuất:** Supabase cho toàn bộ, chỉ cân nhắc thêm Durable Objects nếu làm mục 3.6. Giới hạn của các gói miễn phí đổi theo thời gian, cần xem lại lúc bắt đầu làm.
+**Đã chốt (nhóm nhỏ 4–5 người chơi): Firebase gói miễn phí Spark.**
+
+- **Dùng:**
+  - **Firebase Authentication:** đăng nhập ẩn danh, sau có thể liên kết Google.
+  - **Cloud Firestore:** lưu save, bạn bè, quà, sổ khách.
+  - **Hosting:** vẫn dùng GitHub Pages như hiện tại.
+- **Không dùng Cloud Functions:** cần gói trả phí Blaze. Nhóm nhỏ toàn người quen nên không cần máy chủ kiểm tra chống gian lận; giới hạn mỗi ngày (số quà, số lần tưới giúp) kiểm bằng **Firestore Security Rules** và trong game.
+- **Ước lượng mức dùng:** với 4–5 người, mỗi người lưu khoảng mỗi 30 giây khi đang chơi, vẫn dưới xa hạn mức miễn phí (khoảng 20.000 lần ghi và 50.000 lần đọc mỗi ngày). Cần xem lại hạn mức lúc bắt đầu làm.
+- **Thời gian thực** (mục 3.5) nếu làm: dùng `onSnapshot` của Firestore cho vị trí nhân vật khi thăm nhau, đủ dùng cho vài người.
+- **Khi đông người hơn:** chuyển sang Supabase hoặc Blaze. Phần game không phải sửa nhiều nhờ giao diện `SaveStore`.
 
 ### 4.2 Phía game (repo này)
 
@@ -117,6 +126,8 @@ GDD mục 8.3 đã chốt: dùng dịch vụ có sẵn và **đặt backend ở 
 | `leaderboards` | Điểm lễ hội theo mùa |
 
 ### 4.4 Chống gian lận và an toàn
+
+> Với nhóm 4–5 người quen: chỉ cần Security Rules (mỗi người chỉ ghi được save của mình, chỉ gửi quà dưới tên mình, giới hạn số quà mỗi ngày). Các mục dưới đây áp dụng khi mở cho người lạ.
 
 - Người chơi tự tính tài nguyên nên có thể sửa save. Vì vậy mọi việc **chuyển đồ hoặc vàng sang người khác** và **ghi điểm xếp hạng** đều phải qua Edge Function kiểm tra:
   - giới hạn mỗi ngày;
@@ -151,8 +162,8 @@ Bước 6.1–6.3 đã cho cảm giác "có bạn bè" rõ rệt mà chưa cần
 
 ## 7. Việc cần quyết định trước khi làm
 
-1. Chọn backend: Supabase hay Firebase.
-2. Có làm chợ giữa người chơi không, hay chỉ tặng quà và giúp đỡ.
+1. ~~Chọn backend~~ → **Firebase (Spark, miễn phí)** cho nhóm 4–5 người.
+2. Có làm chợ giữa người chơi không, hay chỉ tặng quà và giúp đỡ (nhóm nhỏ thì chợ ít ý nghĩa; nên làm 6.1–6.4 trước).
 3. Có chat chữ cho bạn bè không, hay chỉ câu nói có sẵn và biểu cảm.
 4. Độ tuổi người chơi chính (ảnh hưởng tới đăng nhập, chat, quyền riêng tư).
 5. Có định thu phí hoặc quảng cáo không (ảnh hưởng tới cách thưởng và chống gian lận).
