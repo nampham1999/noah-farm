@@ -290,5 +290,7 @@
   "order.firstNote": "Ông nội cháu từng trồng rau ngon nhất thị trấn! Cháu trồng giúp cô {what} nhé.",
   "order.readyNote": "Ồ, cháu có đủ rồi kìa!",
   "journal.orders": "Đơn hàng ({n})",
-  "quest.d_deliver": "Giao {n} đơn hàng cho dân làng"
+  "quest.d_deliver": "Giao {n} đơn hàng cho dân làng",
+  "pwa.install": "Cài vào màn hình chính",
+  "pwa.updated": "✨ Đã tải bản mới của game, sẽ dùng từ lần mở sau"
 }

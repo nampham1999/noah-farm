@@ -29,6 +29,18 @@ export function saveErrorText(e: unknown): string {
   return tKey(`save.error.${e instanceof SaveError ? e.reason : 'corrupt'}`)
 }
 
+/** Sự kiện cài app của Chrome/Android, giữ lại để nút "Cài vào màn hình chính" gọi sau. */
+interface InstallPrompt extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+let installPrompt: InstallPrompt | null = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  installPrompt = e as InstallPrompt
+})
+window.addEventListener('appinstalled', () => (installPrompt = null))
+
 /** Menu (Esc / nút ☰): ngôn ngữ, sao lưu và khôi phục, chơi lại từ đầu. */
 export function createMenuPanel(state: GameState, store: SaveStore, autosaver: AutoSaver): PanelSpec {
   let code: string | null = null
@@ -97,6 +109,18 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
 
       if (backupDue(state)) box.append(note(t('save.remindShort'), 'menu-note menu-note--warn'))
       if (isIosBrowserTab()) box.append(note(t('save.iosTip'), 'menu-note'))
+      if (installPrompt) {
+        box.append(
+          button(`📲 ${t('pwa.install')}`, 'btn primary', async () => {
+            const p = installPrompt
+            if (!p) return
+            await p.prompt()
+            await p.userChoice
+            installPrompt = null
+            refresh()
+          }),
+        )
+      }
 
       const actions = document.createElement('div')
       actions.className = 'menu-actions'

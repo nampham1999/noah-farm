@@ -373,4 +373,19 @@ function supportsWebGL(): boolean {
   }
 }
 
+/** Bản build: đăng ký service worker để cài ra màn hình chính và chơi offline (GDD mục 5.1). */
+function registerServiceWorker(): void {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((e: unknown) => console.warn('SW register failed', e))
+  })
+  // Có bản mới thay vào: báo người chơi, bản mới dùng từ lần mở sau.
+  let hadController = !!navigator.serviceWorker.controller
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) bus.emit('notify', { key: 'pwa.updated', good: true })
+    hadController = true
+  })
+}
+
+registerServiceWorker()
 void start()

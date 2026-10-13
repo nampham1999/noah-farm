@@ -290,5 +290,7 @@
   "order.firstNote": "Your grandpa grew the best veggies in town! Could you grow me {what}?",
   "order.readyNote": "Oh, you have it all!",
   "journal.orders": "Orders ({n})",
-  "quest.d_deliver": "Deliver {n} villager orders"
+  "quest.d_deliver": "Deliver {n} villager orders",
+  "pwa.install": "Install to home screen",
+  "pwa.updated": "✨ A new version was downloaded and will be used next time"
 }
