@@ -12,7 +12,8 @@ export interface ShopEntry {
 
 /** Hạt giống bán trong mùa hiện tại, xếp theo cấp mở khoá rồi theo giá (GDD mục 7.1). */
 export function seedCatalog(state: GameState): ShopEntry[] {
-  return CROPS.filter((c) => c.seasons.includes(state.clock.season))
+  // Có nhà kính thì bán cả hạt trái mùa (chỉ trồng được trong luống nhà kính).
+  return CROPS.filter((c) => state.greenhouse || c.seasons.includes(state.clock.season))
     .sort((a, b) => a.level - b.level || a.seedPrice - b.seedPrice)
     .map((c) => ({ itemId: `seed_${c.id}`, price: c.seedPrice, level: c.level }))
 }

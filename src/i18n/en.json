@@ -405,5 +405,10 @@
   "shop.houseUpgrade": "Upgrade house to level {level}",
   "shop.houseSub": "{w}×{d} room, a bigger and nicer house",
   "shop.houseMax": "Your house is fully upgraded",
-  "house.upgraded": "🏡 House upgraded to level {level}! The room is now {w}×{d}"
+  "house.upgraded": "🏡 House upgraded to level {level}! The room is now {w}×{d}",
+  "shop.greenhouse": "Greenhouse",
+  "shop.greenhouseSub": "An 8-plot bed that grows crops in any season, by the shop",
+  "shop.greenhouseOwned": "Built: 8 plots for any season",
+  "shop.greenhouseOnly": "🪴 Off-season: greenhouse only",
+  "greenhouse.built": "🪴 Greenhouse built! Its bed grows crops in any season"
 }

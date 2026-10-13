@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { mulberry32 } from '../core/random.ts'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameState, PlotState } from '../core/state.ts'
-import { blockCells, blockCenter, LAND_BLOCKS, PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
+import { blockCells, blockCenter, GH_BED, LAND_BLOCKS, PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
 import { nextLandPrice } from '../systems/land.ts'
 import { cropOf, isRipe, needsWater } from '../systems/farming.ts'
 import { instanceModel, placeMatrix, staticModel, type InstancedModel } from './instancing.ts'
@@ -24,7 +24,8 @@ function cropVariant(model: string, stage: number, ripe: boolean): string {
 
 /** Ô đất, cây trồng (mô hình của bản cũ), dấu "cần tưới" và khung tô sáng ô đang nhắm. */
 export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
-  const n = PLOT_AREA.cols * PLOT_AREA.rows * LAND_BLOCKS.length
+  // Mọi khu ruộng cộng luống nhà kính.
+  const n = PLOT_AREA.cols * PLOT_AREA.rows * LAND_BLOCKS.length + GH_BED.cols * GH_BED.rows
   const size = PLOT_AREA.size * 0.9
 
   // Đất đã cuốc: khối đất có luống (texture vẽ bằng canvas).

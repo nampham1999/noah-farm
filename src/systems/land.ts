@@ -1,5 +1,5 @@
 import { bus } from '../core/events.ts'
-import { blockPlots, type GameState } from '../core/state.ts'
+import { blockPlots, greenhousePlots, type GameState } from '../core/state.ts'
 import { LAND_BLOCKS } from '../core/world.ts'
 import { balance } from '../data/index.ts'
 
@@ -23,3 +23,26 @@ export function buyLand(state: GameState): boolean {
   bus.emit('saveRequest', undefined)
   return true
 }
+
+export const GREENHOUSE_PRICE = 3000
+export const GREENHOUSE_LEVEL = 4
+
+/** Dựng nhà kính: thêm luống 8 ô trồng được mọi mùa. */
+export function buyGreenhouse(state: GameState): boolean {
+  if (state.greenhouse) return false
+  if (state.player.level < GREENHOUSE_LEVEL) {
+    bus.emit('notify', { key: 'notice.locked', params: { level: GREENHOUSE_LEVEL } })
+    return false
+  }
+  if (state.player.gold < GREENHOUSE_PRICE) {
+    bus.emit('notify', { key: 'notice.noGold' })
+    return false
+  }
+  state.player.gold -= GREENHOUSE_PRICE
+  state.greenhouse = true
+  state.plots.push(...greenhousePlots())
+  bus.emit('notify', { key: 'greenhouse.built', good: true })
+  bus.emit('saveRequest', undefined)
+  return true
+}
+

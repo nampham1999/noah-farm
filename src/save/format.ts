@@ -1,7 +1,7 @@
 import { normalizeLook } from '../core/look.ts'
 import { WEATHERS } from '../systems/weather.ts'
 import { HOUSE_UPGRADES } from '../systems/house.ts'
-import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
+import { blockPlots, createInitialState, greenhousePlots, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
 import { FARM_HALF, isWater, LAND_BLOCKS, SPAWN } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, MACHINE_BY_ID, type AnimalType, type MachineId } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
@@ -112,7 +112,8 @@ function normalize(data: Record<string, unknown>): GameState {
     savedPlots.set(`${pl.x},${pl.z}`, pl)
   }
   const landLevel = Math.max(0, Math.min(LAND_BLOCKS.length - 1, Math.floor(typeof data.landLevel === 'number' ? data.landLevel : 0)))
-  const expected = Array.from({ length: landLevel + 1 }, (_, i) => blockPlots(i)).flat()
+  const greenhouse = data.greenhouse === true
+  const expected = [...Array.from({ length: landLevel + 1 }, (_, i) => blockPlots(i)).flat(), ...(greenhouse ? greenhousePlots() : [])]
   const plots = expected.map((def): PlotState => {
     const pl = savedPlots.get(`${def.x},${def.z}`)
     if (!pl) return def
@@ -156,6 +157,7 @@ function normalize(data: Record<string, unknown>): GameState {
     coopLevel,
     animals,
     pet: normalizePet(data.pet),
+    greenhouse,
     machines: (Array.isArray(data.machines) ? data.machines : []).flatMap((raw): GameState['machines'] => {
       const m = obj(raw)
       if (typeof m.id !== 'string' || !MACHINE_BY_ID.has(m.id as MachineId)) return []

@@ -1,4 +1,5 @@
 import { bus } from '../core/events.ts'
+import { inGreenhouse } from '../core/world.ts'
 import type { GameState, PlotState } from '../core/state.ts'
 import { balance, CROP_BY_ID, item, type CropDef } from '../data/index.ts'
 import { addItem, canFit, countItem, removeItem, selectedStack } from './inventory.ts'
@@ -48,7 +49,7 @@ export function updateCrops(state: GameState, t: number, prevT = t): void {
   for (const plot of state.plots) {
     const crop = cropOf(plot)
     if (!crop) continue
-    if (!crop.seasons.includes(state.clock.season)) {
+    if (!crop.seasons.includes(state.clock.season) && !inGreenhouse(plot.x, plot.z)) {
       if (plot.stage < STAGES && t > prevT) {
         plot.stageStartedAt += t - prevT
         if (plot.wateredAt !== null) plot.wateredAt += t - prevT
@@ -82,11 +83,11 @@ export function shiftTimestamps(state: GameState, delta: number): void {
 }
 
 /** Hạt sẽ gieo: hạt đang chọn trên thanh công cụ, nếu không thì hạt đầu tiên gieo được. */
-function seedToPlant(state: GameState): string | null {
+function seedToPlant(state: GameState, anySeason: boolean): string | null {
   const sel = selectedStack(state.inventory)
   if (sel && item(sel.id).kind === 'seed') return sel.id
   for (const s of state.inventory.slots) {
-    if (s && item(s.id).kind === 'seed' && CROP_BY_ID.get(item(s.id).cropId!)!.seasons.includes(state.clock.season)) {
+    if (s && item(s.id).kind === 'seed' && (anySeason || CROP_BY_ID.get(item(s.id).cropId!)!.seasons.includes(state.clock.season))) {
       return s.id
     }
   }
@@ -117,10 +118,12 @@ export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean
       return true
 
     case 'plant': {
-      const seedId = seedToPlant(state)
+      // Luống nhà kính trồng được mọi mùa.
+      const warm = inGreenhouse(plot.x, plot.z)
+      const seedId = seedToPlant(state, warm)
       if (!seedId) return fail('notice.noSeeds')
       const crop = CROP_BY_ID.get(item(seedId).cropId!)!
-      if (!crop.seasons.includes(state.clock.season)) {
+      if (!warm && !crop.seasons.includes(state.clock.season)) {
         return fail('notice.wrongSeason', { item: seedId })
       }
       removeItem(inv, seedId, 1)

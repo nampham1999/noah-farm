@@ -180,8 +180,28 @@ export const GATE = { x: MAIN_ROAD_X, halfWidth: 1.6 }
 /** Chỗ người chơi mới xuất hiện: trên đường chính, gần lối vào. */
 export const SPAWN = { x: MAIN_ROAD_X, z: 15.8, rotY: Math.PI }
 
+/** Nhà kính ở góc tây nam, và luống ấm 4x2 ô trước cửa (trồng được mọi mùa). */
+export const GREENHOUSE = { x: -13.6, z: 11.2, r: 2.2 }
+/** Luống nhà kính dùng lưới riêng: cột GH_BED.gx.., hàng GH_BED.gz.. để không lẫn với ruộng. */
+export const GH_BED = { x: -13.6, z: 14.9, cols: 4, rows: 2, size: 1.4, gx: 100, gz: 100 }
+
+/** Ô (cột, hàng) có thuộc luống nhà kính không. */
+export function inGreenhouse(x: number, z: number): boolean {
+  return x >= GH_BED.gx && z >= GH_BED.gz
+}
+
+/** Các ô của luống nhà kính. */
+export function greenhouseCells(): { x: number; z: number }[] {
+  const cells: { x: number; z: number }[] = []
+  for (let c = 0; c < GH_BED.cols; c++) for (let r = 0; r < GH_BED.rows; r++) cells.push({ x: GH_BED.gx + c, z: GH_BED.gz + r })
+  return cells
+}
+
 /** Toạ độ thế giới của tâm ô đất ở cột x, hàng z (toàn cục, khu nào cũng dùng chung lưới này). */
 export function plotCenter(x: number, z: number): { x: number; z: number } {
+  if (inGreenhouse(x, z)) {
+    return { x: GH_BED.x + (x - GH_BED.gx - (GH_BED.cols - 1) / 2) * GH_BED.size, z: GH_BED.z + (z - GH_BED.gz - (GH_BED.rows - 1) / 2) * GH_BED.size }
+  }
   const { size, cols, rows } = PLOT_AREA
   const bx = Math.floor(x / cols)
   const bz = Math.floor(z / rows)
@@ -193,6 +213,10 @@ export function plotCenter(x: number, z: number): { x: number; z: number } {
 
 /** Ô đất (cột, hàng) và khu chứa điểm thế giới; null nếu không nằm trong khu ruộng nào. */
 export function plotAt(wx: number, wz: number): { x: number; z: number; block: number } | null {
+  // Luống nhà kính (khu -1).
+  const gx = Math.floor((wx - GH_BED.x) / GH_BED.size + GH_BED.cols / 2)
+  const gz = Math.floor((wz - GH_BED.z) / GH_BED.size + GH_BED.rows / 2)
+  if (gx >= 0 && gx < GH_BED.cols && gz >= 0 && gz < GH_BED.rows) return { x: GH_BED.gx + gx, z: GH_BED.gz + gz, block: -1 }
   const { size, cols, rows } = PLOT_AREA
   for (let i = 0; i < LAND_BLOCKS.length; i++) {
     const c = blockCenter(i)
@@ -259,6 +283,7 @@ export const FLOWERS: Decor[] = scatter(decorRand, 130, FARM_HALF - 0.8, 0.8)
 /** Vật cản hình tròn cho va chạm của nhân vật. */
 export const OBSTACLES: Circle[] = [
   HOUSE,
+  GREENHOUSE,
   // Chái phía tây của nhà cấp 4, 5.
   { x: HOUSE.x - 2.8, z: HOUSE.z - 0.2, r: 1.3 },
   FISHING_HUT,
@@ -313,6 +338,8 @@ function isReserved(x: number, z: number, margin: number): boolean {
     { x: PEN.x, z: PEN.z, r: PEN.r + 0.4 },
     ...PROPS.map((p) => ({ x: p.x, z: p.z, r: Math.max(0.6, p.r + 0.3) })),
     ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 1.4 })),
+    { x: GREENHOUSE.x, z: GREENHOUSE.z, r: GREENHOUSE.r + 0.6 },
+    { x: GH_BED.x, z: GH_BED.z, r: 3.4 },
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },
     { x: SPAWN.x, z: SPAWN.z, r: 1.5 },
   ]

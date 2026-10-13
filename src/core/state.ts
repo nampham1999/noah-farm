@@ -3,7 +3,7 @@
  * Hiển thị, giao diện và lưu trữ chỉ đọc hoặc ghi đối tượng này.
  */
 import { balance, type AnimalType, type MachineId } from '../data/index.ts'
-import { blockCells, SPAWN } from './world.ts'
+import { blockCells, greenhouseCells, SPAWN } from './world.ts'
 import type { Look } from './look.ts'
 
 export type Lang = 'vi' | 'en'
@@ -172,6 +172,8 @@ export interface GameState {
   animals: AnimalState[]
   machines: MachineState[]
   pet: PetState | null
+  /** Đã dựng nhà kính (luống 8 ô trồng được mọi mùa). */
+  greenhouse: boolean
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**
@@ -216,6 +218,7 @@ export function createInitialState(): GameState {
     animals: [],
     machines: [],
     pet: null,
+    greenhouse: false,
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },
@@ -228,6 +231,11 @@ export function createInitialState(): GameState {
 
 function detectLang(): Lang {
   return navigator.language.toLowerCase().startsWith('vi') ? 'vi' : 'en'
+}
+
+/** Ô đất trống của luống nhà kính. */
+export function greenhousePlots(): PlotState[] {
+  return greenhouseCells().map(({ x, z }) => ({ x, z, tilled: false, crop: null, stage: 0, stageStartedAt: 0, wateredAt: null }))
 }
 
 /** Ô đất trống (cỏ) của khu ruộng thứ i. */

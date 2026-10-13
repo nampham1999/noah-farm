@@ -405,5 +405,10 @@
   "shop.houseUpgrade": "Nâng nhà lên cấp {level}",
   "shop.houseSub": "Phòng rộng {w}×{d} ô, nhà to và đẹp hơn",
   "shop.houseMax": "Nhà đã ở cấp cao nhất",
-  "house.upgraded": "🏡 Nhà đã lên cấp {level}! Phòng giờ rộng {w}×{d} ô"
+  "house.upgraded": "🏡 Nhà đã lên cấp {level}! Phòng giờ rộng {w}×{d} ô",
+  "shop.greenhouse": "Nhà kính",
+  "shop.greenhouseSub": "Luống 8 ô trồng được mọi mùa, cạnh quầy hàng",
+  "shop.greenhouseOwned": "Đã có: luống 8 ô trồng mọi mùa",
+  "shop.greenhouseOnly": "🪴 Trái mùa: chỉ trồng trong nhà kính",
+  "greenhouse.built": "🪴 Đã dựng nhà kính! Luống trước cửa trồng được mọi mùa"
 }

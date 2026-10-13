@@ -6,6 +6,7 @@ import { collect, machineStatus, updateMachines } from './systems/machines.ts'
 import { createMachinesView } from './render/machines.ts'
 import { setRoomSize } from './core/world.ts'
 import { createPetView } from './render/pet.ts'
+import { createGreenhouseView } from './render/greenhouse.ts'
 import { petNewDay, updatePet } from './systems/pet.ts'
 import { machinePanel } from './ui/machines.ts'
 import { bus, type GameAction } from './core/events.ts'
@@ -134,6 +135,7 @@ async function start(): Promise<void> {
   world.setHouseLevel(state.house.level)
   bus.on('houseUpgraded', (level) => world.setHouseLevel(level))
   const petView = createPetView(world.scene, models)
+  const greenhouseView = createGreenhouseView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
   let houseView: HouseView | null = null
@@ -436,6 +438,7 @@ async function start(): Promise<void> {
     animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
     machinesView.update(state, t, clock.getElapsed())
     petView.update(state, clock.getElapsed())
+    greenhouseView.update(state)
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {

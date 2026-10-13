@@ -5,7 +5,7 @@ import { ROOM_SIZES } from '../core/world.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { now } from '../core/time.ts'
 import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
-import { buyLand, nextLandPrice } from '../systems/land.ts'
+import { buyGreenhouse, buyLand, GREENHOUSE_LEVEL, GREENHOUSE_PRICE, nextLandPrice } from '../systems/land.ts'
 import { countItem } from '../systems/inventory.ts'
 import { buyMachine } from '../systems/machines.ts'
 import { buyPet, PET_PRICE } from '../systems/pet.ts'
@@ -56,7 +56,7 @@ export function createShopPanel(state: GameState): PanelSpec {
         itemName(entry.itemId),
         locked
           ? t('notice.locked', { level: entry.level })
-          : `${t('shop.grow', { minutes: crop.growMinutes, price: crop.sellPrice })} · ${t('shop.owned', { n: countItem(state.inventory, entry.itemId) })}`,
+          : `${crop.seasons.includes(state.clock.season) ? '' : `${t('shop.greenhouseOnly')} · `}${t('shop.grow', { minutes: crop.growMinutes, price: crop.sellPrice })} · ${t('shop.owned', { n: countItem(state.inventory, entry.itemId) })}`,
       )
       if (locked) row.classList.add('locked')
       for (const qty of [1, 5]) {
@@ -107,6 +107,14 @@ export function createShopPanel(state: GameState): PanelSpec {
     status.className = 'panel__hint'
     status.textContent = state.coopLevel === 0 ? t('animal.needCoop') : t('shop.coopSpace', { used: state.animals.length, n: coopCapacity(state) })
     list.append(status)
+
+    // Nhà kính.
+    const ghRow = iconRow('🪴', t('shop.greenhouse'), state.greenhouse ? t('shop.greenhouseOwned') : p.level < GREENHOUSE_LEVEL ? t('notice.locked', { level: GREENHOUSE_LEVEL }) : t('shop.greenhouseSub'))
+    if (!state.greenhouse) {
+      if (p.level < GREENHOUSE_LEVEL) ghRow.classList.add('locked')
+      ghRow.append(button(`${GREENHOUSE_PRICE}g`, 'btn small gold', () => buyGreenhouse(state) && refresh(), p.level < GREENHOUSE_LEVEL || p.gold < GREENHOUSE_PRICE))
+    }
+    list.append(ghRow)
 
     // Nâng cấp nhà.
     const house = nextHouseUpgrade(state)
