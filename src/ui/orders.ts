@@ -2,6 +2,7 @@ import type { GameState, Order } from '../core/state.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { countItem } from '../systems/inventory.ts'
 import { canDeliver, daysLeft, deliver, npcDef } from '../systems/orders.ts'
+import { giftable, giftedToday, giveGift, hearts, likeIcons, MAX_HEARTS } from '../systems/friendship.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
 
@@ -76,6 +77,7 @@ export function npcDialog(state: GameState, npcId: string): PanelSpec {
   const npc = npcDef(npcId)
   // Chọn sẵn một câu chào cho lần nói chuyện này.
   const greet = 1 + Math.floor(Math.random() * npc.lines)
+  let choosing = false
   return {
     title: () => `${npc.emoji} ${tKey(`npc.${npcId}`)}`,
     render(body, refresh) {
@@ -97,6 +99,42 @@ export function npcDialog(state: GameState, npcId: string): PanelSpec {
       speech.append(face, text)
       body.append(speech)
       if (order) body.append(orderCard(state, order, refresh, false))
+
+      // Độ thân thiết: tim, món thích, tặng quà (mỗi ngày một lần).
+      const friend = document.createElement('div')
+      friend.className = 'friend-row'
+      const h = hearts(state, npcId)
+      friend.innerHTML = `<span class="friend-row__hearts"></span><span class="friend-row__likes"></span>`
+      friend.querySelector('.friend-row__hearts')!.textContent = '❤️'.repeat(h) + '🤍'.repeat(MAX_HEARTS - h)
+      friend.querySelector('.friend-row__likes')!.textContent = t('friend.likes', { icons: likeIcons(npcId).join(' ') })
+      const giftBtn = document.createElement('button')
+      giftBtn.className = 'btn small'
+      giftBtn.textContent = giftedToday(state, npcId) ? t('friend.giftedToday') : `🎁 ${t('friend.gift')}`
+      giftBtn.disabled = giftedToday(state, npcId)
+      giftBtn.addEventListener('click', () => {
+        choosing = !choosing
+        refresh()
+      })
+      friend.append(giftBtn)
+      body.append(friend)
+      if (choosing && !giftedToday(state, npcId)) {
+        const pick = document.createElement('div')
+        pick.className = 'gift-pick'
+        const ids = giftable(state)
+        if (ids.length === 0) pick.textContent = t('friend.nothing')
+        for (const id of ids) {
+          const b = document.createElement('button')
+          b.className = 'slot gift-pick__item'
+          b.innerHTML = itemIconHtml(id)
+          b.title = itemName(id)
+          b.addEventListener('click', () => {
+            if (giveGift(state, npcId, id)) choosing = false
+            refresh()
+          })
+          pick.append(b)
+        }
+        body.append(pick)
+      }
     },
   }
 }

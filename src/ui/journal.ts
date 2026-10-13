@@ -4,10 +4,11 @@ import { itemName, t, tKey } from '../i18n/index.ts'
 import { FESTIVAL_DAY, FESTIVALS, festivalProgress, festivalToday, nextFestival } from '../systems/festival.ts'
 import { currentTutorial, dailyReward, dailyTemplate, ensureDaily, questData, statValue } from '../systems/quests.ts'
 import { itemIconHtml } from './icons.ts'
+import { hearts, likeIcons, MAX_HEARTS, POINTS_PER_HEART } from '../systems/friendship.ts'
 import { canDeliver, daysLeft, NPCS } from '../systems/orders.ts'
 import type { PanelSpec } from './panel.ts'
 
-type Tab = 'quests' | 'fish' | 'crops' | 'achievements'
+type Tab = 'quests' | 'friends' | 'fish' | 'crops' | 'achievements'
 
 /** Nhật ký (phím J, GDD mục 3.7): nhiệm vụ, sổ cá, sổ cây, thành tựu. */
 export function createJournalPanel(state: GameState): PanelSpec {
@@ -18,7 +19,7 @@ export function createJournalPanel(state: GameState): PanelSpec {
     render(body, refresh) {
       const tabs = document.createElement('div')
       tabs.className = 'tabs'
-      for (const id of ['quests', 'fish', 'crops', 'achievements'] as const) {
+      for (const id of ['quests', 'friends', 'fish', 'crops', 'achievements'] as const) {
         const b = document.createElement('button')
         b.className = 'btn small tab' + (tab === id ? ' is-active' : '')
         b.textContent = t(`journal.tab.${id}`)
@@ -32,6 +33,7 @@ export function createJournalPanel(state: GameState): PanelSpec {
       list.className = 'rows'
       body.append(tabs, list)
       if (tab === 'quests') renderQuests(list)
+      else if (tab === 'friends') renderFriends(list)
       else if (tab === 'fish') renderFish(list)
       else if (tab === 'crops') renderCrops(list)
       else renderAchievements(list)
@@ -86,6 +88,17 @@ export function createJournalPanel(state: GameState): PanelSpec {
     note.className = 'panel__hint'
     note.textContent = daily.bonusClaimed ? t('journal.bonusClaimed') : t('journal.bonusHint', { xp: questData.dailyBonusXp })
     list.append(note)
+  }
+
+  function renderFriends(list: HTMLElement): void {
+    for (const npc of NPCS) {
+      const h = hearts(state, npc.id)
+      list.append(row(npc.emoji, tKey(`npc.${npc.id}`), `${'❤️'.repeat(h)}${'🤍'.repeat(MAX_HEARTS - h)} · ${t('friend.likes', { icons: likeIcons(npc.id).join(' ') })}`, (state.friends[npc.id]?.points ?? 0) / (MAX_HEARTS * POINTS_PER_HEART)))
+    }
+    const p = document.createElement('p')
+    p.className = 'panel__hint'
+    p.textContent = t('friend.hint')
+    list.append(p)
   }
 
   function renderFish(list: HTMLElement): void {

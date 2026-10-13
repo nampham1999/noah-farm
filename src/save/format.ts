@@ -159,6 +159,10 @@ function normalize(data: Record<string, unknown>): GameState {
     pet: normalizePet(data.pet),
     greenhouse,
     horse: data.horse === true,
+    friends: Object.fromEntries(Object.entries(obj(data.friends)).map(([id, raw]) => {
+      const f = obj(raw)
+      return [id, { points: Math.max(0, num(f.points, 0)), giftDay: num(f.giftDay, -1), rewarded: Math.max(0, num(f.rewarded, 0)) }]
+    })),
     festival: (() => {
       const f = obj(data.festival)
       return typeof f.stamp === 'number' ? { stamp: f.stamp, progress: Math.max(0, num(f.progress, 0)), done: f.done === true } : null

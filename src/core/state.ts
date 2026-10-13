@@ -188,6 +188,8 @@ export interface GameState {
   orchard: OrchardTree[]
   /** Thử thách lễ hội hôm nay: stamp là dayStamp của ngày lễ hội. */
   festival: { stamp: number; progress: number; done: boolean } | null
+  /** Độ thân thiết với từng dân làng (theo id). */
+  friends: Record<string, { points: number; giftDay: number; rewarded: number }>
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**
@@ -236,6 +238,7 @@ export function createInitialState(): GameState {
     horse: false,
     orchard: [],
     festival: null,
+    friends: {},
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },

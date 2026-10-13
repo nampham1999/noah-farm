@@ -52,6 +52,7 @@ import { createHorseView } from './render/horse.ts'
 import { createOrchardView } from './render/orchard.ts'
 import { createFestivalView } from './render/festival.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
+import { onFriendProgress } from './systems/friendship.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -186,6 +187,7 @@ async function start(): Promise<void> {
     bus.on('progress', (ev) => {
       onProgress(state, ev)
       onFestivalProgress(state, ev)
+      onFriendProgress(state, ev)
     })
   }
   const socialPanel = createSocialPanel(state)

@@ -441,5 +441,16 @@
   "festival.start.fishing": "🎣 It's the Fishing Contest! Catch {n} fish for a gift",
   "festival.start.fair": "🎪 Autumn Fair! The shop pays ×1.5 for produce all day",
   "festival.start.lantern": "🏮 Lantern Festival! Deliver {n} orders for a gift",
-  "festival.done": "🎉 {name} complete! Got {gold} gold and {item}"
+  "festival.done": "🎉 {name} complete! Got {gold} gold and {item}",
+  "journal.tab.friends": "Villagers",
+  "friend.likes": "Likes: {icons}",
+  "friend.gift": "Give a gift",
+  "friend.giftedToday": "Gifted today",
+  "friend.nothing": "Nothing in your bag to give",
+  "friend.alreadyGifted": "You already gave {name} a gift today",
+  "friend.loved": "❤️ {name} loves the {item}!",
+  "friend.thanks": "{name} thanks you for the {item}",
+  "friend.heartUp": "❤️ You and {name} are closer: {n} hearts!",
+  "friend.letter": "📮 Letter from {name}: {gold} gold and {qty} {item}",
+  "friend.hint": "Deliver orders and give gifts (once per person per day) to become friends. At 2, 3 and 5 hearts they send a letter with a gift."
 }

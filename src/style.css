@@ -948,6 +948,34 @@ button {
   transform: scale(1.12);
 }
 
+/* Độ thân thiết trong cửa sổ dân làng. */
+.friend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+.friend-row__likes {
+  flex: 1;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.gift-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gift-pick__item {
+  width: 52px;
+  height: 52px;
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

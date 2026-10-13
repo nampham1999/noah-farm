@@ -441,5 +441,16 @@
   "festival.start.fishing": "🎣 Hôm nay là Thi câu cá! Câu {n} con cá để nhận quà",
   "festival.start.fair": "🎪 Hội chợ mùa thu! Quầy mua nông sản giá ×1,5 cả ngày",
   "festival.start.lantern": "🏮 Hội đèn lồng! Giao {n} đơn hàng cho dân làng để nhận quà",
-  "festival.done": "🎉 Hoàn thành {name}! Nhận {gold} vàng và {item}"
+  "festival.done": "🎉 Hoàn thành {name}! Nhận {gold} vàng và {item}",
+  "journal.tab.friends": "Dân làng",
+  "friend.likes": "Thích: {icons}",
+  "friend.gift": "Tặng quà",
+  "friend.giftedToday": "Hôm nay đã tặng",
+  "friend.nothing": "Túi chưa có gì để tặng",
+  "friend.alreadyGifted": "Hôm nay đã tặng {name} rồi",
+  "friend.loved": "❤️ {name} rất thích {item}!",
+  "friend.thanks": "{name} cảm ơn vì {item}",
+  "friend.heartUp": "❤️ {name} thân với bạn hơn: {n} tim!",
+  "friend.letter": "📮 Thư từ {name}: tặng bạn {gold} vàng và {qty} {item}",
+  "friend.hint": "Giao đơn hàng và tặng quà (mỗi người một lần mỗi ngày) để thân hơn. Đủ 2, 3, 5 tim sẽ nhận thư kèm quà."
 }
