@@ -29,6 +29,11 @@ export function buy(state: GameState, entry: ShopEntry, qty: number): boolean {
   return true
 }
 
+/** Vật phẩm thường bán ở quầy (không theo mùa), như cỏ khô cho vật nuôi. */
+export function supplyCatalog(): ShopEntry[] {
+  return [{ itemId: 'feed_hay', price: item('feed_hay').buyPrice!, level: 1 }]
+}
+
 /** Bán theo giá cố định (GDD mục 7.3). */
 export function sell(state: GameState, itemId: string, qty: number): boolean {
   const price = item(itemId).sellPrice

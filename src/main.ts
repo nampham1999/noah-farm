@@ -10,12 +10,14 @@ import { Input } from './input/input.ts'
 import { attachKeyboard } from './input/keyboard.ts'
 import { attachPointer } from './input/pointer.ts'
 import { FollowCamera } from './render/camera.ts'
+import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
 import { createFarmer } from './render/models.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
 import { createWorld } from './render/scene.ts'
 import { loadModels } from './render/assets.ts'
+import { animalPose, animalsNewDay, updateAnimals, updateWander } from './systems/animals.ts'
 import { advanceClock } from './systems/clock.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
@@ -70,6 +72,7 @@ async function start(): Promise<void> {
   const farmView = createFarmView(world.scene, models.crops)
   const farmer = createFarmer(models.farmer)
   world.scene.add(farmer.root)
+  const animalsView = createAnimalsView(world.scene, models)
 
   const autosaver = new AutoSaver(store, state)
   autosaver.start()
@@ -99,8 +102,12 @@ async function start(): Promise<void> {
   }
   if (backupDue(state)) bus.emit('notify', { key: 'save.remind' })
 
+  bus.on('newDay', () => animalsNewDay(state, now()))
+
   bus.on('tap', ({ x, y }) => {
     if (isPanelOpen()) return
+    const animal = animalsView.hitTest(followCam.camera, x, y)
+    if (animal) return interaction.tapAnimal(animal)
     const hit = pickGround(followCam.camera, x, y)
     if (hit) interaction.tapWorld(hit.x, hit.z, hit.onStall)
   })
@@ -147,6 +154,13 @@ async function start(): Promise<void> {
     Object.assign(window, {
       cozy: {
         state,
+        /** Đồng hồ của game (đã tính ?speed). */
+        now,
+        /** Toạ độ màn hình của một con vật. */
+        animalScreen(id: string) {
+          const p = animalPose(id)
+          return p ? this.toScreen(p.x, p.z) : null
+        },
         /** Toạ độ màn hình của một điểm trên mặt đất. */
         toScreen(x: number, z: number) {
           v.set(x, 0, z).project(followCam.camera)
@@ -176,6 +190,8 @@ async function start(): Promise<void> {
     const t = now()
     advanceClock(state, dt * TIME_SPEED)
     updateCrops(state, t, lastT)
+    updateAnimals(state, t, lastT)
+    updateWander(state, dt)
     lastT = t
 
     // Tự điều khiển (WASD/joystick) thì huỷ việc tự đi tới chỗ đã chạm.
@@ -194,6 +210,7 @@ async function start(): Promise<void> {
     farmer.root.rotation.y = state.player.rotY
     farmer.animate(dt, Math.min(1, speed / WALK_SPEED))
     farmView.update(state, interaction.focusPlot(), clock.getElapsed())
+    animalsView.update(state, t, clock.getElapsed(), dt)
 
     followCam.update(dt, playerPos, input.zoomScale)
     state.settings.zoom = followCam.zoom

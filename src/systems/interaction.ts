@@ -1,5 +1,6 @@
 import { bus } from '../core/events.ts'
-import type { GameState, PlotState } from '../core/state.ts'
+import type { AnimalState, GameState, PlotState } from '../core/state.ts'
+import { actOnAnimal, animalPose, holdStill } from './animals.ts'
 import { plotAt, plotCenter, STALL } from '../core/world.ts'
 import { balance } from '../data/index.ts'
 import { actOnPlot, isRipe } from './farming.ts'
@@ -14,6 +15,10 @@ type Goal =
   | { kind: 'walk'; x: number; z: number }
   | { kind: 'plot'; plot: PlotState }
   | { kind: 'stall' }
+  | { kind: 'animal'; id: string }
+
+/** Đứng cách con vật chừng này thì tương tác được. */
+const ANIMAL_REACH = 1.3
 
 export interface InteractionHooks {
   openShop(): void
@@ -46,6 +51,12 @@ export class Interaction {
     this.setGoal({ kind: 'walk', x: wx, z: wz })
   }
 
+  /** Chạm vào con vật: đi tới rồi nhặt sản phẩm, cho ăn hoặc vuốt ve. */
+  tapAnimal(id: string): void {
+    holdStill(id, 4)
+    this.setGoal({ kind: 'animal', id })
+  }
+
   /** Space / nút "Dùng": làm việc với ô đất trước mặt. */
   useFront(): void {
     const plot = this.frontPlot()
@@ -55,6 +66,8 @@ export class Interaction {
   /** E / nút "Tương tác": mở cửa hàng nếu đứng gần quầy, không thì như useFront. */
   interact(): void {
     if (this.distTo(STALL.x, STALL.z) <= STALL_REACH) return this.hooks.openShop()
+    const animal = this.nearestAnimal()
+    if (animal) return this.actAnimal(animal)
     const plot = this.frontPlot()
     if (plot && isRipe(plot)) this.act(plot)
     else this.useFront()
@@ -119,6 +132,10 @@ export class Interaction {
         const c = plotCenter(goal.plot.x, goal.plot.z)
         return [c.x, c.z, balance.reach - 0.4]
       }
+      case 'animal': {
+        const p = animalPose(goal.id)
+        return p ? [p.x, p.z, ANIMAL_REACH - 0.2] : [this.state.player.pos[0], this.state.player.pos[2], 1]
+      }
     }
   }
 
@@ -129,7 +146,36 @@ export class Interaction {
       this.hooks.openShop()
     } else if (goal.kind === 'plot') {
       this.act(goal.plot)
+    } else if (goal.kind === 'animal') {
+      const animal = this.state.animals.find((a) => a.id === goal.id)
+      if (animal) this.actAnimal(animal)
     }
+  }
+
+  private actAnimal(animal: AnimalState): void {
+    const p = animalPose(animal.id)
+    if (p) {
+      const me = this.state.player.pos
+      turnToward(this.state.player, p.x - me[0], p.z - me[2])
+      holdStill(animal.id, 2)
+    }
+    if (actOnAnimal(this.state, animal, this.hooks.now())) bus.emit('saveRequest', undefined)
+  }
+
+  /** Con vật gần nhất trong tầm tay, cho phím E / nút Tương tác. */
+  private nearestAnimal(): AnimalState | null {
+    let best: AnimalState | null = null
+    let bestD = ANIMAL_REACH + 0.3
+    for (const a of this.state.animals) {
+      const p = animalPose(a.id)
+      if (!p) continue
+      const d = this.distTo(p.x, p.z)
+      if (d < bestD) {
+        best = a
+        bestD = d
+      }
+    }
+    return best
   }
 
   private act(plot: PlotState): void {

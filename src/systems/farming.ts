@@ -66,12 +66,15 @@ export function updateCrops(state: GameState, t: number, prevT = t): void {
   }
 }
 
-/** Dời mọi dấu thời gian của cây đi `delta` ms (dùng khi tính bù có giới hạn hoặc đồng hồ máy bị lùi). */
+/** Dời mọi dấu thời gian (cây và vật nuôi) đi `delta` ms (dùng khi tính bù có giới hạn hoặc đồng hồ máy bị lùi). */
 export function shiftTimestamps(state: GameState, delta: number): void {
   for (const plot of state.plots) {
     if (!plot.crop) continue
     plot.stageStartedAt += delta
     if (plot.wateredAt !== null) plot.wateredAt += delta
+  }
+  for (const a of state.animals) {
+    if (a.fedAt !== null) a.fedAt += delta
   }
 }
 

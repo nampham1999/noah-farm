@@ -39,13 +39,15 @@ export function itemName(id: string): string {
 }
 
 /**
- * Dịch một thông báo từ hệ thống: tham số `item` là id vật phẩm, tham số `name`
- * là khoá i18n; các tham số khác giữ nguyên.
+ * Dịch một thông báo từ hệ thống: tham số `item` là id vật phẩm; tham số chuỗi nào
+ * trùng khoá i18n (vd. `season.spring`, `animal.cow`) thì được dịch; còn lại giữ nguyên.
  */
 export function noticeText(key: string, params?: Record<string, string | number>): string {
   if (!params) return tKey(key)
   const p = { ...params }
-  if (typeof p.item === 'string') p.item = itemName(p.item)
-  if (typeof p.name === 'string') p.name = tKey(p.name)
+  for (const [k, v] of Object.entries(p)) {
+    if (typeof v !== 'string') continue
+    p[k] = k === 'item' ? itemName(v) : (dictionaries[current][v] ?? dictionaries.vi[v] ?? v)
+  }
   return tKey(key, p)
 }

@@ -2,6 +2,7 @@ import type { Season } from '../core/state.ts'
 import balanceJson from './balance.json'
 import cropsJson from './crops.json'
 import itemsJson from './items.json'
+import animalsJson from './animals.json'
 
 export interface CropDef {
   id: string
@@ -18,7 +19,7 @@ export interface CropDef {
   model: string
 }
 
-export type ItemKind = 'tool' | 'seed' | 'crop'
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product'
 
 export interface ItemDef {
   id: string
@@ -33,6 +34,26 @@ export interface ItemDef {
 }
 
 export const balance = balanceJson
+
+export type AnimalType = 'chicken' | 'pig' | 'cow'
+
+export interface AnimalDef {
+  id: AnimalType
+  price: number
+  level: number
+  product: string
+  cycleDays: number
+  xp: number
+  icon: string
+  /** Tỉ lệ phóng mô hình cho hợp với nhân vật. */
+  scale: number
+}
+
+export const animalData = animalsJson as Omit<typeof animalsJson, 'animals'> & { animals: AnimalDef[] }
+export const ANIMAL_BY_ID = new Map(animalData.animals.map((a) => [a.id, a]))
+
+/** Độ dài một ngày trong game, tính bằng mili giây thật. */
+export const DAY_MS = balance.dayRealMinutes * 60_000
 export const CROPS = cropsJson as CropDef[]
 export const CROP_BY_ID = new Map(CROPS.map((c) => [c.id, c]))
 

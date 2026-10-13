@@ -1,5 +1,5 @@
-import { createInitialState, type GameState, type ItemStack, type PlotState } from '../core/state.ts'
-import { balance, CROP_BY_ID, ITEMS } from '../data/index.ts'
+import { createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState } from '../core/state.ts'
+import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
 
 /**
@@ -121,6 +121,22 @@ function normalize(data: Record<string, unknown>): GameState {
     }
   })
 
+  const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
+  const coopLevel = Math.max(0, Math.min(animalData.coopLevels.length, Math.floor(num(data.coopLevel, 0))))
+  const animals = (Array.isArray(data.animals) ? data.animals : []).flatMap((raw): AnimalState[] => {
+    const a = obj(raw)
+    if (typeof a.type !== 'string' || !ANIMAL_BY_ID.has(a.type as AnimalType)) return []
+    return [{
+      id: typeof a.id === 'string' ? a.id : `a${Math.random().toString(36).slice(2, 8)}`,
+      type: a.type as AnimalType,
+      name: typeof a.name === 'string' ? a.name : '',
+      fedAt: typeof a.fedAt === 'number' ? a.fedAt : null,
+      progress: Math.max(0, num(a.progress, 0)),
+      happiness: Math.max(0, Math.min(100, num(a.happiness, 50))),
+      pettedDay: num(a.pettedDay, -1),
+    }]
+  })
+
   const selected = typeof inv.selected === 'number' ? inv.selected : 0
   return {
     version: SAVE_VERSION,
@@ -129,6 +145,8 @@ function normalize(data: Record<string, unknown>): GameState {
     clock: { ...base.clock, ...obj(data.clock) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
+    coopLevel,
+    animals,
     settings: { ...base.settings, ...obj(data.settings) },
   } as GameState
 }

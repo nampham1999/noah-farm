@@ -44,6 +44,10 @@ export function isWater(x: number, z: number, margin = 0): boolean {
 
 /** Khu ô đất 4x4 (16 ô, GDD mục 7.3). */
 export const PLOT_AREA = { x: 0, z: -3, cols: 4, rows: 4, size: 1.4 }
+/** Chuồng (dựng khi mua) và bãi thả quanh chuồng nơi vật nuôi đi lại. */
+export const COOP = { x: 12, z: -13.5, r: 2.3 }
+export const PEN = { x: 11, z: -8, r: 3.6 }
+
 /** Bù nhìn ở góc khu ruộng. */
 export const SCARECROW = { x: 3.7, z: -6.5, r: 0.35 }
 /** Quầy hàng (mô hình shop, rộng khoảng 5,4 m), mặt quầy quay về phía +Z. r là vùng chạm để mở. */
@@ -131,6 +135,7 @@ export const OBSTACLES: Circle[] = [
   HOUSE,
   FISHING_HUT,
   SCARECROW,
+  COOP,
   ...PROPS.filter((p) => p.r > 0),
   ...[-1, 0, 1].map((k) => ({ x: STALL.x + k * (STALL_HALF_WIDTH - 1.1), z: STALL.z, r: 1.2 })),
   ...BUSHES.map((b) => ({ x: b.x, z: b.z, r: 0.5 * b.scale })),
@@ -171,6 +176,8 @@ function isReserved(x: number, z: number, margin: number): boolean {
     { x: POND.x, z: POND.z, r: POND_MAX_R + 0.6 },
     { x: FISHING_HUT.x, z: FISHING_HUT.z, r: FISHING_HUT.r + 0.5 },
     { x: SCARECROW.x, z: SCARECROW.z, r: 1 },
+    { x: COOP.x, z: COOP.z, r: COOP.r + 0.8 },
+    { x: PEN.x, z: PEN.z, r: PEN.r + 0.4 },
     ...PROPS.map((p) => ({ x: p.x, z: p.z, r: Math.max(0.6, p.r + 0.3) })),
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },
     { x: 0, z: 6, r: 1.5 },

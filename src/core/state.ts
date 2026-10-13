@@ -2,7 +2,7 @@
  * Kho trạng thái duy nhất của game (GDD mục 5, 6.3).
  * Hiển thị, giao diện và lưu trữ chỉ đọc hoặc ghi đối tượng này.
  */
-import { balance } from '../data/index.ts'
+import { balance, type AnimalType } from '../data/index.ts'
 import { PLOT_AREA } from './world.ts'
 
 export type Lang = 'vi' | 'en'
@@ -54,6 +54,20 @@ export interface PlotState {
   wateredAt: number | null
 }
 
+export interface AnimalState {
+  id: string
+  type: AnimalType
+  name: string
+  /** Lần cho ăn gần nhất (ms); no trong fullDays ngày game kể từ đó. null là chưa ăn. */
+  fedAt: number | null
+  /** Thời gian đã "làm việc" lúc no, tính bằng ms; đủ chu kỳ thì có sản phẩm. */
+  progress: number
+  /** 0..100; vui thì có lúc cho gấp đôi sản phẩm. */
+  happiness: number
+  /** Ngày game gần nhất đã được vuốt ve (dayStamp), để mỗi ngày chỉ tính một lần. */
+  pettedDay: number
+}
+
 export interface Settings {
   volume: number
   quality: Quality
@@ -76,6 +90,9 @@ export interface GameState {
   clock: ClockState
   inventory: InventoryState
   plots: PlotState[]
+  /** Cấp chuồng: 0 là chưa có chuồng. */
+  coopLevel: number
+  animals: AnimalState[]
   settings: Settings
 }
 
@@ -105,6 +122,8 @@ export function createInitialState(): GameState {
     clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
     inventory: { slots, selected: 0 },
     plots,
+    coopLevel: 0,
+    animals: [],
     settings: { volume: 0.7, quality: 'auto', lang: detectLang(), zoom: 1 },
   }
 }

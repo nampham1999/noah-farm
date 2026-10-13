@@ -1,12 +1,14 @@
 import type { GameState } from '../core/state.ts'
-import { CROP_BY_ID, item } from '../data/index.ts'
-import { itemName, t } from '../i18n/index.ts'
+import { animalData, CROP_BY_ID, item } from '../data/index.ts'
+import { itemName, t, tKey } from '../i18n/index.ts'
+import { now } from '../core/time.ts'
+import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
 import { countItem } from '../systems/inventory.ts'
-import { buy, seedCatalog, sell, sellableItems } from '../systems/shop.ts'
+import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems/shop.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
 
-type Tab = 'buy' | 'sell'
+type Tab = 'buy' | 'animals' | 'sell'
 
 /** Cửa hàng ở quầy: tab Mua hạt giống và tab Bán nông sản. */
 export function createShopPanel(state: GameState): PanelSpec {
@@ -17,8 +19,8 @@ export function createShopPanel(state: GameState): PanelSpec {
     render(body, refresh) {
       const tabs = document.createElement('div')
       tabs.className = 'tabs'
-      for (const id of ['buy', 'sell'] as const) {
-        const b = button(t(id === 'buy' ? 'shop.buy' : 'shop.sell'), 'btn small tab' + (tab === id ? ' is-active' : ''), () => {
+      for (const id of ['buy', 'animals', 'sell'] as const) {
+        const b = button(t(`shop.tab.${id}`), 'btn small tab' + (tab === id ? ' is-active' : ''), () => {
           tab = id
           refresh()
         })
@@ -33,6 +35,7 @@ export function createShopPanel(state: GameState): PanelSpec {
       const list = document.createElement('div')
       list.className = 'rows'
       if (tab === 'buy') renderBuy(list, refresh)
+      else if (tab === 'animals') renderAnimals(list, refresh)
       else renderSell(list, refresh)
       body.append(tabs, list)
     },
@@ -61,6 +64,48 @@ export function createShopPanel(state: GameState): PanelSpec {
     }
   }
 
+  function renderAnimals(list: HTMLElement, refresh: () => void): void {
+    const p = state.player
+    // Chuồng: xây mới hoặc nâng cấp.
+    const next = animalData.coopLevels[state.coopLevel]
+    const coopRow = iconRow('🏠', t(state.coopLevel === 0 ? 'shop.coopBuild' : 'shop.coopUpgrade'),
+      next
+        ? `${t('shop.capacity', { n: next.capacity })}${p.level < next.level ? ` · ${t('notice.locked', { level: next.level })}` : ''}`
+        : t('shop.coopMax', { n: coopCapacity(state) }))
+    if (next) {
+      if (p.level < next.level) coopRow.classList.add('locked')
+      coopRow.append(button(`${next.price}g`, 'btn small gold', () => buyCoopLevel(state) && refresh(), p.level < next.level || p.gold < next.price))
+    }
+    list.append(coopRow)
+
+    // Vật nuôi.
+    const room = coopCapacity(state) - state.animals.length
+    for (const def of animalData.animals) {
+      const owned = state.animals.filter((a) => a.type === def.id).length
+      const locked = p.level < def.level
+      const sub = locked
+        ? t('notice.locked', { level: def.level })
+        : `${t('shop.animalMakes', { item: itemName(def.product), days: def.cycleDays })} · ${t('shop.owned', { n: owned })}`
+      const row = iconRow(def.icon, tKey(`animal.${def.id}`), sub)
+      if (locked) row.classList.add('locked')
+      row.append(button(`${def.price}g`, 'btn small gold', () => buyAnimal(state, def.id, now()) && refresh(), locked || room <= 0 || p.gold < def.price))
+      list.append(row)
+    }
+    const status = document.createElement('p')
+    status.className = 'panel__hint'
+    status.textContent = state.coopLevel === 0 ? t('animal.needCoop') : t('shop.coopSpace', { used: state.animals.length, n: coopCapacity(state) })
+    list.append(status)
+
+    // Cỏ khô.
+    for (const entry of supplyCatalog()) {
+      const row = shopRow(entry.itemId, itemName(entry.itemId), t('shop.owned', { n: countItem(state.inventory, entry.itemId) }))
+      for (const qty of [1, 10]) {
+        row.append(button(`${qty > 1 ? `×${qty} · ` : ''}${entry.price * qty}g`, 'btn small gold', () => buy(state, entry, qty) && refresh(), p.gold < entry.price * qty))
+      }
+      list.append(row)
+    }
+  }
+
   function renderSell(list: HTMLElement, refresh: () => void): void {
     const items = sellableItems(state)
     if (items.length === 0) {
@@ -79,6 +124,16 @@ export function createShopPanel(state: GameState): PanelSpec {
       list.append(row)
     }
   }
+}
+
+function iconRow(emoji: string, name: string, sub: string): HTMLElement {
+  const row = document.createElement('div')
+  row.className = 'row'
+  row.innerHTML = `<span class="row-icon"><span class="icon"><span class="emoji"></span></span></span><span class="row-main"><strong></strong><span class="muted"></span></span>`
+  row.querySelector('.emoji')!.textContent = emoji
+  row.querySelector('strong')!.textContent = name
+  row.querySelector('.muted')!.textContent = sub
+  return row
 }
 
 function shopRow(itemId: string, name: string, sub: string): HTMLElement {

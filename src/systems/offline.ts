@@ -1,4 +1,5 @@
 import type { GameState } from '../core/state.ts'
+import { updateAnimals } from './animals.ts'
 import { isRipe, shiftTimestamps, updateCrops } from './farming.ts'
 
 /** Tính bù tối đa 7 ngày để tránh con số quá lớn (GDD mục 6.4). */
@@ -28,10 +29,12 @@ export function applyOfflineProgress(state: GameState, savedAt: number, t: numbe
 
   if (elapsed > MAX_OFFLINE_MS) {
     updateCrops(state, savedAt + MAX_OFFLINE_MS, savedAt)
+    updateAnimals(state, savedAt + MAX_OFFLINE_MS, savedAt)
     // Phần vượt giới hạn coi như không trôi qua với cây.
     shiftTimestamps(state, elapsed - MAX_OFFLINE_MS)
   } else {
     updateCrops(state, t, savedAt)
+    updateAnimals(state, t, savedAt)
   }
 
   return {
