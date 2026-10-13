@@ -36,6 +36,10 @@ export interface GameEvents {
   tap: { x: number; y: number }
   notify: Notice
   progress: Progress
+  /** Phát một hiệu ứng âm thanh theo tên (xem audio/sound.ts). */
+  sfx: string
+  /** Người chơi vừa đổi âm lượng trong menu. */
+  volumeChanged: undefined
   levelUp: number
   /** Sang ngày mới trong game (số ngày trong mùa). */
   newDay: number

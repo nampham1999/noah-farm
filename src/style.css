@@ -1633,3 +1633,21 @@ body.is-decorating .hud-actions .act-btn:not(:first-child) {
     display: none;
   }
 }
+
+.menu-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 8px;
+  font: 700 14px var(--display);
+}
+
+.menu-slider span {
+  width: 120px;
+  flex: none;
+}
+
+.menu-slider input {
+  flex: 1;
+  accent-color: var(--wood);
+}

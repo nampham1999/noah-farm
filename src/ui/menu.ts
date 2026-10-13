@@ -69,6 +69,22 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
         }),
       )
 
+      // Âm thanh: nhạc nền và hiệu ứng.
+      const audioBox = section(body, t('menu.sound'))
+      audioBox.append(
+        slider(`🎵 ${t('menu.music')}`, state.settings.musicVolume, (v) => {
+          state.settings.musicVolume = v
+          bus.emit('volumeChanged', undefined)
+          autosaver.requestSoon()
+        }),
+        slider(`🔔 ${t('menu.sfx')}`, state.settings.volume, (v) => {
+          state.settings.volume = v
+          bus.emit('volumeChanged', undefined)
+          bus.emit('sfx', 'click')
+          autosaver.requestSoon()
+        }),
+      )
+
       // Lưu trữ.
       const box = section(body, t('menu.storage'))
       const status = document.createElement('p')
@@ -151,6 +167,22 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
       )
     },
   }
+}
+
+/** Thanh trượt 0..100% có nhãn. */
+function slider(label: string, value: number, onChange: (v: number) => void): HTMLElement {
+  const row = document.createElement('label')
+  row.className = 'menu-slider'
+  const text = document.createElement('span')
+  text.textContent = label
+  const input = document.createElement('input')
+  input.type = 'range'
+  input.min = '0'
+  input.max = '100'
+  input.value = String(Math.round(value * 100))
+  input.addEventListener('input', () => onChange(Number(input.value) / 100))
+  row.append(text, input)
+  return row
 }
 
 function section(body: HTMLElement, title: string): HTMLElement {

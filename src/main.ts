@@ -17,6 +17,8 @@ import { createHouseView } from './render/house.ts'
 import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
+import { attachAudio } from './audio/index.ts'
+import { sound } from './audio/sound.ts'
 import { checkAchievements, ensureDaily, onProgress } from './systems/quests.ts'
 import { createFarmer } from './render/models.ts'
 import { pickGround } from './render/picking.ts'
@@ -95,6 +97,7 @@ async function start(): Promise<void> {
   const menuPanel = createMenuPanel(state, store, autosaver)
   const inventoryPanel = createInventoryPanel(state)
   const journalPanel = createJournalPanel(state)
+  const audio = attachAudio(state)
   ensureDaily(state)
   bus.on('progress', (ev) => onProgress(state, ev))
   const goInside = () => {
@@ -207,6 +210,7 @@ async function start(): Promise<void> {
         /** Đồng hồ của game (đã tính ?speed). */
         now,
         fishing,
+        sound,
         /** Toạ độ màn hình của một con vật. */
         animalScreen(id: string) {
           const p = animalPose(id)
@@ -281,6 +285,7 @@ async function start(): Promise<void> {
     animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
     fishingView.update(state.player, clock.getElapsed())
     fishingUi.update()
+    audio.update()
     houseView.update(state, decorUi.ghost, decorUi.active)
     decorUi.update()
     if (decorUi.active && input.hover) {

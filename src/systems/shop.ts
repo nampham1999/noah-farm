@@ -25,6 +25,7 @@ export function buy(state: GameState, entry: ShopEntry, qty: number): boolean {
   if (!canFit(state.inventory, entry.itemId, qty)) return fail('notice.bagFull')
   p.gold -= cost
   addItem(state.inventory, entry.itemId, qty)
+  bus.emit('sfx', 'coin')
   bus.emit('saveRequest', undefined)
   return true
 }

@@ -95,7 +95,10 @@ export interface AnimalState {
 }
 
 export interface Settings {
+  /** Âm lượng hiệu ứng, 0..1. */
   volume: number
+  /** Âm lượng nhạc nền, 0..1. */
+  musicVolume: number
   quality: Quality
   lang: Lang
   /** Mức zoom camera, giữ lại giữa các lần chơi. */
@@ -164,7 +167,7 @@ export function createInitialState(): GameState {
     stats: { harvest: 0, fish: 0, goldEarned: 0 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
     house: { furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
-    settings: { volume: 0.7, quality: 'auto', lang: detectLang(), zoom: 1 },
+    settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1 },
   }
 }
 

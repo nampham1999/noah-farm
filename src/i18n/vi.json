@@ -249,5 +249,8 @@
   "journal.anySeason": "Mọi mùa",
   "journal.anyTime": "Cả ngày",
   "journal.hours": "{from}h–{to}h",
-  "journal.minutes": "phút"
+  "journal.minutes": "phút",
+  "menu.sound": "Âm thanh",
+  "menu.music": "Nhạc nền",
+  "menu.sfx": "Hiệu ứng"
 }

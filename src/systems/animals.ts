@@ -74,6 +74,8 @@ export function actOnAnimal(state: GameState, a: AnimalState, t: number): boolea
     bus.emit('notify', { key: 'animal.collected', params: { qty, item: def.product, xp: def.xp }, good: true })
     return true
   }
+  // Con vật kêu khi được chăm.
+  bus.emit('sfx', a.type)
   if (isHungry(a, t)) {
     if (!countItem(state.inventory, 'feed_hay')) return fail('animal.needHay')
     removeItem(state.inventory, 'feed_hay', 1)

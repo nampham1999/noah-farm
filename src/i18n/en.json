@@ -249,5 +249,8 @@
   "journal.anySeason": "Any season",
   "journal.anyTime": "All day",
   "journal.hours": "{from}:00–{to}:00",
-  "journal.minutes": "min"
+  "journal.minutes": "min",
+  "menu.sound": "Sound",
+  "menu.music": "Music",
+  "menu.sfx": "Effects"
 }
