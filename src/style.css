@@ -1488,7 +1488,7 @@ button {
 
 .fishing__track {
   position: relative;
-  width: 46px;
+  width: 54px;
   height: min(300px, 50vh);
   border-radius: 12px;
   background: linear-gradient(#6fd2e6, #2f86c4);

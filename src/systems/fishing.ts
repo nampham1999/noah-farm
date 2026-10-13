@@ -28,18 +28,22 @@ export interface Fishing {
   progress: number
   /** Đang giữ tay (chuột, ngón, Space) để nâng vùng xanh. */
   holding: boolean
+  /** Đang kéo vùng xanh bằng chuột hoặc ngón tay: độ cao muốn đặt tâm vùng xanh (0..1), null nếu không kéo. */
+  dragY: number | null
 }
 
 const STAMINA_PER_CAST = 2
 const BITE_WINDOW = 1
-const ZONE_LIFT = 3.2
-const ZONE_GRAVITY = 2.6
+const ZONE_LIFT = 2.6
+const ZONE_GRAVITY = 2.1
+/** Kéo trực tiếp: vùng xanh đuổi theo con trỏ nhanh cỡ này (càng lớn càng sát). */
+const DRAG_FOLLOW = 14
 const FILL_RATE = 0.32
 const DRAIN_RATE = 0.22
 
 export const fishing: Fishing = {
   phase: 'idle', x: 0, z: 0, timer: 0, fish: null,
-  zoneY: 0, zoneV: 0, fishY: 0.5, fishTarget: 0.5, fishRetarget: 0, progress: 0, holding: false,
+  zoneY: 0, zoneV: 0, fishY: 0.5, fishTarget: 0.5, fishRetarget: 0, progress: 0, holding: false, dragY: null,
 }
 
 export function isFishing(): boolean {
@@ -73,7 +77,7 @@ export function cast(state: GameState, x: number, z: number): boolean {
   if (isFishing()) return false
   if (!countItem(state.inventory, 'tool_fishing_rod')) return fail('fish.needRod')
   useStamina(state, STAMINA_PER_CAST)
-  Object.assign(fishing, { phase: 'waiting', x, z, timer: 2 + Math.random() * 4, fish: null, holding: false })
+  Object.assign(fishing, { phase: 'waiting', x, z, timer: 2 + Math.random() * 4, fish: null, holding: false, dragY: null })
   return true
 }
 
@@ -94,6 +98,7 @@ export function stop(): void {
   fishing.phase = 'idle'
   fishing.fish = null
   fishing.holding = false
+  fishing.dragY = null
 }
 
 export function updateFishing(state: GameState, dt: number): void {
@@ -112,10 +117,17 @@ export function updateFishing(state: GameState, dt: number): void {
     }
   } else if (f.phase === 'reeling' && f.fish) {
     const zone = f.fish.zone
-    // Vùng xanh: giữ thì bay lên, thả thì rơi, chạm đáy hoặc đỉnh thì dừng.
-    f.zoneV += (f.holding ? ZONE_LIFT : -ZONE_GRAVITY) * dt
-    f.zoneV *= Math.pow(0.15, dt)
-    f.zoneY += f.zoneV * dt
+    if (f.dragY !== null) {
+      // Kéo trực tiếp: vùng xanh trượt mượt tới chỗ con trỏ.
+      const before = f.zoneY
+      f.zoneY += (f.dragY - zone / 2 - f.zoneY) * Math.min(1, dt * DRAG_FOLLOW)
+      f.zoneV = (f.zoneY - before) / Math.max(dt, 1e-3)
+    } else {
+      // Giữ thì bay lên, thả thì rơi; hãm mạnh để không nảy quá đà.
+      f.zoneV += (f.holding ? ZONE_LIFT : -ZONE_GRAVITY) * dt
+      f.zoneV *= Math.pow(0.04, dt)
+      f.zoneY += f.zoneV * dt
+    }
     if (f.zoneY < 0 || f.zoneY > 1 - zone) {
       f.zoneY = Math.min(1 - zone, Math.max(0, f.zoneY))
       f.zoneV = 0

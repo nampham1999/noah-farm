@@ -135,7 +135,7 @@
   "fish.needRod": "You need a fishing rod",
   "fish.waiting": "🎣 Wait for the bobber to dip…",
   "fish.bite": "❗ Tap now!",
-  "fish.reelHint": "Hold to keep the green zone on the fish",
+  "fish.reelHint": "Drag the green zone onto the fish, or hold the screen to lift it",
   "fish.tooEarly": "Too early, nothing was biting",
   "fish.missed": "The fish stole the bait",
   "fish.escaped": "🐟 It got away!",
@@ -359,5 +359,6 @@
   "look.dressColor": "Dress colour",
   "look.extras": "Extras",
   "look.glasses": "Glasses",
-  "look.cane": "Cane"
+  "look.cane": "Cane",
+  "fish.reelHintMouse": "Hold the mouse and move it up or down to keep the green zone on the fish"
 }

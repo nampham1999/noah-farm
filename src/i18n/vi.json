@@ -135,7 +135,7 @@
   "fish.needRod": "Cần có cần câu",
   "fish.waiting": "🎣 Chờ phao chìm…",
   "fish.bite": "❗ Chạm ngay!",
-  "fish.reelHint": "Giữ để kéo vùng xanh theo con cá",
+  "fish.reelHint": "Kéo vùng xanh theo con cá, hoặc giữ màn hình để nâng lên",
   "fish.tooEarly": "Giật sớm quá, cá chưa cắn",
   "fish.missed": "Cá ăn mồi rồi chạy mất",
   "fish.escaped": "🐟 Cá giãy thoát rồi!",
@@ -359,5 +359,6 @@
   "look.dressColor": "Màu váy",
   "look.extras": "Phụ kiện",
   "look.glasses": "Kính",
-  "look.cane": "Gậy"
+  "look.cane": "Gậy",
+  "fish.reelHintMouse": "Giữ chuột rồi rê lên xuống để vùng xanh bám theo con cá"
 }

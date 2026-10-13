@@ -39,16 +39,44 @@ export function createFishingUi(ui: HTMLElement, state: GameState): FishingUi {
   stopBtn.addEventListener('pointerdown', (e) => e.stopPropagation())
   stopBtn.addEventListener('click', () => stop())
 
-  // Đang kéo: giữ bất kỳ đâu trên màn hình (hoặc Space) để nâng vùng xanh.
+  // Đang kéo cá:
+  // - Chuột: giữ rồi rê, vùng xanh đi theo độ cao con trỏ (ở đâu trên màn hình cũng được).
+  // - Ngón tay: chạm vào thanh câu rồi kéo thì như chuột; giữ chỗ khác thì nâng vùng xanh lên.
+  // - Bàn phím: giữ Space để nâng.
+  const track = $('.fishing__track')
+  let dragId: number | null = null
+  const dragTo = (clientY: number) => {
+    const r = track.getBoundingClientRect()
+    fishing.dragY = Math.max(0, Math.min(1, (r.bottom - clientY) / r.height))
+  }
   root.addEventListener('pointerdown', (e) => {
     if (fishing.phase === 'reeling') {
-      fishing.holding = true
       e.preventDefault()
+      if (e.pointerType === 'mouse' || reel.contains(e.target as Node)) {
+        dragId = e.pointerId
+        dragTo(e.clientY)
+        try {
+          root.setPointerCapture(e.pointerId)
+        } catch {
+          // Không bắt được con trỏ thì vẫn nghe pointermove trên khung câu.
+        }
+      } else {
+        fishing.holding = true
+      }
     } else if (fishing.phase === 'bite') {
       strike(state)
     }
   })
-  const release = () => (fishing.holding = false)
+  root.addEventListener('pointermove', (e) => {
+    if (e.pointerId === dragId && fishing.phase === 'reeling') dragTo(e.clientY)
+  })
+  const release = (e: PointerEvent) => {
+    if (e.pointerId === dragId) {
+      dragId = null
+      fishing.dragY = null
+    }
+    fishing.holding = false
+  }
   window.addEventListener('pointerup', release)
   window.addEventListener('pointercancel', release)
   window.addEventListener('keydown', (e) => {
@@ -69,7 +97,7 @@ export function createFishingUi(ui: HTMLElement, state: GameState): FishingUi {
       const key = `${phase}|${fishing.fish?.id}`
       if (key !== shown) {
         shown = key
-        hint.textContent = phase === 'waiting' ? t('fish.waiting') : phase === 'bite' ? t('fish.bite') : t('fish.reelHint')
+        hint.textContent = phase === 'waiting' ? t('fish.waiting') : phase === 'bite' ? t('fish.bite') : document.body.classList.contains('is-touch') ? t('fish.reelHint') : t('fish.reelHintMouse')
         bang.hidden = phase !== 'bite'
         reel.hidden = phase !== 'reeling'
         if (fishing.fish) {

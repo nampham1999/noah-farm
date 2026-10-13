@@ -107,6 +107,8 @@ export function createFarmer(gltf: GLTF, look: FarmerLook = {}): Farmer {
   const rodTilt = new THREE.Quaternion()
   const rodEuler = new THREE.Euler()
   const handQuat = new THREE.Quaternion()
+  /** Hướng cần khi cầm bình thường (cán theo tay). */
+  const rodGrip = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0))
   const hold = (name: ToolName | null) => {
     if (held?.name === name) return
     if (held) held.obj.removeFromParent()
@@ -187,13 +189,14 @@ export function createFarmer(gltf: GLTF, look: FarmerLook = {}): Farmer {
       // Đang chờ cá: tư thế cuối của động tác ném không chỉ cần ra trước, nên đặt hướng cần
       // theo nhân vật (chĩa ra trước, hếch lên), không theo xương tay. Kéo cá thì cần rung.
       if (held?.name === 'fishing_rod' && fishing !== 'none' && hand) {
-        const throwing = current?.name === 'cast' && current.action.time < current.action.getClip().duration * 0.55
-        if (!throwing) {
-          const jitter = fishing === 'reel' ? Math.sin(time * 28) * 0.08 : 0
-          root.getWorldQuaternion(rodAim).multiply(rodTilt.setFromEuler(rodEuler.set(-0.5 + jitter, 0, jitter)))
-          hand.updateWorldMatrix(true, false)
-          held.obj.quaternion.copy(hand.getWorldQuaternion(handQuat).invert().multiply(rodAim))
-        }
+        // Trong lúc vung thì cần theo tay; sau đó chuyển dần sang hướng chĩa ra nước.
+        const clip = current?.name === 'cast' ? current.action.time / current.action.getClip().duration : 1
+        const w = THREE.MathUtils.smoothstep(clip, 0.35, 0.7)
+        const jitter = fishing === 'reel' ? Math.sin(time * 28) * 0.08 : 0
+        root.getWorldQuaternion(rodAim).multiply(rodTilt.setFromEuler(rodEuler.set(-0.5 + jitter, 0, jitter)))
+        hand.updateWorldMatrix(true, false)
+        rodAim.premultiply(hand.getWorldQuaternion(handQuat).invert())
+        held.obj.quaternion.copy(rodGrip).slerp(rodAim, w)
       }
     },
   }

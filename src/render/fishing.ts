@@ -4,7 +4,9 @@ import { fishing } from '../systems/fishing.ts'
 
 /** Giây từ lúc bắt đầu quăng tới lúc nhả phao, và thời gian phao bay. */
 const CAST_RELEASE = 0.32
-const CAST_FLIGHT = 0.45
+const CAST_FLIGHT = 0.5
+/** Số đoạn của dây câu. */
+const LINE_SEGMENTS = 12
 
 export interface FishingView {
   /** rodTip: vị trí đầu cần câu trong tay nhân vật (null thì ước lượng trước mặt). */
@@ -26,7 +28,8 @@ export function createFishingView(scene: THREE.Scene): FishingView {
   )
   ring.rotation.x = -Math.PI / 2
 
-  const linePos = new Float32Array(6)
+  // Dây câu là đường cong nhiều đoạn để võng xuống tự nhiên.
+  const linePos = new Float32Array(LINE_SEGMENTS * 3 + 3)
   const lineGeo = new THREE.BufferGeometry()
   lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3))
   const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xf6f0e0 }))
@@ -34,14 +37,28 @@ export function createFishingView(scene: THREE.Scene): FishingView {
 
   scene.add(bobber, ring, line)
 
+  /** Vẽ dây từ a tới b, võng xuống giữa một đoạn sag (mét). */
+  const drawLine = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, sag: number) => {
+    for (let n = 0; n <= LINE_SEGMENTS; n++) {
+      const u = n / LINE_SEGMENTS
+      linePos[n * 3] = ax + (bx - ax) * u
+      linePos[n * 3 + 1] = ay + (by - ay) * u - sag * 4 * u * (1 - u)
+      linePos[n * 3 + 2] = az + (bz - az) * u
+    }
+    lineGeo.attributes.position.needsUpdate = true
+  }
+
   // Lúc quăng cần: chờ nhân vật vung cần rồi mới cho phao bay vòng cung xuống nước.
   let castAt = -1
-  const from = new THREE.Vector3()
-  const to = new THREE.Vector3()
+  // Độ võng hiện tại của dây, đổi dần cho mượt (căng khi kéo cá, chùng khi chờ).
+  let sag = 0
+  let last = 0
 
   return {
     update(player, time, rodTip) {
       const active = fishing.phase !== 'idle'
+      const prev = last
+      last = time
       if (!active) castAt = -1
       else if (castAt < 0) castAt = time
       bobber.visible = ring.visible = line.visible = active
@@ -57,30 +74,36 @@ export function createFishingView(scene: THREE.Scene): FishingView {
         return
       }
       if (since < CAST_RELEASE + CAST_FLIGHT) {
-        // Phao bay từ đầu cần theo đường vòng cung, dây kéo theo.
+        // Phao bay từ đầu cần theo đường vòng cung (nhanh lúc đầu, chậm dần), dây kéo theo.
         const k = (since - CAST_RELEASE) / CAST_FLIGHT
-        from.set(hx, hy, hz)
-        bobber.position.lerpVectors(from, to.set(fishing.x, 0.06, fishing.z), k)
-        bobber.position.y += Math.sin(k * Math.PI) * 1.2
+        const e = 1 - (1 - k) * (1 - k)
+        bobber.position.set(hx + (fishing.x - hx) * e, hy + (0.06 - hy) * k + Math.sin(k * Math.PI) * 1.1, hz + (fishing.z - hz) * e)
+        bobber.rotation.z = (1 - k) * 0.8
         ring.visible = false
-        linePos.set([hx, hy, hz, bobber.position.x, bobber.position.y + 0.19, bobber.position.z])
-        lineGeo.attributes.position.needsUpdate = true
+        sag = 0.05
+        drawLine(hx, hy, hz, bobber.position.x, bobber.position.y + 0.19, bobber.position.z, sag)
         return
       }
+      bobber.rotation.z = 0
 
       const bite = fishing.phase === 'bite'
       const reeling = fishing.phase === 'reeling'
+      // Vừa rơi xuống nước: phao chìm nhẹ rồi nổi lên.
+      const landed = since - CAST_RELEASE - CAST_FLIGHT
+      const plop = landed < 0.6 ? -Math.sin((landed / 0.6) * Math.PI) * 0.08 * (1 - landed / 0.6) : 0
       // Cá cắn: phao giật chìm xuống; đang kéo: phao rung mạnh.
-      const y = bite ? -0.06 + Math.sin(time * 30) * 0.03 : reeling ? 0.04 + Math.sin(time * 18) * 0.03 : 0.06 + Math.sin(time * 2.5) * 0.02
+      const y = bite ? -0.06 + Math.sin(time * 30) * 0.03 : reeling ? 0.04 + Math.sin(time * 18) * 0.03 : 0.06 + Math.sin(time * 2.5) * 0.02 + plop
       bobber.position.set(fishing.x, y, fishing.z)
       ring.position.set(fishing.x, 0.06, fishing.z)
-      const pulse = (time * (bite ? 3 : 0.8)) % 1
+      // Vòng sóng bắt đầu lan từ lúc phao chạm nước.
+      const pulse = (landed * (bite ? 3 : 0.8)) % 1
       ring.scale.setScalar(1 + pulse * (bite ? 3 : 1.5))
       ;(ring.material as THREE.MeshBasicMaterial).opacity = (1 - pulse) * 0.8
 
-      // Dây câu từ đầu cần (nếu biết) xuống phao.
-      linePos.set([hx, hy, hz, fishing.x, y + 0.19, fishing.z])
-      lineGeo.attributes.position.needsUpdate = true
+      // Dây câu từ đầu cần (nếu biết) xuống phao: chùng khi chờ, căng khi cá cắn hoặc đang kéo.
+      const targetSag = bite || reeling ? 0.02 : Math.hypot(fishing.x - hx, fishing.z - hz) * 0.12
+      sag += (targetSag - sag) * Math.min(1, Math.max(0, time - prev) * 6)
+      drawLine(hx, hy, hz, fishing.x, y + 0.19, fishing.z, sag)
     },
   }
 }
