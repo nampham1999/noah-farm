@@ -121,7 +121,7 @@ export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsVi
 const emojiCache = new Map<string, THREE.Texture>()
 
 /** Bong bóng tròn trắng có emoji ở giữa, vẽ bằng canvas. */
-function emojiTexture(emoji: string): THREE.Texture {
+export function emojiTexture(emoji: string): THREE.Texture {
   let tex = emojiCache.get(emoji)
   if (tex) return tex
   const c = document.createElement('canvas')

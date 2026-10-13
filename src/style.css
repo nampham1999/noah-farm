@@ -1651,3 +1651,104 @@ body.is-decorating .hud-actions .act-btn:not(:first-child) {
   flex: 1;
   accent-color: var(--wood);
 }
+
+/* ---------- Dân làng và đơn hàng ---------- */
+
+.speech {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.speech__face {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: radial-gradient(circle at 50% 35%, #fff3cf, #f6d99a);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px var(--wood-light);
+}
+
+.speech__text {
+  position: relative;
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fffdf6;
+  box-shadow: inset 0 0 0 2px var(--paper-2);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fffdf6;
+  box-shadow: inset 0 0 0 2px var(--paper-2), 0 3px 0 var(--paper-3);
+}
+
+.order-card.is-ready {
+  box-shadow: inset 0 0 0 3px var(--green), 0 3px 0 var(--green-dark);
+}
+
+.order-card__who {
+  font: 700 15px var(--display);
+  color: var(--wood);
+}
+
+.order-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.order-line .icon {
+  width: 30px;
+  height: 30px;
+}
+
+.order-line .icon .emoji {
+  font-size: 22px;
+}
+
+.order-line__name {
+  flex: 1;
+}
+
+.order-line__count {
+  font: 700 14px var(--display);
+  color: var(--red-dark);
+}
+
+.order-line.is-met .order-line__count {
+  color: var(--green-dark);
+}
+
+.order-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-card__due {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.order-card__due.is-urgent {
+  color: var(--red-dark);
+}

@@ -1,36 +1,200 @@
 {
   "tutorial": [
-    { "id": "q_till", "type": "till", "target": 3, "gold": 20, "xp": 10, "icon": "⛏️" },
-    { "id": "q_plant", "type": "plant", "target": 3, "gold": 20, "xp": 10, "icon": "🌱" },
-    { "id": "q_water", "type": "water", "target": 3, "gold": 20, "xp": 10, "icon": "💧" },
-    { "id": "q_harvest", "type": "harvest", "target": 3, "gold": 50, "xp": 20, "icon": "🥕" },
-    { "id": "q_sell", "type": "sell", "target": 1, "gold": 30, "xp": 10, "icon": "🪙" },
-    { "id": "q_fish", "type": "fish", "target": 1, "gold": 50, "xp": 20, "icon": "🎣" },
-    { "id": "q_coop", "type": "coop", "target": 1, "gold": 100, "xp": 30, "icon": "🏠" },
-    { "id": "q_collect", "type": "collect", "target": 1, "gold": 60, "xp": 20, "icon": "🥚" },
-    { "id": "q_decorate", "type": "place", "target": 1, "gold": 80, "xp": 30, "icon": "🛋️" }
+    {
+      "id": "q_till",
+      "type": "till",
+      "target": 3,
+      "gold": 20,
+      "xp": 10,
+      "icon": "⛏️"
+    },
+    {
+      "id": "q_plant",
+      "type": "plant",
+      "target": 3,
+      "gold": 20,
+      "xp": 10,
+      "icon": "🌱"
+    },
+    {
+      "id": "q_water",
+      "type": "water",
+      "target": 3,
+      "gold": 20,
+      "xp": 10,
+      "icon": "💧"
+    },
+    {
+      "id": "q_harvest",
+      "type": "harvest",
+      "target": 3,
+      "gold": 50,
+      "xp": 20,
+      "icon": "🥕"
+    },
+    {
+      "id": "q_sell",
+      "type": "sell",
+      "target": 1,
+      "gold": 30,
+      "xp": 10,
+      "icon": "🪙"
+    },
+    {
+      "id": "q_fish",
+      "type": "fish",
+      "target": 1,
+      "gold": 50,
+      "xp": 20,
+      "icon": "🎣"
+    },
+    {
+      "id": "q_coop",
+      "type": "coop",
+      "target": 1,
+      "gold": 100,
+      "xp": 30,
+      "icon": "🏠"
+    },
+    {
+      "id": "q_collect",
+      "type": "collect",
+      "target": 1,
+      "gold": 60,
+      "xp": 20,
+      "icon": "🥚"
+    },
+    {
+      "id": "q_decorate",
+      "type": "place",
+      "target": 1,
+      "gold": 80,
+      "xp": 30,
+      "icon": "🛋️"
+    }
   ],
   "daily": [
-    { "id": "d_harvest", "type": "harvest", "min": 4, "max": 10, "goldPer": 6, "icon": "🥕" },
-    { "id": "d_water", "type": "water", "min": 5, "max": 12, "goldPer": 3, "icon": "💧" },
-    { "id": "d_fish", "type": "fish", "min": 1, "max": 3, "goldPer": 25, "icon": "🎣" },
-    { "id": "d_sell", "type": "sellGold", "min": 100, "max": 300, "goldPer": 0.2, "icon": "🪙" },
-    { "id": "d_collect", "type": "collect", "min": 1, "max": 3, "goldPer": 15, "icon": "🥚", "needsAnimals": true },
-    { "id": "d_plant", "type": "plant", "min": 4, "max": 10, "goldPer": 4, "icon": "🌱" }
+    {
+      "id": "d_harvest",
+      "type": "harvest",
+      "min": 4,
+      "max": 10,
+      "goldPer": 6,
+      "icon": "🥕"
+    },
+    {
+      "id": "d_water",
+      "type": "water",
+      "min": 5,
+      "max": 12,
+      "goldPer": 3,
+      "icon": "💧"
+    },
+    {
+      "id": "d_fish",
+      "type": "fish",
+      "min": 1,
+      "max": 3,
+      "goldPer": 25,
+      "icon": "🎣"
+    },
+    {
+      "id": "d_sell",
+      "type": "sellGold",
+      "min": 100,
+      "max": 300,
+      "goldPer": 0.2,
+      "icon": "🪙"
+    },
+    {
+      "id": "d_collect",
+      "type": "collect",
+      "min": 1,
+      "max": 3,
+      "goldPer": 15,
+      "icon": "🥚",
+      "needsAnimals": true
+    },
+    {
+      "id": "d_plant",
+      "type": "plant",
+      "min": 4,
+      "max": 10,
+      "goldPer": 4,
+      "icon": "🌱"
+    },
+    {
+      "id": "d_deliver",
+      "type": "deliver",
+      "min": 1,
+      "max": 1,
+      "goldPer": 40,
+      "icon": "📋"
+    }
   ],
   "dailyCount": 3,
   "dailyXp": 10,
   "dailyBonusXp": 10,
   "achievements": [
-    { "id": "a_harvest50", "stat": "harvest", "target": 50, "icon": "🧺" },
-    { "id": "a_harvest500", "stat": "harvest", "target": 500, "icon": "🏆" },
-    { "id": "a_fish10", "stat": "fish", "target": 10, "icon": "🐟" },
-    { "id": "a_allFish", "stat": "fishSpecies", "target": 6, "icon": "🎏" },
-    { "id": "a_allCrops", "stat": "cropSpecies", "target": 10, "icon": "🌾" },
-    { "id": "a_gold5000", "stat": "goldEarned", "target": 5000, "icon": "💰" },
-    { "id": "a_animals3", "stat": "animals", "target": 3, "icon": "🐮" },
-    { "id": "a_land", "stat": "land", "target": 4, "icon": "🗺️" },
-    { "id": "a_decor10", "stat": "furniture", "target": 10, "icon": "🏡" },
-    { "id": "a_level10", "stat": "level", "target": 10, "icon": "⭐" }
+    {
+      "id": "a_harvest50",
+      "stat": "harvest",
+      "target": 50,
+      "icon": "🧺"
+    },
+    {
+      "id": "a_harvest500",
+      "stat": "harvest",
+      "target": 500,
+      "icon": "🏆"
+    },
+    {
+      "id": "a_fish10",
+      "stat": "fish",
+      "target": 10,
+      "icon": "🐟"
+    },
+    {
+      "id": "a_allFish",
+      "stat": "fishSpecies",
+      "target": 6,
+      "icon": "🎏"
+    },
+    {
+      "id": "a_allCrops",
+      "stat": "cropSpecies",
+      "target": 10,
+      "icon": "🌾"
+    },
+    {
+      "id": "a_gold5000",
+      "stat": "goldEarned",
+      "target": 5000,
+      "icon": "💰"
+    },
+    {
+      "id": "a_animals3",
+      "stat": "animals",
+      "target": 3,
+      "icon": "🐮"
+    },
+    {
+      "id": "a_land",
+      "stat": "land",
+      "target": 4,
+      "icon": "🗺️"
+    },
+    {
+      "id": "a_decor10",
+      "stat": "furniture",
+      "target": 10,
+      "icon": "🏡"
+    },
+    {
+      "id": "a_level10",
+      "stat": "level",
+      "target": 10,
+      "icon": "⭐"
+    }
   ]
 }

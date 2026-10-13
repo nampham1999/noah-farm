@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { HOUSE, STALL } from '../core/world.ts'
+import { HOUSE, ORDER_BOARD, STALL } from '../core/world.ts'
 
 export interface Pick {
   /** Điểm chạm trên mặt đất (y = 0). */
@@ -9,6 +9,8 @@ export interface Pick {
   onStall: boolean
   /** Chạm trúng ngôi nhà. */
   onHouse: boolean
+  /** Chạm trúng bảng đơn hàng. */
+  onBoard: boolean
 }
 
 const raycaster = new THREE.Raycaster()
@@ -42,7 +44,16 @@ export function pickGround(camera: THREE.Camera, screenX: number, screenY: numbe
     }
   }
 
+  let onBoard = false
+  for (const h of [0, 0.8, 1.6]) {
+    ground.constant = -h
+    if (raycaster.ray.intersectPlane(ground, hit) && Math.hypot(hit.x - ORDER_BOARD.x, hit.z - ORDER_BOARD.z) < 0.9) {
+      onBoard = true
+      break
+    }
+  }
+
   ground.constant = 0
   if (!raycaster.ray.intersectPlane(ground, hit)) return null
-  return { x: hit.x, z: hit.z, onStall, onHouse }
+  return { x: hit.x, z: hit.z, onStall, onHouse, onBoard }
 }

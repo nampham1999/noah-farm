@@ -1,7 +1,8 @@
 import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
-import { HOUSE_DOOR, isWater, plotAt, plotCenter, roomCellAt, STALL } from '../core/world.ts'
+import { HOUSE_DOOR, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL } from '../core/world.ts'
+import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
@@ -21,10 +22,14 @@ type Goal =
   | { kind: 'animal'; id: string }
   | { kind: 'fish'; x: number; z: number }
   | { kind: 'house' }
+  | { kind: 'npc'; id: string }
+  | { kind: 'board' }
   | { kind: 'bed'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
 const DOOR_REACH = 1.8
+/** Đứng cách dân làng chừng này thì nói chuyện được. */
+const NPC_REACH = 1.4
 const BED_REACH = 1.7
 
 /** Thả cần xa tối đa chừng này (m) tính từ chỗ đứng. */
@@ -36,6 +41,8 @@ const ANIMAL_REACH = 1.3
 export interface InteractionHooks {
   openShop(): void
   enterHouse(): void
+  openNpc(id: string): void
+  openBoard(): void
   now(): number
 }
 
@@ -80,6 +87,16 @@ export class Interaction {
     this.setGoal({ kind: 'walk', x: wx, z: wz })
   }
 
+  /** Chạm vào dân làng: đi tới rồi nói chuyện. */
+  tapNpc(id: string): void {
+    faceTowards(id, this.state.player.pos[0], this.state.player.pos[2], 5)
+    this.setGoal({ kind: 'npc', id })
+  }
+
+  tapBoard(): void {
+    this.setGoal({ kind: 'board' })
+  }
+
   /** Chạm vào con vật: đi tới rồi nhặt sản phẩm, cho ăn hoặc vuốt ve. */
   tapAnimal(id: string): void {
     holdStill(id, 4)
@@ -114,6 +131,12 @@ export class Interaction {
       return
     }
     if (this.distTo(HOUSE_DOOR.x, HOUSE_DOOR.z) <= DOOR_REACH) return this.hooks.enterHouse()
+    const npc = presentNpcs(this.state).find((id) => {
+      const p = npcPose(id)
+      return p && this.distTo(p.x, p.z) <= NPC_REACH + 0.3
+    })
+    if (npc) return this.talkTo(npc)
+    if (this.distTo(ORDER_BOARD.x, ORDER_BOARD.z) <= NPC_REACH + 0.6) return this.hooks.openBoard()
     if (this.distTo(STALL.x, STALL.z) <= STALL_REACH) return this.hooks.openShop()
     const animal = this.nearestAnimal()
     if (animal) return this.actAnimal(animal)
@@ -186,6 +209,12 @@ export class Interaction {
         return [goal.x, goal.z, CAST_RANGE - 0.3]
       case 'house':
         return [HOUSE_DOOR.x, HOUSE_DOOR.z, 0.5]
+      case 'npc': {
+        const p = npcPose(goal.id)
+        return p ? [p.x, p.z, NPC_REACH] : [this.state.player.pos[0], this.state.player.pos[2], 1]
+      }
+      case 'board':
+        return [ORDER_BOARD.x, ORDER_BOARD.z, NPC_REACH + 0.3]
       case 'bed':
         return [goal.x, goal.z, BED_REACH - 0.3]
       case 'animal': {
@@ -204,6 +233,12 @@ export class Interaction {
       this.act(goal.plot)
     } else if (goal.kind === 'house') {
       this.hooks.enterHouse()
+    } else if (goal.kind === 'npc') {
+      this.talkTo(goal.id)
+    } else if (goal.kind === 'board') {
+      const me = this.state.player.pos
+      turnToward(this.state.player, ORDER_BOARD.x - me[0], ORDER_BOARD.z - me[2])
+      this.hooks.openBoard()
     } else if (goal.kind === 'bed') {
       sleep(this.state)
     } else if (goal.kind === 'fish') {
@@ -222,6 +257,14 @@ export class Interaction {
       holdStill(animal.id, 2)
     }
     if (actOnAnimal(this.state, animal, this.hooks.now())) bus.emit('saveRequest', undefined)
+  }
+
+  private talkTo(id: string): void {
+    const p = npcPose(id)
+    const me = this.state.player.pos
+    if (p) turnToward(this.state.player, p.x - me[0], p.z - me[2])
+    faceTowards(id, me[0], me[2], 6)
+    this.hooks.openNpc(id)
   }
 
   /** Giường ở điểm chạm (trong nhà); trả về tâm giường. */

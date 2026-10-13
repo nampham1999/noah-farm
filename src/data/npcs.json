@@ -1,0 +1,21 @@
+{
+  "npcs": [
+    { "id": "mia", "emoji": "🥖", "shirt": "#e88a6a", "pants": "#6b4a3a", "hat": "#f2c75c", "lines": 2 },
+    { "id": "tom", "emoji": "🎣", "shirt": "#5f8fc4", "pants": "#4a4a5a", "hat": "#8a5a2b", "lines": 2 },
+    { "id": "lan", "emoji": "🌸", "shirt": "#f2a8c4", "pants": "#7a5aa8", "hat": "#ffffff", "lines": 2 },
+    { "id": "bao", "emoji": "🍜", "shirt": "#f4f0e6", "pants": "#3a3a3a", "hat": "#f4f0e6", "lines": 2 },
+    { "id": "rosa", "emoji": "🧺", "shirt": "#8cc152", "pants": "#a0703f", "hat": "#e05a47", "lines": 2 },
+    { "id": "kai", "emoji": "🪚", "shirt": "#c9853f", "pants": "#4f6b3a", "hat": "#5b8fd6", "lines": 2 }
+  ],
+  "orders": {
+    "max": 3,
+    "rewardMultiplier": 1.5,
+    "rushChance": 0.15,
+    "bonusChance": 0.2,
+    "daysMin": 2,
+    "daysMax": 4,
+    "ownedShare": 0.6,
+    "minQty": 2,
+    "first": { "npc": "mia", "itemId": "crop_carrot", "qty": 4, "gold": 200, "days": 3 }
+  }
+}

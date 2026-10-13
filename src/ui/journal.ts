@@ -3,6 +3,7 @@ import { CROPS, FISH } from '../data/index.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { currentTutorial, dailyReward, dailyTemplate, ensureDaily, questData, statValue } from '../systems/quests.ts'
 import { itemIconHtml } from './icons.ts'
+import { canDeliver, daysLeft, NPCS } from '../systems/orders.ts'
 import type { PanelSpec } from './panel.ts'
 
 type Tab = 'quests' | 'fish' | 'crops' | 'achievements'
@@ -53,6 +54,17 @@ export function createJournalPanel(state: GameState): PanelSpec {
       if (finished) r.classList.add('done')
       list.append(r)
     }
+    list.append(heading(t('journal.orders', { n: state.orders.list.length })))
+    for (const o of state.orders.list) {
+      const npc = NPCS.find((n) => n.id === o.npc)
+      const what = o.lines.map((l) => `${l.qty} ${itemName(l.itemId)}`).join(', ')
+      const days = daysLeft(state, o)
+      const due = o.rush || days <= 0 ? t('order.today') : t('order.daysLeft', { n: days })
+      const r = row(canDeliver(state, o) ? '❗' : (npc?.emoji ?? '📋'), `${tKey(`npc.${o.npc}`)}: ${what}`, `${due} · ${t('journal.reward', { gold: o.gold, xp: o.xp })}`)
+      if (canDeliver(state, o)) r.classList.add('done')
+      list.append(r)
+    }
+
     const note = document.createElement('p')
     note.className = 'panel__hint'
     note.textContent = daily.bonusClaimed ? t('journal.bonusClaimed') : t('journal.bonusHint', { xp: questData.dailyBonusXp })

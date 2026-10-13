@@ -98,6 +98,12 @@ export function blockCells(i: number): { x: number; z: number }[] {
 export const COOP = { x: 12, z: -13.5, r: 2.3 }
 export const PEN = { x: 12.6, z: -8.4, r: 3.2 }
 
+/** Bảng đơn hàng của dân làng, cạnh đường vào; dân làng có đơn đi loanh quanh khu VILLAGE. */
+export const ORDER_BOARD = { x: -2.4, z: 6.8, r: 0.6 }
+export const VILLAGE = { x: -4.2, z: 9.4, r: 2.4 }
+/** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
+export const TOM_SPOT = { x: 9.3, z: 10.6, rotY: Math.PI / 2 }
+
 /** Bù nhìn ở góc khu ruộng. */
 export const SCARECROW = { x: -3.4, z: 0.9, r: 0.35 }
 /** Quầy hàng (mô hình shop, rộng khoảng 5,4 m), mặt quầy quay về phía +Z. r là vùng chạm để mở. */
@@ -194,6 +200,7 @@ export const OBSTACLES: Circle[] = [
   FISHING_HUT,
   SCARECROW,
   COOP,
+  ORDER_BOARD,
   ...PROPS.filter((p) => p.r > 0),
   ...[-1, 0, 1].map((k) => ({ x: STALL.x + k * (STALL_HALF_WIDTH - 1.1), z: STALL.z, r: 1.2 })),
   ...BUSHES.map((b) => ({ x: b.x, z: b.z, r: 0.5 * b.scale })),
@@ -235,6 +242,8 @@ function isReserved(x: number, z: number, margin: number): boolean {
     { x: FISHING_HUT.x, z: FISHING_HUT.z, r: FISHING_HUT.r + 0.5 },
     { x: SCARECROW.x, z: SCARECROW.z, r: 1 },
     { x: COOP.x, z: COOP.z, r: COOP.r + 0.8 },
+    { x: ORDER_BOARD.x, z: ORDER_BOARD.z, r: 1.2 },
+    { x: VILLAGE.x, z: VILLAGE.z, r: VILLAGE.r },
     { x: PEN.x, z: PEN.z, r: PEN.r + 0.4 },
     ...PROPS.map((p) => ({ x: p.x, z: p.z, r: Math.max(0.6, p.r + 0.3) })),
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },

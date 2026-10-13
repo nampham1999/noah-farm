@@ -20,7 +20,7 @@ export interface Notice {
 
 /** Việc người chơi vừa làm, để tính nhiệm vụ và thành tựu. */
 export interface Progress {
-  type: 'till' | 'plant' | 'water' | 'harvest' | 'sell' | 'sellGold' | 'fish' | 'coop' | 'collect' | 'place'
+  type: 'till' | 'plant' | 'water' | 'harvest' | 'sell' | 'sellGold' | 'fish' | 'coop' | 'collect' | 'place' | 'deliver'
   amount: number
   /** Loài cây / cá liên quan, nếu có. */
   id?: string

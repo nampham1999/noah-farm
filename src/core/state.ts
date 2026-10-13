@@ -23,6 +23,23 @@ export interface PlayerState {
   indoors: boolean
 }
 
+/** Đơn hàng của dân làng trên bảng đơn hàng (như bản cũ). */
+export interface Order {
+  id: number
+  npc: string
+  lines: { itemId: string; qty: number }[]
+  gold: number
+  xp: number
+  /** Hạn giao: ngày game (dayStamp) cuối cùng còn giao được. */
+  dueDay: number
+  /** Đơn gấp: giao trong ngày, thưởng gấp đôi. */
+  rush: boolean
+  /** Tặng thêm khi giao (vd. 5 gói hạt). */
+  bonus: { itemId: string; qty: number } | null
+  /** Đơn kịch bản (lời nhắn riêng), vd. đơn đầu tiên của Cô Mia. */
+  scripted: boolean
+}
+
 export interface DailyQuest {
   id: string
   target: number
@@ -132,6 +149,8 @@ export interface GameState {
   journal: { fish: Record<string, number>; crops: Record<string, number>; achievements: string[] }
   /** Nhiệm vụ: bước hướng dẫn hiện tại và nhiệm vụ hằng ngày. */
   quests: QuestState
+  /** lastRefill: ngày game (absDay) gần nhất đã thêm đơn mới; mỗi ngày chỉ thêm một lần. */
+  orders: { nextId: number; list: Order[]; firstGiven: boolean; lastRefill: number }
   /** Số liệu cộng dồn cho thành tựu. */
   stats: { harvest: number; fish: number; goldEarned: number }
   settings: Settings
@@ -165,6 +184,7 @@ export function createInitialState(): GameState {
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0 },
+    orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
     house: { furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
     settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1 },

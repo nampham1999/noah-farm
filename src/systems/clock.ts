@@ -1,5 +1,5 @@
 import { bus } from '../core/events.ts'
-import type { GameState, Season } from '../core/state.ts'
+import type { ClockState, GameState, Season } from '../core/state.ts'
 import { balance } from '../data/index.ts'
 
 /**
@@ -46,4 +46,9 @@ export function dayPhase(minuteOfDay: number): DayPhase {
   if (h >= 7 && h < 18) return 'day'
   if (h >= 18 && h < 20) return 'dusk'
   return 'night'
+}
+
+/** Số ngày tính từ đầu game (ngày 1 xuân năm 1 là 0), để trừ ra số ngày còn lại. */
+export function absDay(c: ClockState): number {
+  return ((c.year - 1) * SEASONS.length + SEASONS.indexOf(c.season)) * balance.daysPerSeason + (c.day - 1)
 }

@@ -22,8 +22,25 @@ const HIDDEN = ['1H_Crossbow', '2H_Crossbow', 'Knife', 'Knife_Offhand', 'Throwab
  * Nông dân: nhân vật Rogue (KayKit, CC0) như bản cũ, ẩn vũ khí và đội mũ rơm.
  * Hoạt ảnh Idle và Running_A trộn theo tốc độ đi.
  */
-export function createFarmer(gltf: GLTF): Farmer {
+export interface FarmerLook {
+  /** Nhuộm cả người theo màu này (dân làng); bỏ trống là giữ màu gốc. */
+  tint?: string
+  hat?: string
+  band?: string
+}
+
+export function createFarmer(gltf: GLTF, look: FarmerLook = {}): Farmer {
   const model = cloneSkinned(gltf.scene)
+  if (look.tint) {
+    // Nhân bản vật liệu rồi pha màu, để không đổi màu nhân vật chính dùng chung vật liệu.
+    const tint = new THREE.Color('#ffffff').lerp(new THREE.Color(look.tint), 0.55)
+    model.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        o.material = (o.material as THREE.MeshStandardMaterial).clone()
+        ;(o.material as THREE.MeshStandardMaterial).color.copy(tint)
+      }
+    })
+  }
   for (const name of HIDDEN) {
     const o = model.getObjectByName(name)
     if (o) o.visible = false
@@ -35,7 +52,7 @@ export function createFarmer(gltf: GLTF): Farmer {
   model.scale.setScalar(HEIGHT / (box.max.y - box.min.y))
   model.updateMatrixWorld(true)
 
-  addStrawHat(model)
+  addStrawHat(model, look.hat, look.band)
 
   const mixer = new THREE.AnimationMixer(model)
   const clip = (name: string) => {
@@ -80,13 +97,13 @@ export function createFarmer(gltf: GLTF): Farmer {
 }
 
 /** Mũ rơm gắn vào xương đầu, đặt theo khung bao của mesh đầu (giống bản cũ). */
-function addStrawHat(model: THREE.Object3D): void {
+function addStrawHat(model: THREE.Object3D, hatColor = '#f2c75c', bandColor = '#d9573f'): void {
   const head = model.getObjectByName('head')
   const headMesh = model.getObjectByName('Rogue_Head')
   if (!head || !headMesh) return
 
-  const straw = new THREE.MeshStandardMaterial({ color: 0xf2c75c, roughness: 0.9 })
-  const band = new THREE.MeshStandardMaterial({ color: 0xd9573f, roughness: 0.9 })
+  const straw = new THREE.MeshStandardMaterial({ color: hatColor, roughness: 0.9 })
+  const band = new THREE.MeshStandardMaterial({ color: bandColor, roughness: 0.9 })
   const hat = new THREE.Group()
   const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.66, 0.05, 20), straw)
   const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.26, 16), straw)

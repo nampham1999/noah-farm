@@ -1,4 +1,4 @@
-import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState, type QuestState } from '../core/state.ts'
+import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
 import { LAND_BLOCKS } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
@@ -168,6 +168,7 @@ function normalize(data: Record<string, unknown>): GameState {
       achievements: (Array.isArray(obj(data.journal).achievements) ? (obj(data.journal).achievements as unknown[]) : []).filter((a): a is string => typeof a === 'string'),
     },
     quests: normalizeQuests(obj(data.quests), base.quests),
+    orders: normalizeOrders(obj(data.orders), base.orders),
     stats: { ...base.stats, ...counts(obj(data.stats)) },
     settings: { ...base.settings, ...obj(data.settings) },
   } as GameState
@@ -194,5 +195,34 @@ function normalizeQuests(q: Record<string, unknown>, base: QuestState): QuestSta
           : []
       }),
     },
+  }
+}
+
+function normalizeOrders(o: Record<string, unknown>, base: GameState['orders']): GameState['orders'] {
+  const list = (Array.isArray(o.list) ? o.list : []).flatMap((raw): Order[] => {
+    const d = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+    const lines = (Array.isArray(d.lines) ? d.lines : []).flatMap((l) => {
+      const x = l && typeof l === 'object' ? (l as Record<string, unknown>) : {}
+      return typeof x.itemId === 'string' && ITEMS.has(x.itemId) && typeof x.qty === 'number' ? [{ itemId: x.itemId, qty: x.qty }] : []
+    })
+    if (typeof d.id !== 'number' || typeof d.npc !== 'string' || lines.length === 0) return []
+    const bonus = d.bonus && typeof d.bonus === 'object' ? (d.bonus as Record<string, unknown>) : null
+    return [{
+      id: d.id,
+      npc: d.npc,
+      lines,
+      gold: typeof d.gold === 'number' ? d.gold : 0,
+      xp: typeof d.xp === 'number' ? d.xp : 0,
+      dueDay: typeof d.dueDay === 'number' ? d.dueDay : 0,
+      rush: d.rush === true,
+      bonus: bonus && typeof bonus.itemId === 'string' && ITEMS.has(bonus.itemId) && typeof bonus.qty === 'number' ? { itemId: bonus.itemId, qty: bonus.qty } : null,
+      scripted: d.scripted === true,
+    }]
+  })
+  return {
+    nextId: typeof o.nextId === 'number' ? o.nextId : base.nextId,
+    list,
+    firstGiven: o.firstGiven === true,
+    lastRefill: typeof o.lastRefill === 'number' ? o.lastRefill : -1,
   }
 }

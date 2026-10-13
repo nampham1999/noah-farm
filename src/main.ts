@@ -17,6 +17,10 @@ import { createHouseView } from './render/house.ts'
 import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
+import { createBoardPanel, npcDialog } from './ui/orders.ts'
+import { createNpcsView } from './render/npcs.ts'
+import { npcPose, updateNpcs } from './systems/npcs.ts'
+import { refillOrders } from './systems/orders.ts'
 import { attachAudio } from './audio/index.ts'
 import { sound } from './audio/sound.ts'
 import { checkAchievements, ensureDaily, onProgress } from './systems/quests.ts'
@@ -88,6 +92,7 @@ async function start(): Promise<void> {
   const windowModel = models.furniture.scene.getObjectByName('FurnRoot_room_window')?.clone() ?? null
   windowModel?.position.set(0, 0, 0)
   const houseView = createHouseView(world.scene, models.furniture, windowModel)
+  const npcsView = createNpcsView(world.scene, models)
 
   const autosaver = new AutoSaver(store, state)
   autosaver.start()
@@ -99,13 +104,21 @@ async function start(): Promise<void> {
   const journalPanel = createJournalPanel(state)
   const audio = attachAudio(state)
   ensureDaily(state)
+  refillOrders(state)
   bus.on('progress', (ev) => onProgress(state, ev))
   const goInside = () => {
     if (ridingAnimal()) dismount(state)
     if (isFishing()) stopFishing()
     enterHouse(state)
   }
-  const interaction = new Interaction(state, { openShop: () => openPanel(shopPanel), enterHouse: goInside, now })
+  const boardPanel = createBoardPanel(state)
+  const interaction = new Interaction(state, {
+    openShop: () => openPanel(shopPanel),
+    enterHouse: goInside,
+    openNpc: (id) => openPanel(npcDialog(state, id)),
+    openBoard: () => openPanel(boardPanel),
+    now,
+  })
 
   const input = new Input()
   attachKeyboard(input)
@@ -135,6 +148,8 @@ async function start(): Promise<void> {
   bus.on('newDay', () => {
     animalsNewDay(state, now())
     ensureDaily(state)
+    refillOrders(state)
+  refillOrders(state)
   })
   // Thành tựu không gắn với một việc cụ thể (cấp, đất, vật nuôi): kiểm tra định kỳ.
   window.setInterval(() => checkAchievements(state), 5000)
@@ -153,9 +168,12 @@ async function start(): Promise<void> {
       }
       return interaction.tapWorld(hit.x, hit.z, false)
     }
+    const npc = npcsView.hitTest(followCam.camera, x, y)
+    if (npc) return interaction.tapNpc(npc)
     const animal = animalsView.hitTest(followCam.camera, x, y)
     if (animal) return interaction.tapAnimal(animal)
     const hit = pickGround(followCam.camera, x, y)
+    if (hit?.onBoard) return interaction.tapBoard()
     if (hit) interaction.tapWorld(hit.x, hit.z, hit.onStall, hit.onHouse)
   })
 
@@ -211,6 +229,11 @@ async function start(): Promise<void> {
         now,
         fishing,
         sound,
+        /** Toạ độ màn hình của một dân làng. */
+        npcScreen(id: string) {
+          const p = npcPose(id)
+          return p ? this.toScreen(p.x, p.z) : null
+        },
         /** Toạ độ màn hình của một con vật. */
         animalScreen(id: string) {
           const p = animalPose(id)
@@ -247,6 +270,7 @@ async function start(): Promise<void> {
     updateCrops(state, t, lastT)
     updateAnimals(state, t, lastT)
     updateWander(state, dt, ridingAnimal())
+    updateNpcs(state, dt)
     lastT = t
 
     // Tự điều khiển (WASD/joystick) thì huỷ việc tự đi tới chỗ đã chạm.
@@ -283,6 +307,7 @@ async function start(): Promise<void> {
     farmer.animate(dt, Math.min(1, speed / WALK_SPEED))
     farmView.update(state, interaction.focusPlot(), clock.getElapsed())
     animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
+    npcsView.update(state, dt, clock.getElapsed())
     fishingView.update(state.player, clock.getElapsed())
     fishingUi.update()
     audio.update()
