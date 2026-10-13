@@ -5,6 +5,7 @@ import itemsJson from './items.json'
 import animalsJson from './animals.json'
 import fishJson from './fish.json'
 import furnitureJson from './furniture.json'
+import machinesJson from './machines.json'
 
 export interface CropDef {
   id: string
@@ -21,7 +22,7 @@ export interface CropDef {
   model: string
 }
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish' | 'furniture'
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish' | 'furniture' | 'jar' | 'food'
 
 export interface ItemDef {
   id: string
@@ -111,6 +112,51 @@ for (const f of FURNITURE) {
 for (const f of FISH) {
   ITEMS.set(`fish_${f.id}`, { id: `fish_${f.id}`, kind: 'fish', icon: f.icon, sellPrice: f.price })
 }
+
+export type MachineId = 'preserves' | 'stove' | 'beehive'
+
+export interface MachineDef {
+  id: MachineId
+  price: number
+  level: number
+  icon: string
+  /** Chỗ đặt máy ngoài trời. */
+  x: number
+  z: number
+  /** Thời gian làm một mẻ (phút thật); tổ ong: một lần cho mật. */
+  minutes: number
+}
+
+/** Nguyên liệu: một vật phẩm cụ thể (id), hoặc bất kỳ vật phẩm nào thuộc loại (kind). */
+export interface RecipeInput {
+  id?: string
+  kind?: ItemKind
+  qty: number
+}
+
+export interface RecipeDef {
+  id: string
+  icon: string
+  inputs: RecipeInput[]
+  sellPrice: number
+  energy: number
+}
+
+export const MACHINES = machinesJson.machines as MachineDef[]
+export const MACHINE_BY_ID = new Map(MACHINES.map((m) => [m.id, m]))
+export const RECIPES = machinesJson.recipes as RecipeDef[]
+export const JAR_FRUITS = new Set(machinesJson.jarFruits)
+export const HONEY = machinesJson.honey
+
+// Hũ ủ (jar_x): mỗi nông sản ủ thành mứt (trái cây) hoặc đồ muối, giá gấp đôi.
+for (const c of CROPS) {
+  ITEMS.set(`jar_${c.id}`, { id: `jar_${c.id}`, kind: 'jar', icon: '🫙', cropId: c.id, sellPrice: c.sellPrice * 2 + 25, energy: c.energy * 2 })
+}
+// Món nấu ở bếp (food_x) và mật ong.
+for (const r of RECIPES) {
+  ITEMS.set(`food_${r.id}`, { id: `food_${r.id}`, kind: 'food', icon: r.icon, sellPrice: r.sellPrice, energy: r.energy })
+}
+ITEMS.set(HONEY.id, { id: HONEY.id, kind: 'product', icon: HONEY.icon, sellPrice: HONEY.sellPrice, energy: HONEY.energy })
 
 export function item(id: string): ItemDef {
   const def = ITEMS.get(id)

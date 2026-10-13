@@ -1,5 +1,5 @@
 import type { Lang } from '../core/state.ts'
-import { item } from '../data/index.ts'
+import { item, JAR_FRUITS } from '../data/index.ts'
 import vi from './vi.json'
 import en from './en.json'
 
@@ -37,6 +37,8 @@ export function itemName(id: string): string {
   if (def.kind === 'crop') return tKey(`crop.${def.cropId}`)
   if (def.kind === 'fish') return tKey(`fish.${id.slice('fish_'.length)}`)
   if (def.kind === 'furniture') return tKey(`furn.${id.slice('furn_'.length)}`)
+  if (def.kind === 'jar') return t(JAR_FRUITS.has(def.cropId!) ? 'item.jam' : 'item.pickle', { crop: tKey(`crop.${def.cropId}`) })
+  if (def.kind === 'food') return tKey(`food.${id.slice('food_'.length)}`)
   return tKey(`item.${id}`)
 }
 

@@ -1,11 +1,12 @@
 import type { GameState } from '../core/state.ts'
-import { animalData, CROP_BY_ID, FURNITURE, item } from '../data/index.ts'
+import { animalData, CROP_BY_ID, FURNITURE, item, MACHINES } from '../data/index.ts'
 import { buyFurniture } from '../systems/house.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { now } from '../core/time.ts'
 import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
 import { buyLand, nextLandPrice } from '../systems/land.ts'
 import { countItem } from '../systems/inventory.ts'
+import { buyMachine } from '../systems/machines.ts'
 import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems/shop.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
@@ -105,6 +106,16 @@ export function createShopPanel(state: GameState): PanelSpec {
     status.textContent = state.coopLevel === 0 ? t('animal.needCoop') : t('shop.coopSpace', { used: state.animals.length, n: coopCapacity(state) })
     list.append(status)
 
+    // Máy chế biến (dựng ở góc xưởng cạnh nhà).
+    for (const def of MACHINES) {
+      const owned = state.machines.some((m) => m.id === def.id)
+      const locked = p.level < def.level
+      const row = iconRow(def.icon, tKey(`machine.${def.id}`), owned ? t('machine.owned') : locked ? t('notice.locked', { level: def.level }) : tKey(`machine.desc.${def.id}`))
+      if (locked) row.classList.add('locked')
+      if (!owned) row.append(button(`${def.price}g`, 'btn small gold', () => buyMachine(state, def.id, now()) && refresh(), locked || p.gold < def.price))
+      list.append(row)
+    }
+
     // Cỏ khô.
     for (const entry of supplyCatalog()) {
       const row = shopRow(entry.itemId, itemName(entry.itemId), t('shop.owned', { n: countItem(state.inventory, entry.itemId) }))
@@ -154,7 +165,7 @@ export function createShopPanel(state: GameState): PanelSpec {
   }
 }
 
-function iconRow(emoji: string, name: string, sub: string): HTMLElement {
+export function iconRow(emoji: string, name: string, sub: string): HTMLElement {
   const row = document.createElement('div')
   row.className = 'row'
   row.innerHTML = `<span class="row-icon"><span class="icon"><span class="emoji"></span></span></span><span class="row-main"><strong></strong><span class="muted"></span></span>`
@@ -164,7 +175,7 @@ function iconRow(emoji: string, name: string, sub: string): HTMLElement {
   return row
 }
 
-function shopRow(itemId: string, name: string, sub: string): HTMLElement {
+export function shopRow(itemId: string, name: string, sub: string): HTMLElement {
   const row = document.createElement('div')
   row.className = 'row'
   row.innerHTML = `<span class="row-icon">${itemIconHtml(itemId)}</span><span class="row-main"><strong></strong><span class="muted"></span></span>`
@@ -173,7 +184,7 @@ function shopRow(itemId: string, name: string, sub: string): HTMLElement {
   return row
 }
 
-function button(label: string, className: string, onClick: () => void, disabled = false): HTMLButtonElement {
+export function button(label: string, className: string, onClick: () => void, disabled = false): HTMLButtonElement {
   const b = document.createElement('button')
   b.className = className
   b.textContent = label

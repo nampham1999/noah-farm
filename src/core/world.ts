@@ -3,6 +3,7 @@
  * Đơn vị: mét. Trục Y hướng lên, nông trại nằm giữa gốc toạ độ.
  */
 
+import { MACHINES } from '../data/index.ts'
 import { mulberry32 } from './random.ts'
 
 /** Nửa cạnh khu nông trại có hàng rào (nông trại 36 x 36 m, gọn để các khu gần nhau). */
@@ -245,6 +246,8 @@ export const OBSTACLES: Circle[] = [
   SCARECROW,
   COOP,
   ORDER_BOARD,
+  // Máy chế biến (hoặc biển chờ mua) ở góc xưởng cạnh nhà.
+  ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 0.55 })),
   ...PROPS.filter((p) => p.r > 0),
   ...[-1, 0, 1].map((k) => ({ x: STALL.x + k * (STALL_HALF_WIDTH - 1.1), z: STALL.z, r: 1.2 })),
   ...BUSHES.map((b) => ({ x: b.x, z: b.z, r: 0.5 * b.scale })),
@@ -290,6 +293,7 @@ function isReserved(x: number, z: number, margin: number): boolean {
     { x: VILLAGE.x, z: VILLAGE.z, r: VILLAGE.r },
     { x: PEN.x, z: PEN.z, r: PEN.r + 0.4 },
     ...PROPS.map((p) => ({ x: p.x, z: p.z, r: Math.max(0.6, p.r + 0.3) })),
+    ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 1.4 })),
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },
     { x: SPAWN.x, z: SPAWN.z, r: 1.5 },
   ]

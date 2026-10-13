@@ -2,7 +2,7 @@
  * Kho trạng thái duy nhất của game (GDD mục 5, 6.3).
  * Hiển thị, giao diện và lưu trữ chỉ đọc hoặc ghi đối tượng này.
  */
-import { balance, type AnimalType } from '../data/index.ts'
+import { balance, type AnimalType, type MachineId } from '../data/index.ts'
 import { blockCells, SPAWN } from './world.ts'
 import type { Look } from './look.ts'
 
@@ -102,6 +102,15 @@ export interface PlotState {
   wateredAt: number | null
 }
 
+/** Máy chế biến đã mua: đang làm gì, xong lúc nào (dấu thời gian thật, chạy cả khi đóng tab). */
+export interface MachineState {
+  id: MachineId
+  /** Vật phẩm sẽ ra khi xong; null là máy đang trống. */
+  output: string | null
+  qty: number
+  readyAt: number
+}
+
 export interface AnimalState {
   id: string
   type: AnimalType
@@ -152,6 +161,7 @@ export interface GameState {
   /** Cấp chuồng: 0 là chưa có chuồng. */
   coopLevel: number
   animals: AnimalState[]
+  machines: MachineState[]
   house: { furniture: PlacedFurniture[] }
   /**
    * Nhật ký (GDD mục 3.7): sổ cá và sổ cây ghi số con đã câu / cây đã thu của từng loài;
@@ -193,6 +203,7 @@ export function createInitialState(): GameState {
     landLevel: 0,
     coopLevel: 0,
     animals: [],
+    machines: [],
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },

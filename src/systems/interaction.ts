@@ -8,7 +8,7 @@ import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
-import { balance } from '../data/index.ts'
+import { balance, MACHINE_BY_ID, type MachineId } from '../data/index.ts'
 import { actOnPlot, isRipe } from './farming.ts'
 import { turnToward, type Dir } from './movement.ts'
 
@@ -26,6 +26,7 @@ type Goal =
   | { kind: 'house' }
   | { kind: 'npc'; id: string }
   | { kind: 'board' }
+  | { kind: 'machine'; id: MachineId }
   | { kind: 'bed'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
@@ -33,6 +34,8 @@ const DOOR_REACH = 1.8
 /** Đứng cách dân làng chừng này thì nói chuyện được. */
 const NPC_REACH = 1.4
 const BED_REACH = 1.7
+/** Đứng cách máy chế biến chừng này thì dùng được. */
+const MACHINE_REACH = 1.3
 
 /** Thả cần xa tối đa chừng này (m) tính từ chỗ đứng. */
 const CAST_RANGE = 4.5
@@ -47,6 +50,8 @@ export interface InteractionHooks {
   enterHouse(): void
   openNpc(id: string): void
   openBoard(): void
+  /** Tới máy chế biến: lấy hàng nếu xong, không thì mở cửa sổ máy. */
+  openMachine(id: MachineId): void
   now(): number
 }
 
@@ -102,6 +107,10 @@ export class Interaction {
 
   tapBoard(): void {
     this.setGoal({ kind: 'board' })
+  }
+
+  tapMachine(id: MachineId): void {
+    this.setGoal({ kind: 'machine', id })
   }
 
   /** Chạm vào con vật: đi tới rồi nhặt sản phẩm, cho ăn hoặc vuốt ve. */
@@ -272,6 +281,10 @@ export class Interaction {
       }
       case 'board':
         return [ORDER_BOARD.x, ORDER_BOARD.z, NPC_REACH + 0.3]
+      case 'machine': {
+        const m = MACHINE_BY_ID.get(goal.id)!
+        return [m.x, m.z, MACHINE_REACH]
+      }
       case 'bed':
         return [goal.x, goal.z, BED_REACH - 0.3]
       case 'animal': {
@@ -296,6 +309,11 @@ export class Interaction {
       const me = this.state.player.pos
       turnToward(this.state.player, ORDER_BOARD.x - me[0], ORDER_BOARD.z - me[2])
       this.hooks.openBoard()
+    } else if (goal.kind === 'machine') {
+      const m = MACHINE_BY_ID.get(goal.id)!
+      const me = this.state.player.pos
+      turnToward(this.state.player, m.x - me[0], m.z - me[2])
+      this.hooks.openMachine(goal.id)
     } else if (goal.kind === 'bed') {
       sleep(this.state)
     } else if (goal.kind === 'fish') {

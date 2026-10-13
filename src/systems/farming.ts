@@ -76,6 +76,9 @@ export function shiftTimestamps(state: GameState, delta: number): void {
   for (const a of state.animals) {
     if (a.fedAt !== null) a.fedAt += delta
   }
+  for (const m of state.machines) {
+    if (m.output) m.readyAt += delta
+  }
 }
 
 /** Hạt sẽ gieo: hạt đang chọn trên thanh công cụ, nếu không thì hạt đầu tiên gieo được. */

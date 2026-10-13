@@ -148,8 +148,8 @@ export function emojiTexture(emoji: string): THREE.Texture {
   return tex
 }
 
-/** Tấm biển gỗ đánh dấu chỗ xây chuồng. */
-function createSign(): THREE.Group {
+/** Tấm biển gỗ đánh dấu chỗ xây (chuồng, máy chế biến), vẽ biểu tượng lên mặt biển. */
+export function createSign(label = '🐔🏠'): THREE.Group {
   const g = new THREE.Group()
   const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1 })
   const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), wood)
@@ -163,7 +163,7 @@ function createSign(): THREE.Group {
   ctx.font = '40px sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('🐔🏠', 64, 34)
+  ctx.fillText(label, 64, 34)
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   const board = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.45, 0.06), [wood, wood, wood, wood, new THREE.MeshStandardMaterial({ map: tex }), wood])

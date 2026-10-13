@@ -2,6 +2,9 @@ import './style.css'
 import * as THREE from 'three'
 import type { Weather } from './core/state.ts'
 import { applyWeather, setWeather } from './systems/weather.ts'
+import { collect, machineStatus, updateMachines } from './systems/machines.ts'
+import { createMachinesView } from './render/machines.ts'
+import { machinePanel } from './ui/machines.ts'
 import { bus, type GameAction } from './core/events.ts'
 import { createInitialState, type GameState } from './core/state.ts'
 import { now, TIME_SPEED } from './core/time.ts'
@@ -122,6 +125,7 @@ async function start(): Promise<void> {
   let lastFishPhase = 'idle'
   const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
+  const machinesView = createMachinesView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
   let houseView: HouseView | null = null
@@ -178,6 +182,10 @@ async function start(): Promise<void> {
     enterHouse: goInside,
     openNpc: (id) => openPanel(npcDialog(state, id)),
     openBoard: () => openPanel(boardPanel),
+    openMachine: (id) => {
+      if (machineStatus(state, id, now()) === 'ready') collect(state, id, now())
+      else openPanel(machinePanel(state, id))
+    },
     now,
     readOnly: visiting,
   })
@@ -241,6 +249,8 @@ async function start(): Promise<void> {
     if (npc) return interaction.tapNpc(npc)
     const animal = animalsView.hitTest(followCam.camera, x, y)
     if (animal) return interaction.tapAnimal(animal)
+    const machine = machinesView.hitTest(followCam.camera, x, y)
+    if (machine) return interaction.tapMachine(machine)
     const hit = pickGround(followCam.camera, x, y)
     if (hit?.onBoard) return interaction.tapBoard()
     if (hit) interaction.tapWorld(hit.x, hit.z, hit.onStall, hit.onHouse)
@@ -374,6 +384,7 @@ async function start(): Promise<void> {
     if (!visiting) applyWeather(state, t)
     updateCrops(state, t, lastT)
     updateAnimals(state, t, lastT)
+    updateMachines(state, t, lastT)
     updateWander(state, dt, ridingAnimal())
     updateNpcs(state, dt)
     lastT = t
@@ -412,6 +423,7 @@ async function start(): Promise<void> {
     farmer.animate(dt, Math.min(1, speed / WALK_SPEED))
     farmView.update(state, interaction.focusPlot(), clock.getElapsed())
     animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
+    machinesView.update(state, t, clock.getElapsed())
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {
