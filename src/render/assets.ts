@@ -34,7 +34,6 @@ export const MODELS = {
   debris: 'models/debris.glb',
   fishingHut: 'models/fishing-hut.glb',
   coop: 'models/coop.glb',
-  furniture: 'models/furniture.glb',
   cowbarn: 'models/cowbarn.glb',
   chicken: 'models/chicken.glb',
   pig: 'models/pig.glb',
@@ -60,6 +59,21 @@ export type ModelName = keyof typeof MODELS
 export type Models = Record<ModelName, GLTF>
 
 const BASE = `${import.meta.env.BASE_URL}assets/`
+
+/** Nội thất (1,9 MB) chỉ tải khi vào nhà lần đầu (GDD mục 5.3). */
+let furniturePromise: Promise<GLTF> | null = null
+export function loadFurniture(): Promise<GLTF> {
+  furniturePromise ??= new GLTFLoader().loadAsync(`${BASE}models/furniture.glb`).then((gltf) => {
+    gltf.scene.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        o.castShadow = true
+        o.receiveShadow = true
+      }
+    })
+    return gltf
+  })
+  return furniturePromise
+}
 
 /** Tải mọi mô hình song song; onProgress nhận tỉ lệ 0..1 để vẽ thanh tải. */
 export async function loadModels(onProgress: (fraction: number) => void): Promise<Models> {

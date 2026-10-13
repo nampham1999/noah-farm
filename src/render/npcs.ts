@@ -5,6 +5,7 @@ import { npcPose, presentNpcs } from '../systems/npcs.ts'
 import { canDeliver, npcDef } from '../systems/orders.ts'
 import type { Models } from './assets.ts'
 import { createFarmer, type Farmer } from './models.ts'
+import { staticModel } from './instancing.ts'
 import { emojiTexture } from './animals.ts'
 
 export interface NpcsView {
@@ -21,7 +22,11 @@ interface Rig {
 /** Dân làng (nhân vật nhuộm màu, đội mũ riêng) và bảng đơn hàng. */
 export function createNpcsView(scene: THREE.Scene, models: Models): NpcsView {
   const rigs = new Map<string, Rig>()
-  scene.add(createBoard())
+  const board = createBoard()
+  const boardMesh = staticModel(board)
+  boardMesh.position.copy(board.position)
+  boardMesh.rotation.copy(board.rotation)
+  scene.add(boardMesh)
   const v = new THREE.Vector3()
 
   return {

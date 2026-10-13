@@ -41,6 +41,8 @@ export interface GameEvents {
   sfx: string
   /** Người chơi vừa đổi âm lượng trong menu. */
   volumeChanged: undefined
+  /** Người chơi vừa bật/tắt tiết kiệm pin. */
+  qualityChanged: undefined
   levelUp: number
   /** Sang ngày mới trong game (số ngày trong mùa). */
   newDay: number

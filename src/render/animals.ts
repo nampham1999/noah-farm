@@ -4,6 +4,7 @@ import { COOP } from '../core/world.ts'
 import { item } from '../data/index.ts'
 import { animalDef, animalPose, isHungry, isReady } from '../systems/animals.ts'
 import type { Models } from './assets.ts'
+import { staticModel } from './instancing.ts'
 
 export interface AnimalsView {
   update(state: GameState, t: number, time: number, dt: number, riddenId: string | null): void
@@ -26,8 +27,8 @@ const LEG_NAME = /_Leg_/
 export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsView {
   const rigs = new Map<string, Rig>()
 
-  const coop1 = models.coop.scene.clone()
-  const coop2 = models.cowbarn.scene.clone()
+  const coop1 = staticModel(models.coop.scene)
+  const coop2 = staticModel(models.cowbarn.scene)
   for (const c of [coop1, coop2]) {
     c.position.set(COOP.x, 0, COOP.z)
     c.visible = false

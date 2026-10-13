@@ -314,5 +314,9 @@
   "invite.gift": "🎁 Quà chào mừng từ bạn bè: +{gold} vàng!",
   "achievement.a_share": "Rủ bạn",
   "achievement.a_share.desc": "Chia sẻ nông trại {n} lần",
-  "action.social": "Bạn bè"
+  "action.social": "Bạn bè",
+  "menu.power": "Hiệu năng",
+  "menu.powerOn": "Tiết kiệm pin: Bật",
+  "menu.powerOff": "Tiết kiệm pin: Tắt",
+  "menu.powerHint": "Bật để giảm còn 30 khung hình/giây, tắt bóng đổ và bớt cỏ hoa; máy mát và ít tốn pin hơn."
 }

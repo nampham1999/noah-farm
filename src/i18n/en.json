@@ -314,5 +314,9 @@
   "invite.gift": "🎁 Welcome gift from a friend: +{gold} gold!",
   "achievement.a_share": "Bring a friend",
   "achievement.a_share.desc": "Share your farm {n} time",
-  "action.social": "Friends"
+  "action.social": "Friends",
+  "menu.power": "Performance",
+  "menu.powerOn": "Battery saver: On",
+  "menu.powerOff": "Battery saver: Off",
+  "menu.powerHint": "Caps the game at 30 FPS, turns off shadows and thins out grass and flowers; cooler phone, longer battery."
 }

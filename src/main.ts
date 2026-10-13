@@ -13,7 +13,7 @@ import { FollowCamera } from './render/camera.ts'
 import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
 import { createFishingView } from './render/fishing.ts'
-import { createHouseView } from './render/house.ts'
+import { createHouseView, type HouseView } from './render/house.ts'
 import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
@@ -30,7 +30,7 @@ import { createFarmer } from './render/models.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
 import { createWorld } from './render/scene.ts'
-import { loadModels } from './render/assets.ts'
+import { loadFurniture, loadModels } from './render/assets.ts'
 import { animalPose, animalsNewDay, updateAnimals, updateWander } from './systems/animals.ts'
 import { advanceClock } from './systems/clock.ts'
 import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from './systems/fishing.ts'
@@ -95,9 +95,28 @@ async function start(): Promise<void> {
   world.scene.add(farmer.root)
   const animalsView = createAnimalsView(world.scene, models)
   const fishingView = createFishingView(world.scene)
-  const windowModel = models.furniture.scene.getObjectByName('FurnRoot_room_window')?.clone() ?? null
-  windowModel?.position.set(0, 0, 0)
-  const houseView = createHouseView(world.scene, models.furniture, windowModel)
+  // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
+  let houseView: HouseView | null = null
+  let houseLoading = false
+  const ensureHouseView = () => {
+    if (houseView || houseLoading) return
+    houseLoading = true
+    void loadFurniture().then((furniture) => {
+      const windowModel = furniture.scene.getObjectByName('FurnRoot_room_window')?.clone() ?? null
+      windowModel?.position.set(0, 0, 0)
+      houseView = createHouseView(world.scene, furniture, windowModel)
+    })
+  }
+  if (state.player.indoors) ensureHouseView()
+
+  // Tiết kiệm pin (GDD mục 4): 30 FPS, độ phân giải tối đa 1, không bóng đổ, bớt cỏ hoa.
+  const applyQuality = () => {
+    const low = state.settings.quality === 'low'
+    world.setLowPower(low)
+    quality.setTarget(low ? 30 : 60, low ? 1 : 2)
+  }
+  applyQuality()
+  bus.on('qualityChanged', applyQuality)
   const npcsView = createNpcsView(world.scene, models)
 
   const autosaver = new AutoSaver(store, state)
@@ -121,6 +140,7 @@ async function start(): Promise<void> {
   const goInside = () => {
     if (ridingAnimal()) dismount(state)
     if (isFishing()) stopFishing()
+    ensureHouseView()
     enterHouse(state)
   }
   const boardPanel = createBoardPanel(state)
@@ -252,6 +272,11 @@ async function start(): Promise<void> {
         now,
         fishing,
         sound,
+        /** Số lần gọi vẽ, tam giác, bộ nhớ GPU của khung hình gần nhất. */
+        renderInfo() {
+          const i = world.renderer.info
+          return { calls: i.render.calls, triangles: i.render.triangles, geometries: i.memory.geometries, textures: i.memory.textures, fps: Math.round(quality.fps), ratio: quality.pixelRatio }
+        },
         /** Toạ độ màn hình của một dân làng. */
         npcScreen(id: string) {
           const p = npcPose(id)
@@ -284,7 +309,11 @@ async function start(): Promise<void> {
   const clock = new THREE.Timer()
   let lastT = now()
 
+  let lastFrame = 0
   world.renderer.setAnimationLoop((time) => {
+    // Tiết kiệm pin: bỏ bớt khung hình để còn khoảng 30 FPS.
+    if (state.settings.quality === 'low' && time - lastFrame < 1000 / 31) return
+    lastFrame = time
     clock.update(time)
     const dt = Math.min(clock.getDelta(), MAX_DT)
 
@@ -334,7 +363,7 @@ async function start(): Promise<void> {
     fishingView.update(state.player, clock.getElapsed())
     fishingUi.update()
     audio.update()
-    houseView.update(state, decorUi.ghost, decorUi.active)
+    houseView?.update(state, decorUi.ghost, decorUi.active)
     decorUi.update()
     if (decorUi.active && input.hover) {
       const h = pickGround(followCam.camera, input.hover.x, input.hover.y)

@@ -119,6 +119,19 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
 
       if (visiting) return
 
+      // Tiết kiệm pin.
+      const power = section(body, t('menu.power'))
+      const low = state.settings.quality === 'low'
+      power.append(
+        button(low ? `🔋 ${t('menu.powerOn')}` : `⚡ ${t('menu.powerOff')}`, low ? 'btn primary' : 'btn', () => {
+          state.settings.quality = low ? 'auto' : 'low'
+          bus.emit('qualityChanged', undefined)
+          autosaver.requestSoon()
+          refresh()
+        }),
+        note(t('menu.powerHint'), 'menu-note'),
+      )
+
       // Lưu trữ.
       const box = section(body, t('menu.storage'))
       const status = document.createElement('p')

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { mulberry32 } from '../core/random.ts'
 import { DOCK, FISHING_HUT, POND, pondRadius } from '../core/world.ts'
 import type { Models } from './assets.ts'
-import { instanceModel, placeMatrix } from './instancing.ts'
+import { instanceModel, placeMatrix, staticModel } from './instancing.ts'
 import { windify } from './wind.ts'
 
 export interface Pond {
@@ -79,15 +79,15 @@ export function createPond(scene: THREE.Scene, models: Models): Pond {
   addInstances(models.rockA.scene, rocks.filter((_, i) => i % 2 === 0), true)
   addInstances(models.rockC.scene, rocks.filter((_, i) => i % 2 === 1), true)
 
-  scene.add(createDock())
+  scene.add(staticModel(createDock()))
 
-  const hut = models.fishingHut.scene.clone()
+  const hut = staticModel(models.fishingHut.scene)
   hut.position.set(FISHING_HUT.x, 0, FISHING_HUT.z)
   // Quay cửa chòi về phía cầu gỗ.
   hut.rotation.y = Math.atan2(DOCK.x0 - FISHING_HUT.x, DOCK.z - FISHING_HUT.z)
   scene.add(hut)
 
-  const boat = models.boat.scene.clone()
+  const boat = staticModel(models.boat.scene)
   const boatBase = new THREE.Vector3(DOCK.x1 - 0.6, 0.12, DOCK.z + 1.7)
   boat.position.copy(boatBase)
   boat.rotation.y = 0.25

@@ -4,7 +4,7 @@ import {
   BUSHES, FARM_HALF, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
 } from '../core/world.ts'
 import type { Models } from './assets.ts'
-import { instanceModel, placeMatrix } from './instancing.ts'
+import { instanceModel, placeMatrix, staticModel } from './instancing.ts'
 import { createPond } from './water.ts'
 import { applyWind, windify, windUniforms } from './wind.ts'
 
@@ -13,6 +13,8 @@ export interface World {
   scene: THREE.Scene
   /** Gọi mỗi khung hình: bóng đổ theo nhân vật, ánh sáng theo giờ, cảnh theo mùa, gió, mặt nước. */
   update(time: number, player: THREE.Vector3, clock: ClockState, indoors: boolean): void
+  /** Tiết kiệm pin: tắt bóng đổ, ẩn cỏ và hoa dại. */
+  setLowPower(on: boolean): void
 }
 
 // Bảng màu lấy theo bản cũ; cỏ đổi màu theo mùa (GDD mục 3.2).
@@ -73,6 +75,10 @@ export function createWorld(container: HTMLElement, models: Models): World {
   return {
     renderer,
     scene,
+    setLowPower(on) {
+      sun.castShadow = !on
+      decor.setLowPower(on)
+    },
     update(time, player, clock, indoors) {
       if (clock.season !== season) {
         season = clock.season
@@ -272,9 +278,9 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
 }
 
 function addBuildings(scene: THREE.Scene, models: Models): void {
-  const house = models.house.scene.clone()
+  const house = staticModel(models.house.scene)
   house.position.set(HOUSE.x, 0, HOUSE.z)
-  const shop = models.shop.scene.clone()
+  const shop = staticModel(models.shop.scene)
   shop.position.set(STALL.x, 0, STALL.z)
   scene.add(house, shop)
 }
@@ -346,7 +352,7 @@ function placeVariants(parent: THREE.Object3D, items: { x: number; z: number; ro
   })
 }
 
-function addDecor(scene: THREE.Scene, models: Models): { setSeason(season: Season): void } {
+function addDecor(scene: THREE.Scene, models: Models): { setSeason(season: Season): void; setLowPower(on: boolean): void } {
   const place = (parent: THREE.Object3D, source: THREE.Object3D, items: Decor[], shadows: boolean) => {
     const inst = instanceModel(source, items.length, { shadows })
     items.forEach((d, i) => inst.setMatrixAt(i, placeMatrix(d.x, d.z, d.rotY, d.scale)))
@@ -378,12 +384,21 @@ function addDecor(scene: THREE.Scene, models: Models): { setSeason(season: Seaso
     scene.add(obj)
   }
 
+  let winter = false
+  let lowPower = false
+  // Mùa đông tuyết phủ, hoặc đang tiết kiệm pin: không vẽ hoa dại và cỏ ngọn.
+  const applyVisibility = () => {
+    flowers.visible = tufts.visible = !winter && !lowPower
+  }
   return {
     setSeason(season) {
       bushes.setSeason(season)
-      // Mùa đông tuyết phủ: không còn hoa dại và cỏ ngọn.
-      flowers.visible = season !== 'winter'
-      tufts.visible = season !== 'winter'
+      winter = season === 'winter'
+      applyVisibility()
+    },
+    setLowPower(on) {
+      lowPower = on
+      applyVisibility()
     },
   }
 }

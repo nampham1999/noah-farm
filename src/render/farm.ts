@@ -5,7 +5,7 @@ import type { GameState, PlotState } from '../core/state.ts'
 import { blockCenter, LAND_BLOCKS, PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
 import { nextLandPrice } from '../systems/land.ts'
 import { cropOf, isRipe, needsWater } from '../systems/farming.ts'
-import { instanceModel, placeMatrix, type InstancedModel } from './instancing.ts'
+import { instanceModel, placeMatrix, staticModel, type InstancedModel } from './instancing.ts'
 
 /** Đất khô giữ màu gốc của texture; đất ướt nhân màu tối hơn. */
 const DRY = new THREE.Color(0xffffff)
@@ -64,7 +64,11 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
   const lockSign = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
   lockSign.scale.set(2.4, 1.2, 1)
   let lockKey = ''
-  scene.add(soil, outlines, drops, highlight, createScarecrow(), lockSign)
+  const scarecrow = createScarecrow()
+  const scarecrowMesh = staticModel(scarecrow)
+  scarecrowMesh.position.copy(scarecrow.position)
+  scarecrowMesh.rotation.copy(scarecrow.rotation)
+  scene.add(soil, outlines, drops, highlight, scarecrowMesh, lockSign)
 
   // Mỗi biến thể cây (vd. carrot_3) là một nhóm InstancedMesh, tạo khi cần lần đầu.
   const variants = new Map<string, { inst: InstancedModel; count: number }>()
