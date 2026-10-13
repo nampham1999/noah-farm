@@ -1,6 +1,7 @@
 import type { GameState } from '../core/state.ts'
 import { animalData, CROP_BY_ID, FURNITURE, item, MACHINES } from '../data/index.ts'
-import { buyFurniture } from '../systems/house.ts'
+import { buyFurniture, nextHouseUpgrade, upgradeHouse } from '../systems/house.ts'
+import { ROOM_SIZES } from '../core/world.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { now } from '../core/time.ts'
 import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
@@ -106,6 +107,18 @@ export function createShopPanel(state: GameState): PanelSpec {
     status.className = 'panel__hint'
     status.textContent = state.coopLevel === 0 ? t('animal.needCoop') : t('shop.coopSpace', { used: state.animals.length, n: coopCapacity(state) })
     list.append(status)
+
+    // Nâng cấp nhà.
+    const house = nextHouseUpgrade(state)
+    const houseRow = iconRow('🏡', t('shop.houseUpgrade', { level: state.house.level + 1 }),
+      house
+        ? `${t('shop.houseSub', { w: ROOM_SIZES[state.house.level].w, d: ROOM_SIZES[state.house.level].d })}${p.level < house.level ? ` · ${t('notice.locked', { level: house.level })}` : ''}`
+        : t('shop.houseMax'))
+    if (house) {
+      if (p.level < house.level) houseRow.classList.add('locked')
+      houseRow.append(button(`${house.price}g`, 'btn small gold', () => upgradeHouse(state) && refresh(), p.level < house.level || p.gold < house.price))
+    }
+    list.append(houseRow)
 
     // Chó nuôi.
     const petRow = iconRow('🐶', t('pet.shopName'), state.pet ? t('pet.owned', { name: state.pet.name }) : t('pet.shopSub'))

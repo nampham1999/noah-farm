@@ -4,7 +4,7 @@ import type { ClockState, Season } from '../core/state.ts'
 import {
   BUSHES, FARM_HALF, FIELD_FENCE, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
 } from '../core/world.ts'
-import type { Models } from './assets.ts'
+import { loadHouseModel, type Models } from './assets.ts'
 import { instanceModel, placeMatrix, staticModel } from './instancing.ts'
 import { createPond } from './water.ts'
 import { applyWind, windify, windUniforms } from './wind.ts'
@@ -14,6 +14,8 @@ export interface World {
   scene: THREE.Scene
   /** Gọi mỗi khung hình: bóng đổ theo nhân vật, ánh sáng theo giờ, cảnh theo mùa, gió, mặt nước. */
   update(time: number, player: THREE.Vector3, clock: ClockState, indoors: boolean): void
+  /** Đổi mô hình nhà theo cấp (1..5). */
+  setHouseLevel(level: number): void
   /** Tiết kiệm pin: tắt bóng đổ, ẩn cỏ và hoa dại. */
   setLowPower(on: boolean): void
 }
@@ -62,7 +64,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
   const ground = addGround(scene)
   addPaths(scene)
   const pond = createPond(scene, models)
-  addBuildings(scene, models)
+  const buildings = addBuildings(scene, models)
   addFence(scene, models)
   addFieldFence(scene, models)
   const trees = addTrees(scene, models)
@@ -83,6 +85,9 @@ export function createWorld(container: HTMLElement, models: Models): World {
   return {
     renderer,
     scene,
+    setHouseLevel(level) {
+      buildings.setHouseLevel(level)
+    },
     setLowPower(on) {
       sun.castShadow = !on
       decor.setLowPower(on)
@@ -362,12 +367,28 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
   return s
 }
 
-function addBuildings(scene: THREE.Scene, models: Models): void {
-  const house = staticModel(models.house.scene)
+function addBuildings(scene: THREE.Scene, models: Models): { setHouseLevel(level: number): void } {
+  let house = staticModel(models.house.scene)
   house.position.set(HOUSE.x, 0, HOUSE.z)
   const shop = staticModel(models.shop.scene)
   shop.position.set(STALL.x, 0, STALL.z)
   scene.add(house, shop)
+  let shown = 1
+  return {
+    setHouseLevel(level) {
+      if (level === shown) return
+      shown = level
+      const swap = (source: THREE.Object3D) => {
+        if (shown !== level) return
+        scene.remove(house)
+        house = staticModel(source)
+        house.position.set(HOUSE.x, 0, HOUSE.z)
+        scene.add(house)
+      }
+      if (level <= 1) swap(models.house.scene)
+      else void loadHouseModel(level).then((g) => swap(g.scene))
+    },
+  }
 }
 
 /** Hàng rào gỗ quanh nông trại, chừa cổng ở giữa cạnh phía nam cho đường đất. */

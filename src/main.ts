@@ -4,6 +4,7 @@ import type { Weather } from './core/state.ts'
 import { applyWeather, setWeather } from './systems/weather.ts'
 import { collect, machineStatus, updateMachines } from './systems/machines.ts'
 import { createMachinesView } from './render/machines.ts'
+import { setRoomSize } from './core/world.ts'
 import { createPetView } from './render/pet.ts'
 import { petNewDay, updatePet } from './systems/pet.ts'
 import { machinePanel } from './ui/machines.ts'
@@ -128,6 +129,10 @@ async function start(): Promise<void> {
   const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
   const machinesView = createMachinesView(world.scene, models)
+  // Cấp nhà: phòng trong nhà và mô hình nhà bên ngoài.
+  setRoomSize(state.house.level)
+  world.setHouseLevel(state.house.level)
+  bus.on('houseUpgraded', (level) => world.setHouseLevel(level))
   const petView = createPetView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.

@@ -401,5 +401,9 @@
   "pet.petted": "❤️ {name} vẫy đuôi rối rít!",
   "pet.happy": "{name} đang vui lắm rồi",
   "pet.gift": "🎁 {name} tìm được {qty} {item}!",
-  "pet.giftGold": "🎁 {name} đào được {qty} vàng!"
+  "pet.giftGold": "🎁 {name} đào được {qty} vàng!",
+  "shop.houseUpgrade": "Nâng nhà lên cấp {level}",
+  "shop.houseSub": "Phòng rộng {w}×{d} ô, nhà to và đẹp hơn",
+  "shop.houseMax": "Nhà đã ở cấp cao nhất",
+  "house.upgraded": "🏡 Nhà đã lên cấp {level}! Phòng giờ rộng {w}×{d} ô"
 }

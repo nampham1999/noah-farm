@@ -172,7 +172,8 @@ export interface GameState {
   animals: AnimalState[]
   machines: MachineState[]
   pet: PetState | null
-  house: { furniture: PlacedFurniture[] }
+  /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
+  house: { level: number; furniture: PlacedFurniture[] }
   /**
    * Nhật ký (GDD mục 3.7): sổ cá và sổ cây ghi số con đã câu / cây đã thu của từng loài;
    * achievements là các thành tựu đã đạt (để chỉ báo một lần).
@@ -220,7 +221,7 @@ export function createInitialState(): GameState {
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },
     orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
-    house: { furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
+    house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
     settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1 },
   }
 }

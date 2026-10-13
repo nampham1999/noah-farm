@@ -80,6 +80,18 @@ export function loadFurniture(): Promise<GLTF> {
   return furniturePromise
 }
 
+const housePromises = new Map<number, Promise<GLTF>>()
+
+/** Nhà cấp 2..5 chỉ tải khi người chơi đã nâng cấp tới đó. */
+export function loadHouseModel(level: number): Promise<GLTF> {
+  let p = housePromises.get(level)
+  if (!p) {
+    p = new GLTFLoader().loadAsync(`${BASE}models/house-${level}.glb`)
+    housePromises.set(level, p)
+  }
+  return p
+}
+
 /** Tải mọi mô hình song song; onProgress nhận tỉ lệ 0..1 để vẽ thanh tải. */
 export async function loadModels(onProgress: (fraction: number) => void): Promise<Models> {
   const loader = new GLTFLoader()

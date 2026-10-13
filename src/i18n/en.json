@@ -401,5 +401,9 @@
   "pet.petted": "❤️ {name} wags happily!",
   "pet.happy": "{name} is already very happy",
   "pet.gift": "🎁 {name} found {qty} {item}!",
-  "pet.giftGold": "🎁 {name} dug up {qty} gold!"
+  "pet.giftGold": "🎁 {name} dug up {qty} gold!",
+  "shop.houseUpgrade": "Upgrade house to level {level}",
+  "shop.houseSub": "{w}×{d} room, a bigger and nicer house",
+  "shop.houseMax": "Your house is fully upgraded",
+  "house.upgraded": "🏡 House upgraded to level {level}! The room is now {w}×{d}"
 }

@@ -1,5 +1,6 @@
 import { normalizeLook } from '../core/look.ts'
 import { WEATHERS } from '../systems/weather.ts'
+import { HOUSE_UPGRADES } from '../systems/house.ts'
 import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
 import { FARM_HALF, isWater, LAND_BLOCKS, SPAWN } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, MACHINE_BY_ID, type AnimalType, type MachineId } from '../data/index.ts'
@@ -163,6 +164,7 @@ function normalize(data: Record<string, unknown>): GameState {
     }).filter((m, i, all) => all.findIndex((o) => o.id === m.id) === i),
     house: Array.isArray(obj(data.house).furniture)
       ? {
+          level: Math.max(1, Math.min(HOUSE_UPGRADES.length + 1, Math.floor(num(obj(data.house).level, 1)))),
           furniture: (obj(data.house).furniture as unknown[]).flatMap((raw) => {
             const f = obj(raw)
             return typeof f.id === 'string' && FURNITURE_BY_ID.has(f.id)

@@ -23,50 +23,60 @@ export interface HouseView {
  */
 export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel: THREE.Object3D | null): HouseView {
   const room = new THREE.Group()
-  const c = roomCorner()
+  // Vỏ phòng (sàn, tường, cửa sổ, đèn) dựng theo kích thước ROOM; nâng cấp nhà thì dựng lại.
+  let grid = new THREE.Mesh()
+  let builtW = 0
+  let builtD = 0
+  const buildShell = () => {
+    room.clear()
+    builtW = ROOM.w
+    builtD = ROOM.d
+    const c = roomCorner()
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), new THREE.MeshStandardMaterial({ map: plankTexture(), roughness: 0.9 }))
-  floor.rotation.x = -Math.PI / 2
-  floor.position.set(ROOM.x, 0.02, ROOM.z)
-  floor.receiveShadow = true
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), new THREE.MeshStandardMaterial({ map: plankTexture(), roughness: 0.9 }))
+    floor.rotation.x = -Math.PI / 2
+    floor.position.set(ROOM.x, 0.02, ROOM.z)
+    floor.receiveShadow = true
 
-  const grid = new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM.w, ROOM.d),
-    new THREE.MeshBasicMaterial({ map: gridTexture(), transparent: true, depthWrite: false }),
-  )
-  grid.rotation.x = -Math.PI / 2
-  grid.position.set(ROOM.x, 0.03, ROOM.z)
+    grid = new THREE.Mesh(
+      new THREE.PlaneGeometry(ROOM.w, ROOM.d),
+      new THREE.MeshBasicMaterial({ map: gridTexture(), transparent: true, depthWrite: false }),
+    )
+    grid.rotation.x = -Math.PI / 2
+    grid.position.set(ROOM.x, 0.03, ROOM.z)
 
-  const wallMat = new THREE.MeshStandardMaterial({ map: wallpaperTexture(), roughness: 1 })
-  const trimMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1 })
-  const north = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w + 0.4, WALL_H, 0.2), wallMat)
-  north.position.set(ROOM.x, WALL_H / 2, c.z - 0.1)
-  const west = new THREE.Mesh(new THREE.BoxGeometry(0.2, WALL_H, ROOM.d), wallMat)
-  west.position.set(c.x - 0.1, WALL_H / 2, ROOM.z)
-  const east = west.clone()
-  east.position.x = c.x + ROOM.w + 0.1
-  // Chân tường và nẹp gỗ.
-  const base = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w + 0.4, 0.18, 0.24), trimMat)
-  base.position.set(ROOM.x, 0.09, c.z - 0.08)
-  for (const w of [north, west, east]) w.receiveShadow = true
-  room.add(floor, grid, north, west, east, base)
+    const wallMat = new THREE.MeshStandardMaterial({ map: wallpaperTexture(), roughness: 1 })
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1 })
+    const north = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w + 0.4, WALL_H, 0.2), wallMat)
+    north.position.set(ROOM.x, WALL_H / 2, c.z - 0.1)
+    const west = new THREE.Mesh(new THREE.BoxGeometry(0.2, WALL_H, ROOM.d), wallMat)
+    west.position.set(c.x - 0.1, WALL_H / 2, ROOM.z)
+    const east = west.clone()
+    east.position.x = c.x + ROOM.w + 0.1
+    // Chân tường và nẹp gỗ.
+    const base = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w + 0.4, 0.18, 0.24), trimMat)
+    base.position.set(ROOM.x, 0.09, c.z - 0.08)
+    for (const w of [north, west, east]) w.receiveShadow = true
+    room.add(floor, grid, north, west, east, base)
 
-  if (windowModel) {
-    for (const dx of [-ROOM.w / 4, ROOM.w / 4]) {
-      const win = windowModel.clone()
-      win.position.set(ROOM.x + dx, 1.0, c.z + 0.05)
-      room.add(win)
+    if (windowModel) {
+      for (const dx of [-ROOM.w / 4, ROOM.w / 4]) {
+        const win = windowModel.clone()
+        win.position.set(ROOM.x + dx, 1.0, c.z + 0.05)
+        room.add(win)
+      }
     }
+
+    const mat = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.8), new THREE.MeshStandardMaterial({ color: 0xb5532f, roughness: 1 }))
+    mat.rotation.x = -Math.PI / 2
+    mat.position.set(ROOM.x, 0.035, c.z + ROOM.d - 0.35)
+    room.add(mat)
+
+    const lamp = new THREE.PointLight(0xffd6a0, 8, Math.max(ROOM.w, ROOM.d) * 1.3, 1.6)
+    lamp.position.set(ROOM.x, 2.4, ROOM.z)
+    room.add(lamp)
   }
-
-  const mat = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.8), new THREE.MeshStandardMaterial({ color: 0xb5532f, roughness: 1 }))
-  mat.rotation.x = -Math.PI / 2
-  mat.position.set(ROOM.x, 0.035, c.z + ROOM.d - 0.35)
-  room.add(mat)
-
-  const lamp = new THREE.PointLight(0xffd6a0, 8, Math.max(ROOM.w, ROOM.d) * 1.3, 1.6)
-  lamp.position.set(ROOM.x, 2.4, ROOM.z)
-  room.add(lamp)
+  buildShell()
   scene.add(room)
 
   // Đồ đã đặt: dựng lại cả nhóm khi danh sách thay đổi (vài chục món nên rẻ).
@@ -105,6 +115,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
 
   return {
     update(state, ghost, decorating) {
+      if (ROOM.w !== builtW || ROOM.d !== builtD) buildShell()
       const indoors = state.player.indoors
       room.visible = placed.visible = indoors
       grid.visible = indoors && decorating

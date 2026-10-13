@@ -52,6 +52,8 @@ export interface GameEvents {
   seasonChanged: Season
   /** Thời tiết vừa đổi (sáng ngày mới, hoặc lúc gỡ lỗi). */
   weatherChanged: Weather
+  /** Nhà vừa lên cấp (1..5). */
+  houseUpgraded: number
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang

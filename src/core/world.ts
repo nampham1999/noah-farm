@@ -52,6 +52,23 @@ export function roomCellAt(wx: number, wz: number): { cx: number; cz: number } |
 
 /** Chỗ xuất hiện khi vào nhà (ngay trong cửa). */
 export const ROOM_ENTRY = { x: ROOM.x, z: ROOM.z + ROOM.d / 2 - 0.7 }
+
+/** Kích thước phòng (ô) theo cấp nhà 1..5; chiều rộng chẵn để cửa nằm giữa. */
+export const ROOM_SIZES = [
+  { w: 12, d: 9 },
+  { w: 14, d: 10 },
+  { w: 16, d: 11 },
+  { w: 18, d: 12 },
+  { w: 20, d: 13 },
+]
+
+/** Đổi kích thước phòng theo cấp nhà (đồ đã đặt tính từ góc tây bắc nên vẫn giữ chỗ). */
+export function setRoomSize(level: number): void {
+  const size = ROOM_SIZES[Math.max(0, Math.min(ROOM_SIZES.length - 1, level - 1))]
+  ROOM.w = size.w
+  ROOM.d = size.d
+  ROOM_ENTRY.z = ROOM.z + ROOM.d / 2 - 0.7
+}
 /** Hồ cá: tâm và bán kính trung bình; viền thật uốn lượn theo pondRadius(). */
 export const POND = { x: 11.5, z: 4.5, r: 4.2 }
 
@@ -215,8 +232,8 @@ export const PROPS: Prop[] = [
   // Quanh nhà.
   { model: 'well', x: -0.6, z: -10.6, rotY: 0.3, r: 1.2 },
   { model: 'bucket', x: 0.7, z: -9.8, rotY: 0, r: 0 },
-  { model: 'pallet', x: -9.6, z: -9.2, rotY: 0.2, r: 0 },
-  { model: 'sack', x: -9.5, z: -9.3, rotY: 0.6, r: 0 },
+  { model: 'pallet', x: -10.3, z: -8.6, rotY: 0.2, r: 0 },
+  { model: 'sack', x: -10.2, z: -8.7, rotY: 0.6, r: 0 },
   { model: 'lumber', x: -12.6, z: -11.4, rotY: 1.4, r: 1.1 },
   // Quanh quầy hàng.
   { model: 'barrel', x: -7.6, z: 12.9, rotY: 0, r: 0.4 },
@@ -242,6 +259,8 @@ export const FLOWERS: Decor[] = scatter(decorRand, 130, FARM_HALF - 0.8, 0.8)
 /** Vật cản hình tròn cho va chạm của nhân vật. */
 export const OBSTACLES: Circle[] = [
   HOUSE,
+  // Chái phía tây của nhà cấp 4, 5.
+  { x: HOUSE.x - 2.8, z: HOUSE.z - 0.2, r: 1.3 },
   FISHING_HUT,
   SCARECROW,
   COOP,

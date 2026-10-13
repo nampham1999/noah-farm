@@ -1,6 +1,6 @@
 import { bus } from '../core/events.ts'
 import type { GameState, PlacedFurniture } from '../core/state.ts'
-import { HOUSE_DOOR, ROOM, ROOM_ENTRY, roomCorner } from '../core/world.ts'
+import { HOUSE_DOOR, ROOM, ROOM_ENTRY, roomCorner, setRoomSize } from '../core/world.ts'
 import { FURNITURE_BY_ID, type FurnitureDef } from '../data/index.ts'
 import { advanceClock, GAME_MINUTES_PER_SECOND } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
@@ -17,11 +17,13 @@ export interface Rect {
   z1: number
 }
 
-/** Hai ô giữa cạnh nam là lối ra cửa, không được đặt đồ chắn. */
-const DOOR_CELLS = [
-  { cx: ROOM.w / 2 - 1, cz: ROOM.d - 1 },
-  { cx: ROOM.w / 2, cz: ROOM.d - 1 },
-]
+/** Hai ô giữa cạnh nam là lối ra cửa, không được đặt đồ chắn (phòng to ra theo cấp nhà). */
+function doorCells(): { cx: number; cz: number }[] {
+  return [
+    { cx: ROOM.w / 2 - 1, cz: ROOM.d - 1 },
+    { cx: ROOM.w / 2, cz: ROOM.d - 1 },
+  ]
+}
 
 export function furnitureDef(id: string): FurnitureDef {
   return FURNITURE_BY_ID.get(id)!
@@ -44,7 +46,7 @@ export function canPlace(state: GameState, id: string, cx: number, cz: number, r
   const rug = furnitureDef(id).kind === 'rug'
   const mine = cells(id, cx, cz, rot)
   if (mine.some((c) => c.cx < 0 || c.cz < 0 || c.cx >= ROOM.w || c.cz >= ROOM.d)) return false
-  if (!rug && mine.some((c) => DOOR_CELLS.some((d) => d.cx === c.cx && d.cz === c.cz))) return false
+  if (!rug && mine.some((c) => doorCells().some((d) => d.cx === c.cx && d.cz === c.cz))) return false
   return state.house.furniture.every((f, i) => {
     if (i === ignore || (furnitureDef(f.id).kind === 'rug') !== rug) return true
     const theirs = cells(f.id, f.cx, f.cz, f.rot)
@@ -134,6 +136,33 @@ export function sleep(state: GameState): void {
   const toMorning = m >= 18 * 60 ? 24 * 60 - m + 6 * 60 : 6 * 60 - m
   advanceClock(state, toMorning / GAME_MINUTES_PER_SECOND)
   bus.emit('notify', { key: 'house.slept', good: true })
+}
+
+/** Giá và cấp người chơi cần để nâng nhà lên cấp 2, 3, 4, 5. */
+export const HOUSE_UPGRADES = [
+  { price: 2000, level: 3 },
+  { price: 5000, level: 5 },
+  { price: 10000, level: 7 },
+  { price: 20000, level: 9 },
+]
+
+/** Lần nâng cấp kế tiếp, null nếu nhà đã tối đa. */
+export function nextHouseUpgrade(state: GameState): { price: number; level: number } | null {
+  return HOUSE_UPGRADES[state.house.level - 1] ?? null
+}
+
+export function upgradeHouse(state: GameState): boolean {
+  const next = nextHouseUpgrade(state)
+  if (!next) return false
+  if (state.player.level < next.level) return fail('notice.locked', { level: next.level })
+  if (state.player.gold < next.price) return fail('notice.noGold')
+  state.player.gold -= next.price
+  state.house.level++
+  setRoomSize(state.house.level)
+  bus.emit('houseUpgraded', state.house.level)
+  bus.emit('notify', { key: 'house.upgraded', params: { level: state.house.level, w: ROOM.w, d: ROOM.d }, good: true })
+  bus.emit('saveRequest', undefined)
+  return true
 }
 
 export function buyFurniture(state: GameState, id: string): boolean {
