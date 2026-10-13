@@ -102,7 +102,7 @@ export function createInitialState(): GameState {
       pos: [0, 0, 6],
       rotY: Math.PI,
     },
-    clock: { day: 1, season: 'spring', year: 1, minuteOfDay: 6 * 60 },
+    clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
     inventory: { slots, selected: 0 },
     plots,
     settings: { volume: 0.7, quality: 'auto', lang: detectLang(), zoom: 1 },

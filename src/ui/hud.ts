@@ -2,6 +2,7 @@ import { bus, type GameAction } from '../core/events.ts'
 import type { GameState } from '../core/state.ts'
 import { balance, xpToNext } from '../data/index.ts'
 import { getLang, itemName, noticeText, t, tKey } from '../i18n/index.ts'
+import { dayPhase, type DayPhase } from '../systems/clock.ts'
 import { itemIconHtml } from './icons.ts'
 import { slotElement } from './inventory.ts'
 
@@ -49,7 +50,8 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   const gold = el('div', 'res-pill', el('span', 'coin-dot big'), goldText)
   const clockTime = el('span', 'clock-card__time')
   const clockDate = el('span', 'clock-card__date')
-  const clock = el('div', 'clock-card', el('span', 'clock-card__ico', '☀️'), el('span', 'clock-card__text', clockTime, clockDate))
+  const clockIco = el('span', 'clock-card__ico', '☀️')
+  const clock = el('div', 'clock-card', clockIco, el('span', 'clock-card__text', clockTime, clockDate))
   const menuBtn = el('button', 'round-btn', '☰')
   menuBtn.addEventListener('click', hooks.openMenu)
   top.append(left, el('div', 'hud-right', gold, clock, menuBtn))
@@ -141,8 +143,11 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
       if (changed('gold', `${p.gold}`)) goldText.textContent = p.gold.toLocaleString('en-US')
 
       const c = state.clock
-      if (changed('clock', `${c.minuteOfDay}|${c.season}|${c.day}|${getLang()}`)) {
-        clockTime.textContent = formatClock(c.minuteOfDay)
+      // Đồng hồ nhảy theo bước 10 phút trong game như bản cũ, đỡ phải vẽ lại mỗi khung hình.
+      const shownMinute = Math.floor(c.minuteOfDay / 10) * 10
+      if (changed('clock', `${shownMinute}|${c.season}|${c.day}|${getLang()}`)) {
+        clockTime.textContent = formatClock(shownMinute)
+        clockIco.textContent = PHASE_ICON[dayPhase(c.minuteOfDay)]
         clockDate.textContent = t('hud.date', { day: c.day, season: tKey(`season.${c.season}`) })
       }
 
@@ -162,6 +167,8 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
     },
   }
 }
+
+const PHASE_ICON: Record<DayPhase, string> = { dawn: '🌅', day: '☀️', dusk: '🌇', night: '🌙' }
 
 /** Giờ trong game dạng 6:10 SA / 6:10 AM. */
 function formatClock(minuteOfDay: number): string {

@@ -2,7 +2,7 @@ import './style.css'
 import * as THREE from 'three'
 import { bus, type GameAction } from './core/events.ts'
 import { createInitialState, type GameState } from './core/state.ts'
-import { now } from './core/time.ts'
+import { now, TIME_SPEED } from './core/time.ts'
 import { plotAt } from './core/world.ts'
 import { balance } from './data/index.ts'
 import { setLang, t } from './i18n/index.ts'
@@ -16,6 +16,7 @@ import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
 import { createWorld } from './render/scene.ts'
 import { loadModels } from './render/assets.ts'
+import { advanceClock } from './systems/clock.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -166,12 +167,16 @@ async function start(): Promise<void> {
 
   const playerPos = new THREE.Vector3()
   const clock = new THREE.Timer()
+  let lastT = now()
 
   world.renderer.setAnimationLoop((time) => {
     clock.update(time)
     const dt = Math.min(clock.getDelta(), MAX_DT)
 
-    updateCrops(state, now())
+    const t = now()
+    advanceClock(state, dt * TIME_SPEED)
+    updateCrops(state, t, lastT)
+    lastT = t
 
     // Tự điều khiển (WASD/joystick) thì huỷ việc tự đi tới chỗ đã chạm.
     const manual = isPanelOpen() ? { x: 0, y: 0 } : input.moveVector()
@@ -193,7 +198,7 @@ async function start(): Promise<void> {
     followCam.update(dt, playerPos, input.zoomScale)
     state.settings.zoom = followCam.zoom
     interaction.setHover(hoveredPlot())
-    world.update(clock.getElapsed(), playerPos)
+    world.update(clock.getElapsed(), playerPos, state.clock)
     world.renderer.render(world.scene, followCam.camera)
 
     quality.tick(dt)

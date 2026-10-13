@@ -97,5 +97,7 @@
   "hud.emptyHand": "Empty hand",
   "hud.date": "{season} · Day {day}",
   "time.am": "AM",
-  "time.pm": "PM"
+  "time.pm": "PM",
+  "clock.newDay": "☀️ Day {day} begins! Stamina restored",
+  "clock.newSeason": "🍃 {name} has arrived"
 }

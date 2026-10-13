@@ -39,11 +39,22 @@ export function timeToRipe(plot: PlotState, t: number): number {
   return left + (STAGES - 1 - plot.stage) * stageMs(crop)
 }
 
-/** Cho cây lớn tới thời điểm t. Gọi mỗi khung hình, và một lần khi mở game để tính bù. */
-export function updateCrops(state: GameState, t: number): void {
+/**
+ * Cho cây lớn tới thời điểm t. Gọi mỗi khung hình, và một lần khi mở game để tính bù.
+ * prevT là lần gọi trước: cây sai mùa (chưa chín) đứng yên, nên dời mốc giai đoạn
+ * đi đúng khoảng thời gian đó để khi về đúng mùa cây lớn tiếp chứ không nhảy cóc.
+ */
+export function updateCrops(state: GameState, t: number, prevT = t): void {
   for (const plot of state.plots) {
     const crop = cropOf(plot)
-    if (!crop || !crop.seasons.includes(state.clock.season)) continue
+    if (!crop) continue
+    if (!crop.seasons.includes(state.clock.season)) {
+      if (plot.stage < STAGES && t > prevT) {
+        plot.stageStartedAt += t - prevT
+        if (plot.wateredAt !== null) plot.wateredAt += t - prevT
+      }
+      continue
+    }
     while (plot.stage < STAGES && plot.wateredAt !== null) {
       const end = plot.stageStartedAt + stageMs(crop)
       if (t < end) break

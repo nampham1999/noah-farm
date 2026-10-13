@@ -97,5 +97,7 @@
   "hud.emptyHand": "Tay không",
   "hud.date": "Ngày {day} mùa {season}",
   "time.am": "SA",
-  "time.pm": "CH"
+  "time.pm": "CH",
+  "clock.newDay": "☀️ Ngày {day} bắt đầu! Thể lực đã hồi đầy",
+  "clock.newSeason": "🍃 Mùa {name} đã đến"
 }

@@ -1,4 +1,4 @@
-import type { Lang } from './state.ts'
+import type { Lang, Season } from './state.ts'
 
 /** Hành động của người chơi, dùng chung cho bàn phím và cảm ứng (GDD mục 4). */
 export type GameAction =
@@ -28,6 +28,9 @@ export interface GameEvents {
   tap: { x: number; y: number }
   notify: Notice
   levelUp: number
+  /** Sang ngày mới trong game (số ngày trong mùa). */
+  newDay: number
+  seasonChanged: Season
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang

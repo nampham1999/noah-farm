@@ -3,6 +3,8 @@
  * Thêm ?speed=N vào URL để thời gian trôi nhanh gấp N lần khi thử chơi.
  */
 const speed = Math.max(1, Number(new URLSearchParams(location.search).get('speed')) || 1)
+/** Hệ số tua nhanh khi thử chơi (?speed=N); 1 khi chơi thật. Đồng hồ trong game cũng nhân theo. */
+export const TIME_SPEED = speed
 const startReal = Date.now()
 
 export function now(): number {

@@ -27,11 +27,11 @@ export function applyOfflineProgress(state: GameState, savedAt: number, t: numbe
   }
 
   if (elapsed > MAX_OFFLINE_MS) {
-    updateCrops(state, savedAt + MAX_OFFLINE_MS)
+    updateCrops(state, savedAt + MAX_OFFLINE_MS, savedAt)
     // Phần vượt giới hạn coi như không trôi qua với cây.
     shiftTimestamps(state, elapsed - MAX_OFFLINE_MS)
   } else {
-    updateCrops(state, t)
+    updateCrops(state, t, savedAt)
   }
 
   return {

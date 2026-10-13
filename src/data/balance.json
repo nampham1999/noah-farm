@@ -1,19 +1,43 @@
 {
   "startGold": 200,
   "startItems": [
-    { "id": "tool_hoe", "qty": 1 },
-    { "id": "tool_watering_can", "qty": 1 },
-    { "id": "seed_carrot", "qty": 10 },
-    { "id": "tool_fishing_rod", "qty": 1 }
+    {
+      "id": "tool_hoe",
+      "qty": 1
+    },
+    {
+      "id": "tool_watering_can",
+      "qty": 1
+    },
+    {
+      "id": "seed_carrot",
+      "qty": 10
+    },
+    {
+      "id": "tool_fishing_rod",
+      "qty": 1
+    }
   ],
   "inventorySize": 24,
   "toolbarSize": 9,
   "cropStages": 3,
   "staminaMax": 100,
-  "staminaCost": { "till": 2, "plant": 0, "water": 1, "harvest": 0 },
+  "staminaCost": {
+    "till": 2,
+    "plant": 0,
+    "water": 1,
+    "harvest": 0
+  },
   "lowStaminaSpeed": 0.6,
-  "xpPerAction": { "till": 0, "plant": 1, "water": 0 },
+  "xpPerAction": {
+    "till": 0,
+    "plant": 1,
+    "water": 0
+  },
   "xpBase": 100,
   "xpExponent": 1.5,
-  "reach": 1.6
+  "reach": 1.6,
+  "dayRealMinutes": 12,
+  "daysPerSeason": 7,
+  "dayStartMinute": 360
 }
