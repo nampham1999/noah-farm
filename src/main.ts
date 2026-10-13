@@ -277,6 +277,7 @@ async function start(): Promise<void> {
           const i = world.renderer.info
           return { calls: i.render.calls, triangles: i.render.triangles, geometries: i.memory.geometries, textures: i.memory.textures, fps: Math.round(quality.fps), ratio: quality.pixelRatio }
         },
+        npcPose,
         /** Toạ độ màn hình của một dân làng. */
         npcScreen(id: string) {
           const p = npcPose(id)

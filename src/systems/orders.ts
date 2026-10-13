@@ -6,6 +6,7 @@ import npcData from '../data/npcs.json'
 import { absDay } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
 import { gainXp } from './progress.ts'
+import type { Look } from '../render/character.ts'
 
 /**
  * Bảng đơn hàng của dân làng (theo bản cũ cozyfarmy.com): mỗi đơn xin vài món,
@@ -16,9 +17,8 @@ import { gainXp } from './progress.ts'
 export interface NpcDef {
   id: string
   emoji: string
-  shirt: string
-  pants: string
-  hat: string
+  /** Ngoại hình dựng bằng render/character.ts. */
+  look: Look
   lines: number
 }
 

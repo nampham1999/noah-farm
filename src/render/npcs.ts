@@ -4,7 +4,8 @@ import { ORDER_BOARD } from '../core/world.ts'
 import { npcPose, presentNpcs } from '../systems/npcs.ts'
 import { canDeliver, npcDef } from '../systems/orders.ts'
 import type { Models } from './assets.ts'
-import { createFarmer, type Farmer } from './models.ts'
+import { createCharacter } from './character.ts'
+import type { Farmer } from './models.ts'
 import { staticModel } from './instancing.ts'
 import { emojiTexture } from './animals.ts'
 
@@ -17,10 +18,11 @@ interface Rig {
   farmer: Farmer
   bubble: THREE.Sprite
   icon: string
+  top: number
 }
 
 /** Dân làng (nhân vật nhuộm màu, đội mũ riêng) và bảng đơn hàng. */
-export function createNpcsView(scene: THREE.Scene, models: Models): NpcsView {
+export function createNpcsView(scene: THREE.Scene, _models: Models): NpcsView {
   const rigs = new Map<string, Rig>()
   const board = createBoard()
   const boardMesh = staticModel(board)
@@ -36,12 +38,14 @@ export function createNpcsView(scene: THREE.Scene, models: Models): NpcsView {
         let rig = rigs.get(id)
         if (!rig) {
           const def = npcDef(id)
-          const farmer = createFarmer(models.farmer, { tint: def.shirt, hat: def.hat, band: def.pants })
+          const farmer = createCharacter(def.look)
           const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
           bubble.scale.set(0.6, 0.6, 1)
-          bubble.position.y = 2.05
+          // Bong bóng ngay trên đầu, theo chiều cao từng người (trẻ con thấp hơn).
+          const top = def.look.age === 'child' ? 1.35 : def.look.hat === 'chef' ? 2.05 : 1.85
+          bubble.position.y = top
           farmer.root.add(bubble)
-          rig = { farmer, bubble, icon: '' }
+          rig = { farmer, bubble, icon: '', top }
           rigs.set(id, rig)
           scene.add(farmer.root)
         }
@@ -60,7 +64,7 @@ export function createNpcsView(scene: THREE.Scene, models: Models): NpcsView {
           m.map = emojiTexture(icon)
           m.needsUpdate = true
         }
-        rig.bubble.position.y = 2.05 + Math.sin(time * 2.5 + id.length) * 0.06
+        rig.bubble.position.y = rig.top + Math.sin(time * 2.5 + id.length) * 0.06
       }
       for (const [id, rig] of rigs) {
         if (!present.includes(id)) {

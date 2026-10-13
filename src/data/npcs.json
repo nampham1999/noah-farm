@@ -1,11 +1,110 @@
 {
   "npcs": [
-    { "id": "mia", "emoji": "🥖", "shirt": "#e88a6a", "pants": "#6b4a3a", "hat": "#f2c75c", "lines": 2 },
-    { "id": "tom", "emoji": "🎣", "shirt": "#5f8fc4", "pants": "#4a4a5a", "hat": "#8a5a2b", "lines": 2 },
-    { "id": "lan", "emoji": "🌸", "shirt": "#f2a8c4", "pants": "#7a5aa8", "hat": "#ffffff", "lines": 2 },
-    { "id": "bao", "emoji": "🍜", "shirt": "#f4f0e6", "pants": "#3a3a3a", "hat": "#f4f0e6", "lines": 2 },
-    { "id": "rosa", "emoji": "🧺", "shirt": "#8cc152", "pants": "#a0703f", "hat": "#e05a47", "lines": 2 },
-    { "id": "kai", "emoji": "🪚", "shirt": "#c9853f", "pants": "#4f6b3a", "hat": "#5b8fd6", "lines": 2 }
+    {
+      "id": "mia",
+      "emoji": "🥖",
+      "lines": 2,
+      "look": {
+        "body": "female",
+        "age": "adult",
+        "skin": "#f6d2b4",
+        "hair": "#7a4a2a",
+        "hairStyle": "bun",
+        "shirt": "#f2a0b4",
+        "pants": "#e88aa6",
+        "dress": true,
+        "apron": "#fffaf0",
+        "shoes": "#a0522d"
+      }
+    },
+    {
+      "id": "tom",
+      "emoji": "🎣",
+      "lines": 2,
+      "look": {
+        "body": "male",
+        "age": "elder",
+        "skin": "#e8b896",
+        "hair": "#e8e4dc",
+        "hairStyle": "bald",
+        "beard": "full",
+        "glasses": true,
+        "shirt": "#5f8fc4",
+        "pants": "#4a4a5a",
+        "hat": "bucket",
+        "hatColor": "#8a7a5a",
+        "cane": true
+      }
+    },
+    {
+      "id": "lan",
+      "emoji": "🌸",
+      "lines": 2,
+      "look": {
+        "body": "female",
+        "age": "child",
+        "skin": "#f8dcc4",
+        "hair": "#2b1d14",
+        "hairStyle": "ponytail",
+        "shirt": "#c4a0f2",
+        "pants": "#a07ae0",
+        "dress": true,
+        "shoes": "#e2483a"
+      }
+    },
+    {
+      "id": "bao",
+      "emoji": "🍜",
+      "lines": 2,
+      "look": {
+        "body": "male",
+        "age": "adult",
+        "skin": "#d9a47c",
+        "hair": "#2b1d14",
+        "hairStyle": "short",
+        "beard": "mustache",
+        "shirt": "#f4f0e6",
+        "pants": "#3a3a3a",
+        "hat": "chef",
+        "shoes": "#2b2b2b"
+      }
+    },
+    {
+      "id": "rosa",
+      "emoji": "🧺",
+      "lines": 2,
+      "look": {
+        "body": "female",
+        "age": "adult",
+        "skin": "#b97a52",
+        "hair": "#3a2418",
+        "hairStyle": "curly",
+        "shirt": "#8cc152",
+        "pants": "#5e9a3a",
+        "dress": true,
+        "hat": "scarf",
+        "hatColor": "#e05a47",
+        "apron": "#f6e3c8"
+      }
+    },
+    {
+      "id": "kai",
+      "emoji": "🪚",
+      "lines": 2,
+      "look": {
+        "body": "male",
+        "age": "adult",
+        "skin": "#c88a62",
+        "hair": "#4a2e1a",
+        "hairStyle": "short",
+        "beard": "full",
+        "shirt": "#e8d2a6",
+        "pants": "#8a5a2b",
+        "hat": "cap",
+        "hatColor": "#3f7fc4",
+        "shoes": "#3a2a1e"
+      }
+    }
   ],
   "orders": {
     "max": 3,
@@ -16,6 +115,12 @@
     "daysMax": 4,
     "ownedShare": 0.6,
     "minQty": 2,
-    "first": { "npc": "mia", "itemId": "crop_carrot", "qty": 4, "gold": 200, "days": 3 }
+    "first": {
+      "npc": "mia",
+      "itemId": "crop_carrot",
+      "qty": 4,
+      "gold": 200,
+      "days": 3
+    }
   }
 }
