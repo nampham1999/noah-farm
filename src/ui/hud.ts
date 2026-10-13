@@ -18,6 +18,7 @@ export interface HudHooks {
   indoors(): boolean
   toggleDecor(): void
   openJournal(): void
+  openSocial(): void
 }
 
 export interface Hud {
@@ -62,7 +63,9 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   menuBtn.addEventListener('click', hooks.openMenu)
   const journalBtn = el('button', 'round-btn round-btn--paper', '📖')
   journalBtn.addEventListener('click', hooks.openJournal)
-  top.append(left, el('div', 'hud-right', gold, clock, journalBtn, menuBtn))
+  const socialBtn = el('button', 'round-btn round-btn--paper', '🤝')
+  socialBtn.addEventListener('click', hooks.openSocial)
+  top.append(left, el('div', 'hud-right', gold, clock, socialBtn, journalBtn, menuBtn))
 
   // Khung mục tiêu dưới avatar (như bản cũ): nhiệm vụ đang làm, chạm để mở nhật ký.
   const objIcon = el('span', 'objective__icon')
@@ -145,6 +148,7 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
     bagSlot.title = t('action.inventory')
     menuBtn.title = t('action.menu')
     journalBtn.title = t('journal.title')
+    socialBtn.title = t('social.title')
     energy.title = t('hud.stamina')
     interactBtn.title = t('action.interact')
     useBtn.title = t('action.useTool')

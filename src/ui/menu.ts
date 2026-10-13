@@ -81,6 +81,26 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
         }),
       )
 
+      // Đang thăm nông trại bạn: không cho đặt tên, chia sẻ hay sao lưu, vì dữ liệu đang mở
+      // là của người khác (sao lưu lúc này sẽ ra nông trại của bạn bè).
+      const visiting = document.body.classList.contains('is-visiting')
+
+      // Tên nông dân (hiện trên link chia sẻ) và lối vào Bạn bè.
+      if (!visiting) {
+        const nameBox = section(body, t('menu.name'))
+        const friends = button(`🤝 ${t('social.title')}`, 'btn', () => bus.emit('action', 'social'))
+        const nameInput = document.createElement('input')
+        nameInput.className = 'menu-input'
+        nameInput.maxLength = 20
+        nameInput.value = state.player.name
+        nameInput.addEventListener('change', () => {
+          state.player.name = nameInput.value.trim().slice(0, 20) || state.player.name
+          nameInput.value = state.player.name
+          autosaver.requestSoon()
+        })
+        nameBox.append(nameInput, friends)
+      }
+
       // Âm thanh: nhạc nền và hiệu ứng.
       const audioBox = section(body, t('menu.sound'))
       audioBox.append(
@@ -96,6 +116,8 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
           autosaver.requestSoon()
         }),
       )
+
+      if (visiting) return
 
       // Lưu trữ.
       const box = section(body, t('menu.storage'))

@@ -17,6 +17,8 @@ import { createHouseView } from './render/house.ts'
 import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
+import { createSocialPanel } from './ui/social.ts'
+import { decodeFarm } from './save/share.ts'
 import { createBoardPanel, npcDialog } from './ui/orders.ts'
 import { createNpcsView } from './render/npcs.ts'
 import { npcPose, updateNpcs } from './systems/npcs.ts'
@@ -71,7 +73,11 @@ async function start(): Promise<void> {
   const store = new BrowserSaveStore()
   // Tải mô hình song song với đọc bản lưu; hộp thoại khôi phục (nếu có) hiện trên màn hình tải.
   const modelsReady = loadModels(loading.progress)
-  const { state, savedAt, isNew } = await loadGame(store)
+  // Link #visit=…: đi dạo nông trại của bạn ở chế độ chỉ xem, không đụng tới bản lưu của mình.
+  const visit = await readVisitLink()
+  const visiting = visit !== null
+  const { state, savedAt, isNew } = visit ? { state: visit, savedAt: 0, isNew: false } : await loadGame(store)
+  if (!visiting && isNew) applyInvite(state)
   const models = await modelsReady.catch((e: unknown) => {
     loading.fail()
     throw e
@@ -95,17 +101,23 @@ async function start(): Promise<void> {
   const npcsView = createNpcsView(world.scene, models)
 
   const autosaver = new AutoSaver(store, state)
-  autosaver.start()
-  if (isNew) void autosaver.saveNow()
+  if (visiting) autosaver.suspend()
+  else {
+    autosaver.start()
+    if (isNew) void autosaver.saveNow()
+  }
 
   const shopPanel = createShopPanel(state)
   const menuPanel = createMenuPanel(state, store, autosaver)
   const inventoryPanel = createInventoryPanel(state)
   const journalPanel = createJournalPanel(state)
   const audio = attachAudio(state)
-  ensureDaily(state)
-  refillOrders(state)
-  bus.on('progress', (ev) => onProgress(state, ev))
+  if (!visiting) {
+    ensureDaily(state)
+    refillOrders(state)
+    bus.on('progress', (ev) => onProgress(state, ev))
+  }
+  const socialPanel = createSocialPanel(state)
   const goInside = () => {
     if (ridingAnimal()) dismount(state)
     if (isFishing()) stopFishing()
@@ -118,6 +130,7 @@ async function start(): Promise<void> {
     openNpc: (id) => openPanel(npcDialog(state, id)),
     openBoard: () => openPanel(boardPanel),
     now,
+    readOnly: visiting,
   })
 
   const input = new Input()
@@ -133,7 +146,9 @@ async function start(): Promise<void> {
     indoors: () => state.player.indoors,
     toggleDecor: () => decorUi.toggle(),
     openJournal: () => togglePanel(journalPanel),
+    openSocial: () => togglePanel(socialPanel),
   })
+  if (visiting) showVisitBanner(ui, state)
   const fishingUi = createFishingUi(ui, state)
   const decorUi = createDecorUi(ui, state)
 
@@ -148,14 +163,19 @@ async function start(): Promise<void> {
   bus.on('newDay', () => {
     animalsNewDay(state, now())
     ensureDaily(state)
-    refillOrders(state)
-  refillOrders(state)
+    if (!visiting) refillOrders(state)
   })
   // Thành tựu không gắn với một việc cụ thể (cấp, đất, vật nuôi): kiểm tra định kỳ.
-  window.setInterval(() => checkAchievements(state), 5000)
+  if (!visiting) window.setInterval(() => checkAchievements(state), 5000)
 
   bus.on('tap', ({ x, y }) => {
     if (isPanelOpen()) return
+    // Đang thăm: chỉ đi lại và vào xem nhà.
+    if (visiting) {
+      const hit = pickGround(followCam.camera, x, y)
+      if (hit) interaction.tapWorld(hit.x, hit.z, false, hit.onHouse && !state.player.indoors)
+      return
+    }
     // Đang câu: chạm là giật cần (sớm quá thì thu cần).
     if (isFishing()) return strike(state)
     if (state.player.indoors) {
@@ -190,8 +210,9 @@ async function start(): Promise<void> {
 
   bus.on('action', (action) => {
     if (isModalOpen()) return
+    if (visiting && action !== 'menu' && action !== 'interact') return
     // Khi đang mở cửa sổ, chỉ cho đóng cửa sổ hoặc chuyển qua túi đồ.
-    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal') return
+    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal' && action !== 'social') return
     if (isFishing() && (action === 'useTool' || action === 'interact')) return strike(state)
     if (isFishing() && action === 'menu') return stopFishing()
     switch (action) {
@@ -207,6 +228,8 @@ async function start(): Promise<void> {
         return isPanelOpen() ? closePanel() : openPanel(menuPanel)
       case 'journal':
         return togglePanel(journalPanel)
+      case 'social':
+        return togglePanel(socialPanel)
       case 'ride':
         return state.player.indoors ? undefined : toggleRide(state)
       default:
@@ -350,6 +373,51 @@ function showLoading(ui: HTMLElement): { progress(f: number): void; done(): void
   }
 }
 
+/** Đọc link thăm nông trại (#visit=…); null nếu không có hoặc link hỏng. */
+async function readVisitLink(): Promise<GameState | null> {
+  const m = /[#&]visit=([^&]+)/.exec(location.hash)
+  if (!m) return null
+  try {
+    return await decodeFarm(decodeURIComponent(m[1]))
+  } catch (e) {
+    console.warn('Bad visit link', e)
+    history.replaceState(null, '', location.pathname + location.search)
+    setTimeout(() => bus.emit('notify', { key: 'visit.broken' }), 1500)
+    return null
+  }
+}
+
+/** Link mời ?ref=…: người mới bắt đầu từ link được tặng vàng một lần (GDD mục 8.2). */
+const INVITE_GOLD = 500
+function applyInvite(state: GameState): void {
+  const params = new URLSearchParams(location.search)
+  const ref = params.get('ref')
+  if (!ref || ref === state.meta.inviteCode) return
+  state.meta.referredBy = ref.slice(0, 16)
+  state.player.gold += INVITE_GOLD
+  setTimeout(() => bus.emit('notify', { key: 'invite.gift', params: { gold: INVITE_GOLD }, good: true }), 1500)
+  params.delete('ref')
+  const query = params.toString()
+  history.replaceState(null, '', location.pathname + (query ? `?${query}` : '') + location.hash)
+}
+
+/** Dải báo "Đang thăm nông trại của …" và nút về nông trại của mình. */
+function showVisitBanner(ui: HTMLElement, state: GameState): void {
+  document.body.classList.add('is-visiting')
+  const banner = document.createElement('div')
+  banner.className = 'visit-banner'
+  const text = document.createElement('span')
+  text.textContent = t('visit.banner', { name: state.player.name, level: state.player.level })
+  const home = document.createElement('button')
+  home.className = 'btn small primary'
+  home.textContent = t('visit.home')
+  home.addEventListener('click', () => {
+    location.href = location.pathname + location.search
+  })
+  banner.append(text, home)
+  ui.append(banner)
+}
+
 /** Đọc bản lưu; dữ liệu hỏng thì hỏi người chơi trước, không tự xoá (GDD mục 6.5). */
 async function loadGame(store: SaveStore): Promise<{ state: GameState; savedAt: number; isNew: boolean }> {
   const result = await store.load().catch((e: unknown) => {
@@ -386,6 +454,11 @@ function registerServiceWorker(): void {
     hadController = true
   })
 }
+
+// Dán link thăm vào thanh địa chỉ khi đang mở game: tải lại để vào chế độ thăm.
+window.addEventListener('hashchange', () => {
+  if (/[#&]visit=/.test(location.hash)) location.reload()
+})
 
 registerServiceWorker()
 void start()

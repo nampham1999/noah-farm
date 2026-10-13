@@ -9,6 +9,7 @@ export type GameAction =
   | 'inventory'
   | 'journal'
   | 'menu'
+  | 'social'
 
 /** Thông báo ngắn cho người chơi; key là khoá i18n, HUD tự dịch. */
 export interface Notice {

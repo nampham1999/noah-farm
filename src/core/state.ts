@@ -127,6 +127,10 @@ export interface MetaState {
   createdAt: number
   /** Lần cuối người chơi xuất file hoặc mã sao lưu; null là chưa bao giờ. */
   lastBackupAt: number | null
+  /** Mã mời riêng của nông trại này (link ?ref=). */
+  inviteCode: string
+  /** Mã mời đã dùng khi bắt đầu chơi (được tặng vàng); null nếu không. */
+  referredBy: string | null
 }
 
 export interface GameState {
@@ -152,7 +156,7 @@ export interface GameState {
   /** lastRefill: ngày game (absDay) gần nhất đã thêm đơn mới; mỗi ngày chỉ thêm một lần. */
   orders: { nextId: number; list: Order[]; firstGiven: boolean; lastRefill: number }
   /** Số liệu cộng dồn cho thành tựu. */
-  stats: { harvest: number; fish: number; goldEarned: number }
+  stats: { harvest: number; fish: number; goldEarned: number; shared: number }
   settings: Settings
 }
 
@@ -164,7 +168,7 @@ export function createInitialState(): GameState {
 
   return {
     version: 1,
-    meta: { createdAt: Date.now(), lastBackupAt: null },
+    meta: { createdAt: Date.now(), lastBackupAt: null, inviteCode: randomCode(), referredBy: null },
     player: {
       name: 'Mia',
       gold: balance.startGold,
@@ -183,7 +187,7 @@ export function createInitialState(): GameState {
     animals: [],
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
-    stats: { harvest: 0, fish: 0, goldEarned: 0 },
+    stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },
     orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
     house: { furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
@@ -198,4 +202,12 @@ function detectLang(): Lang {
 /** Ô đất trống (cỏ) của khu ruộng thứ i. */
 export function blockPlots(i: number): PlotState[] {
   return blockCells(i).map(({ x, z }) => ({ x, z, tilled: false, crop: null, stage: 0, stageStartedAt: 0, wateredAt: null }))
+}
+
+/** Mã mời ngắn, dễ đọc (bỏ các ký tự dễ nhầm như 0/O, 1/l). */
+function randomCode(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789'
+  let out = ''
+  for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)]
+  return out
 }

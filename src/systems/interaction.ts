@@ -39,6 +39,8 @@ const CAST_RANGE = 4.5
 const ANIMAL_REACH = 1.3
 
 export interface InteractionHooks {
+  /** Đang thăm nông trại người khác: chỉ đi lại và vào xem nhà. */
+  readOnly?: boolean
   openShop(): void
   enterHouse(): void
   openNpc(id: string): void
@@ -66,6 +68,9 @@ export class Interaction {
 
   /** Người chơi chạm vào điểm (wx, wz) trên mặt đất; onStall là chạm trúng quầy hàng. */
   tapWorld(wx: number, wz: number, onStall: boolean, onHouse = false): void {
+    if (this.hooks.readOnly) {
+      return this.setGoal(onHouse ? { kind: 'house' } : { kind: 'walk', x: wx, z: wz })
+    }
     if (this.state.player.indoors) {
       const bed = this.bedAt(wx, wz)
       return this.setGoal(bed ? { kind: 'bed', ...bed } : { kind: 'walk', x: wx, z: wz })
@@ -125,6 +130,10 @@ export class Interaction {
 
   /** E / nút "Tương tác": mở cửa hàng nếu đứng gần quầy, không thì như useFront. */
   interact(): void {
+    if (this.hooks.readOnly) {
+      if (!this.state.player.indoors && this.distTo(HOUSE_DOOR.x, HOUSE_DOOR.z) <= DOOR_REACH) this.hooks.enterHouse()
+      return
+    }
     if (this.state.player.indoors) {
       const bed = this.state.house.furniture.find((f) => furnitureDef(f.id).kind === 'bed' && this.distToFurniture(f) < BED_REACH)
       if (bed) sleep(this.state)

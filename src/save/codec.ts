@@ -8,17 +8,24 @@ const PREFIX = 'NF1.'
 const LEGACY_PREFIXES = ['CF1.']
 
 export async function encodeCode(text: string): Promise<string> {
-  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
-  const bytes = new Uint8Array(await new Response(stream).arrayBuffer())
-  return PREFIX + toBase64Url(bytes)
+  return PREFIX + (await gzipBase64Url(text))
 }
 
 export async function decodeCode(code: string): Promise<string> {
   const trimmed = code.trim().replace(/\s+/g, '')
   const prefix = [PREFIX, ...LEGACY_PREFIXES].find((p) => trimmed.startsWith(p))
   if (!prefix) throw new Error('Not a Noah Farm code')
-  const bytes = fromBase64Url(trimmed.slice(prefix.length))
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
+  return gunzipBase64Url(trimmed.slice(prefix.length))
+}
+
+/** Nén gzip rồi mã hoá base64url (an toàn để đặt trong URL). */
+export async function gzipBase64Url(text: string): Promise<string> {
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
+  return toBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()))
+}
+
+export async function gunzipBase64Url(data: string): Promise<string> {
+  const stream = new Blob([fromBase64Url(data)]).stream().pipeThrough(new DecompressionStream('gzip'))
   return new Response(stream).text()
 }
 

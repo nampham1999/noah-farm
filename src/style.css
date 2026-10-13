@@ -1752,3 +1752,61 @@ body.is-decorating .hud-actions .act-btn:not(:first-child) {
 .order-card__due.is-urgent {
   color: var(--red-dark);
 }
+
+.menu-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--paper-3);
+  border-radius: 10px;
+  background: #fff;
+  font: 700 15px var(--display);
+  color: var(--ink);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.qr {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.qr svg {
+  width: min(240px, 70vw);
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px var(--paper-3);
+}
+
+/* Đang thăm nông trại bạn: chỉ xem, ẩn mọi thứ để sửa. */
+.visit-banner {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 20px);
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: rgb(46 30 14 / 0.8);
+  border: 2px solid rgb(255 255 255 / 0.25);
+  color: #fff;
+  font: 700 14px var(--display);
+}
+
+.visit-banner span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.is-visiting .hud-bottom,
+body.is-visiting .hud-actions,
+body.is-visiting .objective,
+body.is-visiting .hud-right,
+body.is-visiting .energy-pill {
+  display: none;
+}

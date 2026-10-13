@@ -195,6 +195,12 @@
       "stat": "level",
       "target": 10,
       "icon": "⭐"
+    },
+    {
+      "id": "a_share",
+      "stat": "shared",
+      "target": 1,
+      "icon": "🤝"
     }
   ]
 }

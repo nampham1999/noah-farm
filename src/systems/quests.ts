@@ -32,7 +32,7 @@ export interface DailyTemplate {
 
 export interface Achievement {
   id: string
-  stat: 'harvest' | 'fish' | 'fishSpecies' | 'cropSpecies' | 'goldEarned' | 'animals' | 'land' | 'furniture' | 'level'
+  stat: 'harvest' | 'fish' | 'fishSpecies' | 'cropSpecies' | 'goldEarned' | 'animals' | 'land' | 'furniture' | 'level' | 'shared'
   target: number
   icon: string
 }
@@ -143,6 +143,8 @@ export function statValue(state: GameState, stat: Achievement['stat']): number {
       return state.house.furniture.length
     case 'level':
       return state.player.level
+    case 'shared':
+      return state.stats.shared
   }
 }
 
