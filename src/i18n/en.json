@@ -146,5 +146,10 @@
   "shop.landSub": "You have {n} plots",
   "shop.landMax": "Fully expanded ({n} plots)",
   "land.bought": "🌱 Field expanded! You now have {n} plots",
-  "land.locked": "🔒 Not yours yet; buy it at the stall for {price} gold"
+  "land.locked": "🔒 Not yours yet; buy it at the stall for {price} gold",
+  "ride.tamed": "🐮 {name} is tamed! Stand close and press R (or 🐮) to ride",
+  "ride.notNear": "Stand next to a tamed cow to ride",
+  "ride.noTamedCow": "No tamed cow yet. Feed and pet a cow every day until it is 100 happy",
+  "ride.on": "Ride cow (R)",
+  "ride.off": "Get off (R)"
 }

@@ -146,5 +146,10 @@
   "shop.landSub": "Đang có {n} ô",
   "shop.landMax": "Đã mở hết ({n} ô)",
   "land.bought": "🌱 Đã mở thêm ruộng! Giờ có {n} ô",
-  "land.locked": "🔒 Khu này chưa mua; mở ở quầy hàng với {price} vàng"
+  "land.locked": "🔒 Khu này chưa mua; mở ở quầy hàng với {price} vàng",
+  "ride.tamed": "🐮 {name} đã thuần! Đứng gần và bấm R (hoặc nút 🐮) để cưỡi",
+  "ride.notNear": "Đứng gần con bò đã thuần để cưỡi",
+  "ride.noTamedCow": "Chưa có bò nào thuần. Cho ăn và vuốt ve bò mỗi ngày tới khi vui 100",
+  "ride.on": "Cưỡi bò (R)",
+  "ride.off": "Xuống bò (R)"
 }

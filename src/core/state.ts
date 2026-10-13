@@ -66,6 +66,8 @@ export interface AnimalState {
   happiness: number
   /** Ngày game gần nhất đã được vuốt ve (dayStamp), để mỗi ngày chỉ tính một lần. */
   pettedDay: number
+  /** Đã thuần (vui đạt 100 một lần); bò đã thuần thì cưỡi được. */
+  tamed: boolean
 }
 
 export interface Settings {

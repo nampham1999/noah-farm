@@ -22,6 +22,7 @@ import { animalPose, animalsNewDay, updateAnimals, updateWander } from './system
 import { advanceClock } from './systems/clock.ts'
 import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from './systems/fishing.ts'
 import { createFishingUi } from './ui/fishing.ts'
+import { mountable, RIDE_SPEED, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -96,6 +97,7 @@ async function start(): Promise<void> {
     openInventory: () => togglePanel(inventoryPanel),
     openMenu: () => togglePanel(menuPanel),
     backupDue: () => backupDue(state),
+    rideState: () => (ridingAnimal() ? 'riding' : mountable(state) ? 'can' : 'none'),
   })
   const fishingUi = createFishingUi(ui, state)
 
@@ -147,6 +149,8 @@ async function start(): Promise<void> {
         return togglePanel(inventoryPanel)
       case 'menu':
         return isPanelOpen() ? closePanel() : openPanel(menuPanel)
+      case 'ride':
+        return toggleRide(state)
       default:
         return comingSoon(action)
     }
@@ -201,7 +205,7 @@ async function start(): Promise<void> {
     advanceClock(state, dt * TIME_SPEED)
     updateCrops(state, t, lastT)
     updateAnimals(state, t, lastT)
-    updateWander(state, dt)
+    updateWander(state, dt, ridingAnimal())
     lastT = t
 
     // Tự điều khiển (WASD/joystick) thì huỷ việc tự đi tới chỗ đã chạm.
@@ -218,14 +222,17 @@ async function start(): Promise<void> {
     } else {
       dir = interaction.autoWalk(dt)
     }
-    const speed = movePlayer(state.player, dir, speedMultiplier(state), dt)
+    const riding = ridingAnimal() !== null
+    const speed = movePlayer(state.player, dir, speedMultiplier(state) * (riding ? RIDE_SPEED : 1), dt)
+    updateRiding(state, Math.min(1, speed / (WALK_SPEED * RIDE_SPEED)))
+    farmer.setRiding(riding)
 
     playerPos.fromArray(state.player.pos)
     farmer.root.position.copy(playerPos)
     farmer.root.rotation.y = state.player.rotY
     farmer.animate(dt, Math.min(1, speed / WALK_SPEED))
     farmView.update(state, interaction.focusPlot(), clock.getElapsed())
-    animalsView.update(state, t, clock.getElapsed(), dt)
+    animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
     fishingView.update(state.player, clock.getElapsed())
     fishingUi.update()
 

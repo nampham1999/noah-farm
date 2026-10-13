@@ -137,6 +137,7 @@ function normalize(data: Record<string, unknown>): GameState {
       progress: Math.max(0, num(a.progress, 0)),
       happiness: Math.max(0, Math.min(100, num(a.happiness, 50))),
       pettedDay: num(a.pettedDay, -1),
+      tamed: a.tamed === true,
     }]
   })
 

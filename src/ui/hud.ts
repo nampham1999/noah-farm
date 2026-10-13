@@ -12,6 +12,8 @@ export interface HudHooks {
   openMenu(): void
   /** Có cần nhắc sao lưu không (hiện chấm đỏ trên nút menu). */
   backupDue(): boolean
+  /** Nút cưỡi: hiện khi đứng gần bò đã thuần hoặc đang cưỡi (GDD mục 4). */
+  rideState(): 'none' | 'can' | 'riding'
 }
 
 export interface Hud {
@@ -69,7 +71,9 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   // Dưới phải: nút Tương tác và nút Dùng (hiện icon vật đang cầm), như bản cũ.
   const interactBtn = actionButton('act-btn', 'interact', '✋')
   const useBtn = actionButton('act-btn big', 'useTool', '✋')
-  const actions = el('div', 'hud-actions', interactBtn, useBtn)
+  const rideBtn = actionButton('act-btn', 'ride', '🐮')
+  rideBtn.hidden = true
+  const actions = el('div', 'hud-actions', rideBtn, interactBtn, useBtn)
 
   const toasts = el('div', 'toasts')
 
@@ -153,6 +157,12 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
 
       const bar = state.inventory.slots.slice(0, balance.toolbarSize).map((s) => (s ? `${s.id}:${s.qty}` : '-'))
       if (changed('hotbar', `${state.inventory.selected}|${bar.join(',')}`)) drawHotbar()
+      const ride = hooks.rideState()
+      if (changed('ride', ride)) {
+        rideBtn.hidden = ride === 'none'
+        rideBtn.classList.toggle('is-on', ride === 'riding')
+        rideBtn.title = t(ride === 'riding' ? 'ride.off' : 'ride.on')
+      }
       if (changed('badge', `${hooks.backupDue()}`)) menuBtn.classList.toggle('has-badge', hooks.backupDue())
       const touch = document.body.classList.contains('is-touch')
       if (changed('touch', `${touch}`)) {

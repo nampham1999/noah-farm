@@ -79,6 +79,7 @@ export function actOnAnimal(state: GameState, a: AnimalState, t: number): boolea
     a.fedAt = t
     a.happiness = Math.min(100, a.happiness + animalData.feedHappiness)
     bus.emit('notify', { key: 'animal.fed', params: { name: a.name }, good: true })
+    checkTamed(a)
     return true
   }
   const today = dayStamp(state.clock)
@@ -86,11 +87,19 @@ export function actOnAnimal(state: GameState, a: AnimalState, t: number): boolea
     a.pettedDay = today
     a.happiness = Math.min(100, a.happiness + animalData.petHappiness)
     bus.emit('notify', { key: 'animal.petted', params: { name: a.name, happy: Math.round(a.happiness) }, good: true })
+    checkTamed(a)
     return true
   }
   const minutes = Math.ceil((cycleMs(a) - a.progress) / 60_000)
   bus.emit('notify', { key: 'animal.content', params: { name: a.name, item: def.product, minutes } })
   return false
+}
+
+/** Bò vui đạt 100 lần đầu thì thuần, từ đó cưỡi được (GDD mục 3.3). */
+function checkTamed(a: AnimalState): void {
+  if (a.type !== 'cow' || a.tamed || a.happiness < 100) return
+  a.tamed = true
+  bus.emit('notify', { key: 'ride.tamed', params: { name: a.name }, good: true })
 }
 
 export function buyCoopLevel(state: GameState): boolean {
@@ -115,7 +124,7 @@ export function buyAnimal(state: GameState, type: AnimalType, t: number): boolea
   const used = new Set(state.animals.map((a) => a.name))
   const name = animalData.names.find((n) => !used.has(n)) ?? `${def.icon}${state.animals.length + 1}`
   // Con mới về được cho ăn sẵn một bữa.
-  state.animals.push({ id: `a${t.toString(36)}`, type, name, fedAt: t, progress: 0, happiness: 50, pettedDay: -1 })
+  state.animals.push({ id: `a${t.toString(36)}`, type, name, fedAt: t, progress: 0, happiness: 50, pettedDay: -1, tamed: false })
   bus.emit('notify', { key: 'animal.bought', params: { name, animal: `animal.${type}` }, good: true })
   bus.emit('saveRequest', undefined)
   return true
@@ -152,8 +161,9 @@ function randomPenPoint(): { x: number; z: number } {
 }
 
 /** Mỗi con chọn một điểm trong bãi thả, đi tới, đứng nghỉ một lúc rồi chọn điểm khác. */
-export function updateWander(state: GameState, dt: number): void {
+export function updateWander(state: GameState, dt: number, riddenId: string | null = null): void {
   for (const a of state.animals) {
+    if (a.id === riddenId) continue
     let p = poses.get(a.id)
     if (!p) {
       const s = randomPenPoint()
@@ -182,6 +192,21 @@ export function updateWander(state: GameState, dt: number): void {
     p.speed01 = 1
   }
   for (const id of poses.keys()) if (!state.animals.some((a) => a.id === id)) poses.delete(id)
+}
+
+/** Đặt tư thế con vật theo nhân vật đang cưỡi nó. */
+export function setPose(id: string, x: number, z: number, rotY: number, speed01: number): void {
+  const p = poses.get(id)
+  if (!p) return
+  Object.assign(p, { x, z, rotY, speed01, tx: x, tz: z })
+}
+
+/** Cho con vật đi về một điểm trong bãi thả (sau khi xuống bò). */
+export function sendHome(id: string): void {
+  const p = poses.get(id)
+  if (!p) return
+  const n = randomPenPoint()
+  Object.assign(p, { tx: n.x, tz: n.z, wait: 0 })
 }
 
 /** Con vật đứng yên khi người chơi tới gần để tương tác. */

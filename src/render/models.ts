@@ -6,7 +6,12 @@ export interface Farmer {
   root: THREE.Group
   /** speed01: tốc độ hiện tại so với tốc độ tối đa, 0..1. */
   animate(dt: number, speed01: number): void
+  /** Ngồi trên lưng thú cưỡi (dùng hoạt ảnh ngồi) hoặc đứng xuống. */
+  setRiding(on: boolean): void
 }
+
+/** Độ cao chỗ ngồi trên lưng bò so với mặt đất. */
+const SADDLE_Y = 0.62
 
 /** Chiều cao nhân vật trong thế giới (m). */
 const HEIGHT = 1.35
@@ -40,14 +45,30 @@ export function createFarmer(gltf: GLTF): Farmer {
   }
   const idle = mixer.clipAction(clip('Idle'))
   const run = mixer.clipAction(clip('Running_A'))
+  const sit = mixer.clipAction(clip('Sit_Chair_Idle'))
   idle.play()
   run.play()
+  sit.play()
   run.setEffectiveWeight(0)
+  sit.setEffectiveWeight(0)
 
   let blend = 0
+  let riding = false
   return {
     root,
+    setRiding(on) {
+      riding = on
+      model.position.y = on ? SADDLE_Y : 0
+    },
     animate(dt, speed01) {
+      if (riding) {
+        idle.setEffectiveWeight(0)
+        run.setEffectiveWeight(0)
+        sit.setEffectiveWeight(1)
+        mixer.update(dt)
+        return
+      }
+      sit.setEffectiveWeight(0)
       // Chuyển dần giữa đứng và chạy để không bị giật.
       blend += (Math.min(1, speed01 * 1.5) - blend) * Math.min(1, dt * 10)
       idle.setEffectiveWeight(1 - blend)

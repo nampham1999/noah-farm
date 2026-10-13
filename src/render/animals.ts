@@ -6,7 +6,7 @@ import { animalDef, animalPose, isHungry, isReady } from '../systems/animals.ts'
 import type { Models } from './assets.ts'
 
 export interface AnimalsView {
-  update(state: GameState, t: number, time: number, dt: number): void
+  update(state: GameState, t: number, time: number, dt: number, riddenId: string | null): void
   /** Vị trí trên màn hình của từng con, để chạm chọn. */
   hitTest(camera: THREE.Camera, x: number, y: number): string | null
 }
@@ -40,9 +40,11 @@ export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsVi
   const modelFor = { chicken: models.chicken, pig: models.pig, cow: models.cow }
   const v = new THREE.Vector3()
   const lastPetted = new Map<string, number>()
+  let ridden: string | null = null
 
   return {
-    update(state, t, time, dt) {
+    update(state, t, time, dt, riddenId) {
+      ridden = riddenId
       coop1.visible = state.coopLevel === 1
       coop2.visible = state.coopLevel >= 2
       sign.visible = state.coopLevel === 0
@@ -80,7 +82,7 @@ export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsVi
         if (lastPetted.get(a.id) !== undefined && lastPetted.get(a.id) !== a.pettedDay) rig.heartUntil = time + 2
         lastPetted.set(a.id, a.pettedDay)
 
-        const icon = time < rig.heartUntil ? '❤️' : isReady(a) ? item(animalDef(a).product).icon : isHungry(a, t) ? '🌾' : ''
+        const icon = a.id === riddenId ? '' : time < rig.heartUntil ? '❤️' : isReady(a) ? item(animalDef(a).product).icon : isHungry(a, t) ? '🌾' : ''
         if (icon !== rig.bubbleIcon) {
           rig.bubbleIcon = icon
           rig.bubble.visible = icon !== ''
@@ -101,6 +103,7 @@ export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsVi
       let best: string | null = null
       let bestD = 48
       for (const [id, rig] of rigs) {
+        if (id === ridden) continue
         v.copy(rig.root.position).setY(0.4).project(camera)
         const sx = ((v.x + 1) / 2) * window.innerWidth
         const sy = ((1 - v.y) / 2) * window.innerHeight
