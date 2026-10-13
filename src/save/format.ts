@@ -1,3 +1,4 @@
+import { normalizeLook } from '../core/look.ts'
 import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
 import { LAND_BLOCKS } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
@@ -145,7 +146,7 @@ function normalize(data: Record<string, unknown>): GameState {
   return {
     version: SAVE_VERSION,
     meta: { ...base.meta, ...obj(data.meta) },
-    player: { ...base.player, ...p },
+    player: { ...base.player, ...p, look: normalizeLook(p.look) },
     clock: { ...base.clock, ...obj(data.clock) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,

@@ -9,6 +9,10 @@ export interface PanelSpec {
   title(): string
   /** Bắt buộc chọn một lựa chọn trong cửa sổ: không có nút đóng, chạm ra ngoài không đóng. */
   modal?: boolean
+  /** Lớp CSS thêm cho nền mờ (ví dụ cửa sổ nằm cạnh màn hình để vẫn thấy nhân vật). */
+  className?: string
+  /** Gọi khi cửa sổ đóng (bấm nút đóng, mở cửa sổ khác...). */
+  onClose?(): void
   render(body: HTMLElement, refresh: () => void): void
 }
 
@@ -32,7 +36,7 @@ export function isModalOpen(): boolean {
 export function openPanel(spec: PanelSpec): void {
   closePanel()
   const el = document.createElement('div')
-  el.className = 'panel-backdrop'
+  el.className = spec.className ? `panel-backdrop ${spec.className}` : 'panel-backdrop'
   // Chạm ra ngoài khung thì đóng.
   el.addEventListener('pointerdown', (e) => {
     if (e.target === el && !spec.modal) closePanel()
@@ -43,8 +47,10 @@ export function openPanel(spec: PanelSpec): void {
 }
 
 export function closePanel(): void {
+  const closing = current
   current?.el.remove()
   current = null
+  closing?.spec.onClose?.()
 }
 
 /** Mở nếu đang đóng, đóng nếu đang mở chính nó. */
@@ -56,6 +62,8 @@ export function togglePanel(spec: PanelSpec): void {
 function draw(): void {
   if (!current) return
   const { spec, el } = current
+  // Vẽ lại sau mỗi thao tác: giữ nguyên chỗ đang cuộn tới.
+  const scroll = el.querySelector('.panel__body')?.scrollTop ?? 0
   // Khung gỗ có dải ruy băng ghi tiêu đề và nút đóng tròn đỏ, như bản cũ.
   const box = document.createElement('div')
   box.className = 'panel framed'
@@ -80,4 +88,5 @@ function draw(): void {
 
   box.append(body)
   el.replaceChildren(box)
+  body.scrollTop = scroll
 }

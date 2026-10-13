@@ -32,6 +32,7 @@ export const MODELS = {
   fieldFence: 'models/fence-2.glb',
   grass: 'models/grass.glb',
   crops: 'models/crops.glb',
+  tools: 'models/tools.glb',
   debris: 'models/debris.glb',
   fishingHut: 'models/fishing-hut.glb',
   coop: 'models/coop.glb',

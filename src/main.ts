@@ -17,6 +17,7 @@ import { createHouseView, type HouseView } from './render/house.ts'
 import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
+import { createCharacterPanel } from './ui/character.ts'
 import { createSocialPanel } from './ui/social.ts'
 import { decodeFarm } from './save/share.ts'
 import { createBoardPanel, npcDialog } from './ui/orders.ts'
@@ -27,6 +28,8 @@ import { attachAudio } from './audio/index.ts'
 import { sound } from './audio/sound.ts'
 import { checkAchievements, ensureDaily, onProgress } from './systems/quests.ts'
 import { createFarmer } from './render/models.ts'
+import { createCharacter } from './render/character.ts'
+import { initTools, type ActionName } from './render/tools.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
 import { createWorld } from './render/scene.ts'
@@ -91,8 +94,31 @@ async function start(): Promise<void> {
   const followCam = new FollowCamera(window.innerWidth / window.innerHeight)
   const quality = new AdaptiveQuality(world.renderer)
   const farmView = createFarmView(world.scene, models.crops)
-  const farmer = createFarmer(models.farmer)
+  initTools(models.tools)
+  // Nhân vật người chơi: tự tạo (bộ dựng chibi) hoặc mẫu gốc của bản cũ.
+  const makePlayerModel = () => (state.player.look ? createCharacter(state.player.look) : createFarmer(models.farmer))
+  let farmer = makePlayerModel()
   world.scene.add(farmer.root)
+  bus.on('lookChanged', () => {
+    world.scene.remove(farmer.root)
+    farmer = makePlayerModel()
+    world.scene.add(farmer.root)
+  })
+
+  // Động tác làm việc theo việc vừa làm (cầm dụng cụ tương ứng trên tay).
+  const PROGRESS_ACTION: Partial<Record<string, ActionName>> = {
+    till: 'hoe', plant: 'plant', water: 'water', harvest: 'harvest', collect: 'harvest', fish: 'cheer',
+  }
+  bus.on('progress', (ev) => {
+    const a = PROGRESS_ACTION[ev.type]
+    if (a) farmer.playAction?.(a)
+  })
+  bus.on('levelUp', () => farmer.playAction?.('cheer'))
+  bus.on('sfx', (name) => {
+    if (name === 'chicken' || name === 'cow' || name === 'pig') farmer.playAction?.('pet')
+  })
+  let lastFishPhase = 'idle'
+  const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
@@ -137,6 +163,7 @@ async function start(): Promise<void> {
     bus.on('progress', (ev) => onProgress(state, ev))
   }
   const socialPanel = createSocialPanel(state)
+  const characterPanel = createCharacterPanel(state, () => autosaver.requestSoon(), () => (followCam.closeup = false))
   const goInside = () => {
     if (ridingAnimal()) dismount(state)
     if (isFishing()) stopFishing()
@@ -232,7 +259,7 @@ async function start(): Promise<void> {
     if (isModalOpen()) return
     if (visiting && action !== 'menu' && action !== 'interact') return
     // Khi đang mở cửa sổ, chỉ cho đóng cửa sổ hoặc chuyển qua túi đồ.
-    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal' && action !== 'social') return
+    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal' && action !== 'social' && action !== 'character') return
     if (isFishing() && (action === 'useTool' || action === 'interact')) return strike(state)
     if (isFishing() && action === 'menu') return stopFishing()
     switch (action) {
@@ -250,6 +277,10 @@ async function start(): Promise<void> {
         return togglePanel(journalPanel)
       case 'social':
         return togglePanel(socialPanel)
+      case 'character':
+        togglePanel(characterPanel)
+        followCam.closeup = isPanelOpen()
+        return
       case 'ride':
         return state.player.indoors ? undefined : toggleRide(state)
       default:
@@ -278,6 +309,23 @@ async function start(): Promise<void> {
           return { calls: i.render.calls, triangles: i.render.triangles, geometries: i.memory.geometries, textures: i.memory.textures, fps: Math.round(quality.fps), ratio: quality.pixelRatio }
         },
         npcPose,
+        /** Cho nhân vật làm một động tác (để xem hoạt ảnh). */
+        act: (name: ActionName) => farmer.playAction?.(name),
+        /** Dụng cụ đang cầm: kích thước thật trong thế giới (để kiểm tra tỉ lệ, hướng). */
+        heldTool: () => {
+          let info: { name: string; size: number[]; center: number[] } | null = null
+          farmer.root.traverse((o) => {
+            if (!info && o.name.startsWith('Tool_')) {
+              const box = new THREE.Box3().setFromObject(o)
+              info = { name: o.name, size: box.getSize(new THREE.Vector3()).toArray(), center: box.getCenter(new THREE.Vector3()).toArray() }
+            }
+          })
+          return info
+        },
+        setLook: (look: unknown) => {
+          state.player.look = look as typeof state.player.look
+          bus.emit('lookChanged', undefined)
+        },
         /** Toạ độ màn hình của một dân làng. */
         npcScreen(id: string) {
           const p = npcPose(id)
@@ -361,7 +409,13 @@ async function start(): Promise<void> {
     farmView.update(state, interaction.focusPlot(), clock.getElapsed())
     animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
     npcsView.update(state, dt, clock.getElapsed())
-    fishingView.update(state.player, clock.getElapsed())
+    // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
+    if (fishing.phase !== lastFishPhase) {
+      if (fishing.phase === 'waiting' && lastFishPhase === 'idle') farmer.playAction?.('cast')
+      farmer.setFishing?.(fishing.phase === 'idle' ? 'none' : fishing.phase === 'reeling' ? 'reel' : 'hold')
+      lastFishPhase = fishing.phase
+    }
+    fishingView.update(state.player, clock.getElapsed(), farmer.rodTip?.(rodTip) ? rodTip : null)
     fishingUi.update()
     audio.update()
     houseView?.update(state, decorUi.ghost, decorUi.active)

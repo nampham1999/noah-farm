@@ -1,31 +1,15 @@
 import * as THREE from 'three'
 import { staticModel } from './instancing.ts'
-import type { Farmer } from './models.ts'
+import type { Farmer, FishingPose } from './models.ts'
+import type { Look } from '../core/look.ts'
+import { ACTION_SECONDS, ACTION_TOOL, makeTool, toolTip, type ActionName, type ToolName } from './tools.ts'
 
 /**
  * Bộ dựng nhân vật chibi low-poly bằng khối cơ bản: nam/nữ, trẻ con/người lớn/người già,
  * nhiều kiểu tóc, râu, mũ, trang phục. Mỗi nhân vật gộp còn 5 khối (thân và đầu, hai tay,
  * hai chân) nên vẫn có hoạt ảnh bước đi mà ít lần gọi vẽ.
  */
-export interface Look {
-  body: 'male' | 'female'
-  age: 'child' | 'adult' | 'elder'
-  skin: string
-  hair: string
-  hairStyle: 'short' | 'long' | 'bun' | 'ponytail' | 'curly' | 'bald'
-  beard?: 'full' | 'mustache'
-  shirt: string
-  pants: string
-  /** Mặc váy (thay cho quần, chân thò dưới váy). */
-  dress?: boolean
-  shoes?: string
-  hat?: 'straw' | 'cap' | 'chef' | 'bucket' | 'scarf'
-  hatColor?: string
-  apron?: string
-  glasses?: boolean
-  /** Người già chống gậy. */
-  cane?: boolean
-}
+export type { Look }
 
 const mat = (color: string) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 })
 
@@ -152,15 +136,54 @@ export function createCharacter(look: Look): Farmer {
   body.scale.setScalar(scale)
   root.add(body)
 
+  // Chỗ cầm đồ ở bàn tay phải (đầu cánh tay khi buông thõng).
+  const handR = new THREE.Object3D()
+  handR.position.set(0, -0.3, 0)
+  parts.armR.add(handR)
+  let held: { name: ToolName; obj: THREE.Object3D } | null = null
+  const hold = (name: ToolName | null) => {
+    if (held?.name === name) return
+    if (held) held.obj.removeFromParent()
+    held = null
+    const obj = name ? makeTool(name) : null
+    if (!obj || !name) return
+    obj.scale.divideScalar(scale)
+    handR.add(obj)
+    held = { name, obj }
+  }
+
+  const baseLean = parts.upper.rotation.x
   let phase = Math.random() * 6
   let riding = false
+  let action: { name: ActionName; t: number } | null = null
+  let fishing: FishingPose = 'none'
+  let time = 0
   const pace = elder ? 0.7 : child ? 1.3 : 1
   return {
     root,
     setRiding(on) {
       riding = on
     },
+    playAction(name) {
+      action = { name, t: 0 }
+      hold(ACTION_TOOL[name] ?? (fishing !== 'none' ? 'fishing_rod' : null))
+    },
+    setFishing(mode) {
+      fishing = mode
+      if (mode === 'none') {
+        if (action?.name === 'cast') action = null
+        hold(null)
+      } else hold('fishing_rod')
+    },
+    rodTip(out) {
+      if (held?.name !== 'fishing_rod') return false
+      const tip = toolTip(held.obj)
+      if (!tip) return false
+      tip.getWorldPosition(out)
+      return true
+    },
     animate(dt, speed01) {
+      time += dt
       if (riding) {
         parts.legL.rotation.x = parts.legR.rotation.x = -1.3
         return
@@ -171,9 +194,93 @@ export function createCharacter(look: Look): Farmer {
       parts.legR.rotation.x = -swing
       parts.armL.rotation.x = -swing * 0.8
       parts.armR.rotation.x = swing * (look.cane ? 0.3 : 0.8)
+      parts.upper.rotation.x = baseLean
       // Đi thì nhún, đứng thì thở nhẹ.
       body.position.y = Math.abs(Math.sin(phase)) * 0.05 * speed01 * scale
       parts.upper.scale.y = 1 + Math.sin(phase * 0.5) * 0.012 * (1 - speed01)
+
+      // Cầm cần câu chờ cá: tay đưa ra trước, cần chĩa lên về phía hồ; kéo cá thì cần rung.
+      const fishingPose = () => {
+        parts.armR.rotation.x = -1.05
+        parts.armL.rotation.x = -0.75
+        handR.rotation.x = -0.35 + (fishing === 'reel' ? Math.sin(time * 26) * 0.12 : 0)
+      }
+
+      if (action) {
+        action.t += dt
+        const k = Math.min(1, action.t / ACTION_SECONDS[action.name])
+        poseAction(action.name, k)
+        if (k >= 1 && !(action.name === 'cast' && fishing !== 'none')) {
+          action = null
+          handR.rotation.set(0, 0, 0)
+          if (fishing === 'none') hold(null)
+        }
+      } else if (fishing !== 'none') {
+        fishingPose()
+      } else {
+        handR.rotation.set(0, 0, 0)
+      }
+
+      /** Tư thế theo tiến độ k (0..1) của từng động tác. */
+      function poseAction(name: ActionName, k: number): void {
+        const ease = (a: number, b: number, t: number) => a + (b - a) * (t * t * (3 - 2 * t))
+        const seg = (k0: number, k1: number) => Math.min(1, Math.max(0, (k - k0) / (k1 - k0)))
+        // Dụng cụ dài (cuốc, liềm, cần câu) nối theo cánh tay; bình tưới, gói hạt giữ thẳng đứng.
+        const along = held && (held.name === 'hoe' || held.name === 'sickle' || held.name === 'fishing_rod')
+        switch (name) {
+          case 'hoe': {
+            // Giơ cao bằng hai tay rồi bổ xuống đất.
+            const a = k < 0.45 ? ease(0, -2.7, seg(0, 0.45)) : k < 0.65 ? ease(-2.7, -0.55, seg(0.45, 0.65)) : ease(-0.55, 0, seg(0.65, 1))
+            parts.armR.rotation.x = parts.armL.rotation.x = a
+            parts.upper.rotation.x = baseLean + (k > 0.45 && k < 0.8 ? 0.25 : 0)
+            break
+          }
+          case 'water': {
+            // Đưa bình ra trước rồi nghiêng cho nước chảy.
+            const a = ease(0, -1.1, seg(0, 0.25))
+            parts.armR.rotation.x = k > 0.85 ? ease(-1.1, 0, seg(0.85, 1)) : a
+            break
+          }
+          case 'plant':
+          case 'harvest': {
+            // Cúi xuống, hai tay chạm đất; thu hoạch thì nhấc lên khoe.
+            const down = k < 0.5 ? seg(0, 0.4) : 1 - seg(0.6, 1)
+            parts.upper.rotation.x = baseLean + 0.5 * down
+            body.position.y = -0.08 * down * scale
+            parts.armR.rotation.x = parts.armL.rotation.x = -1.3 * down
+            if (name === 'harvest' && k > 0.6) parts.armR.rotation.x = ease(-1.3, -2.4, seg(0.6, 0.85))
+            break
+          }
+          case 'cast': {
+            // Vung cần ra sau qua vai rồi quăng ra trước.
+            parts.armR.rotation.x = k < 0.45 ? ease(0, -3.0, seg(0, 0.45)) : ease(-3.0, -1.05, seg(0.45, 0.7))
+            parts.armL.rotation.x = ease(0, -0.75, seg(0.4, 0.8))
+            parts.upper.rotation.x = baseLean + (k < 0.45 ? -0.15 * seg(0, 0.45) : 0.15 * seg(0.45, 0.7))
+            handR.rotation.x = k > 0.7 ? -0.35 * seg(0.7, 1) : 0
+            break
+          }
+          case 'cheer': {
+            // Hai tay giơ lên, nhảy hai cái.
+            const up = k < 0.2 ? seg(0, 0.2) : k > 0.85 ? 1 - seg(0.85, 1) : 1
+            parts.armR.rotation.x = parts.armL.rotation.x = -2.9 * up
+            parts.armR.rotation.z = 0.35 * up
+            parts.armL.rotation.z = -0.35 * up
+            body.position.y = Math.abs(Math.sin(k * Math.PI * 2)) * 0.12 * scale
+            break
+          }
+          case 'pet': {
+            parts.armR.rotation.x = -0.9 + Math.sin(k * Math.PI * 6) * 0.2
+            parts.upper.rotation.x = baseLean + 0.2
+            break
+          }
+        }
+        if (name !== 'cheer') parts.armR.rotation.z = parts.armL.rotation.z = 0
+        // Dụng cụ dài nối theo cánh tay; đồ cầm đứng thì bù góc tay cho thẳng (bình tưới nghiêng khi tưới).
+        if (held) {
+          held.obj.rotation.x = along ? Math.PI / 2 : -parts.armR.rotation.x + (name === 'water' && k > 0.25 && k < 0.85 ? 0.7 : 0)
+        }
+      }
+      if (held && !action && fishing !== 'none') held.obj.rotation.x = Math.PI / 2
     },
   }
 }

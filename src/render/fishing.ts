@@ -3,7 +3,8 @@ import type { PlayerState } from '../core/state.ts'
 import { fishing } from '../systems/fishing.ts'
 
 export interface FishingView {
-  update(player: PlayerState, time: number): void
+  /** rodTip: vị trí đầu cần câu trong tay nhân vật (null thì ước lượng trước mặt). */
+  update(player: PlayerState, time: number, rodTip: THREE.Vector3 | null): void
 }
 
 /** Phao đỏ trắng bập bềnh, chìm xuống khi cá cắn, nối với nhân vật bằng dây câu. */
@@ -30,7 +31,7 @@ export function createFishingView(scene: THREE.Scene): FishingView {
   scene.add(bobber, ring, line)
 
   return {
-    update(player, time) {
+    update(player, time, rodTip) {
       const active = fishing.phase !== 'idle'
       bobber.visible = ring.visible = line.visible = active
       if (!active) return
@@ -45,10 +46,11 @@ export function createFishingView(scene: THREE.Scene): FishingView {
       ring.scale.setScalar(1 + pulse * (bite ? 3 : 1.5))
       ;(ring.material as THREE.MeshBasicMaterial).opacity = (1 - pulse) * 0.8
 
-      // Dây câu từ tay (trước mặt, ngang vai) tới phao.
-      const hx = player.pos[0] + Math.sin(player.rotY) * 0.45
-      const hz = player.pos[2] + Math.cos(player.rotY) * 0.45
-      linePos.set([hx, 1.25, hz, fishing.x, y + 0.19, fishing.z])
+      // Dây câu từ đầu cần (nếu biết) xuống phao.
+      const hx = rodTip?.x ?? player.pos[0] + Math.sin(player.rotY) * 0.45
+      const hy = rodTip?.y ?? 1.25
+      const hz = rodTip?.z ?? player.pos[2] + Math.cos(player.rotY) * 0.45
+      linePos.set([hx, hy, hz, fishing.x, y + 0.19, fishing.z])
       lineGeo.attributes.position.needsUpdate = true
     },
   }

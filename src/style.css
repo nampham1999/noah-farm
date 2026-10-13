@@ -878,6 +878,76 @@ button {
   border-color: var(--gold);
 }
 
+/* Tạo nhân vật: cửa sổ nằm bên phải (ngang) hoặc dưới đáy (dọc), nền trong để thấy nhân vật. */
+.panel-backdrop--side {
+  place-items: center end;
+  background: transparent;
+  pointer-events: none;
+}
+
+.panel-backdrop--side .panel {
+  width: min(400px, 46vw);
+  pointer-events: auto;
+}
+
+@media (orientation: portrait) {
+  .panel-backdrop--side {
+    place-items: end center;
+    padding-bottom: 8px;
+  }
+
+  .panel-backdrop--side .panel {
+    width: min(520px, 100%);
+    max-height: 46dvh;
+  }
+}
+
+.look-section + .look-section {
+  margin-top: 10px;
+}
+
+.look-section h3 {
+  margin: 0 0 6px;
+  font: 700 14px var(--display);
+  color: var(--wood);
+}
+
+.look-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.look-chip {
+  min-height: 34px;
+  padding: 4px 12px;
+  border: 3px solid var(--paper-3);
+  border-radius: 999px;
+  background: #fffaf0;
+  color: var(--ink);
+  font: 700 14px var(--font);
+  cursor: pointer;
+}
+
+.look-chip.is-on {
+  border-color: var(--green-dark);
+  background: var(--green-top);
+}
+
+.look-swatch {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #fffaf0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--paper-3);
+  cursor: pointer;
+}
+
+.look-swatch.is-on {
+  box-shadow: 0 0 0 3px var(--green-dark);
+  transform: scale(1.12);
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

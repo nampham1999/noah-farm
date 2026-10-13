@@ -4,6 +4,7 @@
  */
 import { balance, type AnimalType } from '../data/index.ts'
 import { blockCells, SPAWN } from './world.ts'
+import type { Look } from './look.ts'
 
 export type Lang = 'vi' | 'en'
 export type Quality = 'auto' | 'low' | 'high'
@@ -21,6 +22,8 @@ export interface PlayerState {
   rotY: number
   /** Đang ở trong nhà. */
   indoors: boolean
+  /** Ngoại hình tự tạo; null là dùng nhân vật mẫu gốc của bản cũ. */
+  look: Look | null
 }
 
 /** Đơn hàng của dân làng trên bảng đơn hàng (như bản cũ). */
@@ -178,6 +181,7 @@ export function createInitialState(): GameState {
       pos: [SPAWN.x, 0, SPAWN.z],
       rotY: SPAWN.rotY,
       indoors: false,
+      look: null,
     },
     clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
     inventory: { slots, selected: 0 },

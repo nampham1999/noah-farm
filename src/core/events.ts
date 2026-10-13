@@ -10,6 +10,7 @@ export type GameAction =
   | 'journal'
   | 'menu'
   | 'social'
+  | 'character'
 
 /** Thông báo ngắn cho người chơi; key là khoá i18n, HUD tự dịch. */
 export interface Notice {
@@ -41,6 +42,8 @@ export interface GameEvents {
   sfx: string
   /** Người chơi vừa đổi âm lượng trong menu. */
   volumeChanged: undefined
+  /** Người chơi vừa đổi ngoại hình nhân vật. */
+  lookChanged: undefined
   /** Người chơi vừa bật/tắt tiết kiệm pin. */
   qualityChanged: undefined
   levelUp: number

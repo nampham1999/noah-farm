@@ -6,7 +6,7 @@ import npcData from '../data/npcs.json'
 import { absDay } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
 import { gainXp } from './progress.ts'
-import type { Look } from '../render/character.ts'
+import type { Look } from '../core/look.ts'
 
 /**
  * Bảng đơn hàng của dân làng (theo bản cũ cozyfarmy.com): mỗi đơn xin vài món,

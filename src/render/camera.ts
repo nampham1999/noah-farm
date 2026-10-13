@@ -5,6 +5,8 @@ const OFFSET = new THREE.Vector3(0, 10.5, 10.5)
 export const ZOOM_MIN = 0.6
 export const ZOOM_MAX = 2.45
 const FOLLOW_RATE = 6
+/** Cận cảnh nhân vật (lúc tạo nhân vật): khoảng cách camera so với zoom 1, màn ngang và dọc. */
+const CLOSEUP_ZOOM = { landscape: 0.42, portrait: 0.32 }
 /** Góc nhìn dọc khi màn hình ngang hoặc vuông. */
 const FOV = 45
 /** Màn hình dọc: giữ góc nhìn ngang tối thiểu này để vẫn thấy đủ nông trại hai bên. */
@@ -22,6 +24,11 @@ export class FollowCamera {
   /** Góc xoay của camera; cố định 0 (camera ở phía +Z). */
   readonly yaw = 0
   zoom = 1
+  /** Bật thì zoom sát nhân vật và đẩy nhân vật sang trái (màn ngang) hoặc lên trên (màn dọc), chừa chỗ cho cửa sổ. */
+  closeup = false
+
+  private closeupT = 0
+  private readonly shift = new THREE.Vector3()
 
   private readonly target = new THREE.Vector3()
   private initialized = false
@@ -44,8 +51,16 @@ export class FollowCamera {
       this.initialized = true
     }
 
-    this.camera.position.copy(this.target).addScaledVector(OFFSET, this.zoom * this.pullback)
-    this.camera.lookAt(this.target)
+    // Chuyển mượt vào và ra khỏi cận cảnh.
+    this.closeupT += ((this.closeup ? 1 : 0) - this.closeupT) * (1 - Math.exp(-8 * dt))
+    const c = this.closeupT
+    const dist = THREE.MathUtils.lerp(this.zoom * this.pullback, this.camera.aspect >= 1 ? CLOSEUP_ZOOM.landscape : CLOSEUP_ZOOM.portrait, c)
+    const d = OFFSET.length() * dist
+    if (this.camera.aspect >= 1) this.shift.set(0.29 * d * c, 0, 0)
+    else this.shift.set(0, 0, 0.47 * d * c)
+    this.shift.add(this.target)
+    this.camera.position.copy(this.shift).addScaledVector(OFFSET, dist)
+    this.camera.lookAt(this.shift)
   }
 
   resize(aspect: number): void {

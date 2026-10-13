@@ -98,7 +98,8 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
           nameInput.value = state.player.name
           autosaver.requestSoon()
         })
-        nameBox.append(nameInput, friends)
+        const looks = button(`👤 ${t('look.title')}`, 'btn', () => bus.emit('action', 'character'))
+        nameBox.append(nameInput, looks, friends)
       }
 
       // Âm thanh: nhạc nền và hiệu ứng.
