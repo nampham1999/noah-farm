@@ -410,5 +410,10 @@
   "shop.greenhouseSub": "Luống 8 ô trồng được mọi mùa, cạnh quầy hàng",
   "shop.greenhouseOwned": "Đã có: luống 8 ô trồng mọi mùa",
   "shop.greenhouseOnly": "🪴 Trái mùa: chỉ trồng trong nhà kính",
-  "greenhouse.built": "🪴 Đã dựng nhà kính! Luống trước cửa trồng được mọi mùa"
+  "greenhouse.built": "🪴 Đã dựng nhà kính! Luống trước cửa trồng được mọi mùa",
+  "horse.shopName": "Ngựa",
+  "horse.shopSub": "Cưỡi chạy nhanh; ở xa bấm 🐴 là ngựa phi tới đón",
+  "horse.owned": "Ngựa đang ở cột buộc cạnh chuồng",
+  "horse.bought": "🐴 Đã có ngựa! Bấm nút 🐴 (hoặc R) để gọi và cưỡi",
+  "horse.called": "🐴 Ngựa đang phi tới…"
 }

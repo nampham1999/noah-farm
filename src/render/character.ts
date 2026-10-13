@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { staticModel } from './instancing.ts'
-import type { Farmer, FishingPose } from './models.ts'
+import { SADDLE_Y, type Farmer, type FishingPose } from './models.ts'
 import type { Look } from '../core/look.ts'
 import { ACTION_SECONDS, ACTION_TOOL, makeTool, toolTip, type ActionName, type ToolName } from './tools.ts'
 
@@ -155,14 +155,16 @@ export function createCharacter(look: Look): Farmer {
   const baseLean = parts.upper.rotation.x
   let phase = Math.random() * 6
   let riding = false
+  let saddle = SADDLE_Y
   let action: { name: ActionName; t: number } | null = null
   let fishing: FishingPose = 'none'
   let time = 0
   const pace = elder ? 0.7 : child ? 1.3 : 1
   return {
     root,
-    setRiding(on) {
+    setRiding(on, saddleY = SADDLE_Y) {
       riding = on
+      saddle = saddleY
     },
     playAction(name) {
       action = { name, t: 0 }
@@ -186,6 +188,7 @@ export function createCharacter(look: Look): Farmer {
       time += dt
       if (riding) {
         parts.legL.rotation.x = parts.legR.rotation.x = -1.3
+        body.position.y = saddle
         return
       }
       phase += dt * (3 + 9 * speed01) * pace

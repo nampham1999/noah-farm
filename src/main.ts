@@ -47,7 +47,8 @@ import { animalPose, animalsNewDay, updateAnimals, updateWander } from './system
 import { advanceClock } from './systems/clock.ts'
 import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from './systems/fishing.ts'
 import { createFishingUi } from './ui/fishing.ts'
-import { dismount, mountable, RIDE_SPEED, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
+import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
+import { createHorseView } from './render/horse.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -136,6 +137,7 @@ async function start(): Promise<void> {
   bus.on('houseUpgraded', (level) => world.setHouseLevel(level))
   const petView = createPetView(world.scene, models)
   const greenhouseView = createGreenhouseView(world.scene, models)
+  const horseView = createHorseView(world.scene, models)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
   let houseView: HouseView | null = null
@@ -209,7 +211,7 @@ async function start(): Promise<void> {
     openInventory: () => togglePanel(inventoryPanel),
     openMenu: () => togglePanel(menuPanel),
     backupDue: () => backupDue(state),
-    rideState: () => (ridingAnimal() ? 'riding' : mountable(state) ? 'can' : 'none'),
+    rideState: () => (ridingAnimal() ? 'riding' : canRide(state) ? 'can' : 'none'),
     indoors: () => state.player.indoors,
     toggleDecor: () => decorUi.toggle(),
     openJournal: () => togglePanel(journalPanel),
@@ -261,6 +263,7 @@ async function start(): Promise<void> {
     const animal = animalsView.hitTest(followCam.camera, x, y)
     if (animal) return interaction.tapAnimal(animal)
     if (petView.hitTest(followCam.camera, x, y)) return interaction.tapPet()
+    if (!ridingAnimal() && horseView.hitTest(followCam.camera, x, y)) return interaction.tapHorse()
     const machine = machinesView.hitTest(followCam.camera, x, y)
     if (machine) return interaction.tapMachine(machine)
     const hit = pickGround(followCam.camera, x, y)
@@ -418,7 +421,7 @@ async function start(): Promise<void> {
     }
     const riding = ridingAnimal() !== null
     const speed = movePlayer(
-      state.player, dir, speedMultiplier(state) * (riding ? RIDE_SPEED : 1), dt,
+      state.player, dir, speedMultiplier(state) * (riding ? rideSpeed() : 1), dt,
       state.player.indoors ? blockedRects(state) : [],
     )
     // Bước ra thảm cửa thì ra ngoài.
@@ -427,8 +430,8 @@ async function start(): Promise<void> {
       decorUi.close()
       exitHouse(state)
     }
-    updateRiding(state, Math.min(1, speed / (WALK_SPEED * RIDE_SPEED)))
-    farmer.setRiding(riding)
+    updateRiding(state, Math.min(1, speed / (WALK_SPEED * rideSpeed())), dt)
+    farmer.setRiding(riding, ridingAnimal() === HORSE_ID ? horseView.saddleY : undefined)
 
     playerPos.fromArray(state.player.pos)
     farmer.root.position.copy(playerPos)
@@ -439,6 +442,7 @@ async function start(): Promise<void> {
     machinesView.update(state, t, clock.getElapsed())
     petView.update(state, clock.getElapsed())
     greenhouseView.update(state)
+    horseView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {

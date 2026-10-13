@@ -8,7 +8,8 @@ export interface Farmer {
   /** speed01: tốc độ hiện tại so với tốc độ tối đa, 0..1. */
   animate(dt: number, speed01: number): void
   /** Ngồi trên lưng thú cưỡi (dùng hoạt ảnh ngồi) hoặc đứng xuống. */
-  setRiding(on: boolean): void
+  /** Ngồi lên lưng con vật; saddleY là độ cao yên (m), mặc định lưng bò. */
+  setRiding(on: boolean, saddleY?: number): void
   /** Làm một động tác (cuốc, tưới, quăng cần...), cầm dụng cụ phù hợp trên tay. */
   playAction?(name: ActionName): void
   /** Câu cá: 'hold' cầm cần chờ cá, 'reel' đang kéo (cần rung), 'none' cất cần. */
@@ -20,7 +21,7 @@ export interface Farmer {
 export type FishingPose = 'none' | 'hold' | 'reel'
 
 /** Độ cao chỗ ngồi trên lưng bò so với mặt đất. */
-const SADDLE_Y = 0.62
+export const SADDLE_Y = 0.62
 
 /** Chiều cao nhân vật trong thế giới (m). */
 const HEIGHT = 1.35
@@ -131,9 +132,9 @@ export function createFarmer(gltf: GLTF, look: FarmerLook = {}): Farmer {
   let time = 0
   return {
     root,
-    setRiding(on) {
+    setRiding(on, saddleY = SADDLE_Y) {
       riding = on
-      model.position.y = on ? SADDLE_Y : 0
+      model.position.y = on ? saddleY : 0
     },
     playAction(name) {
       const action = actions.get(name)!

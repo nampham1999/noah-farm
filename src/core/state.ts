@@ -174,6 +174,8 @@ export interface GameState {
   pet: PetState | null
   /** Đã dựng nhà kính (luống 8 ô trồng được mọi mùa). */
   greenhouse: boolean
+  /** Đã mua ngựa. */
+  horse: boolean
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**
@@ -219,6 +221,7 @@ export function createInitialState(): GameState {
     machines: [],
     pet: null,
     greenhouse: false,
+    horse: false,
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },

@@ -10,6 +10,7 @@ import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
 import { balance, MACHINE_BY_ID, type MachineId } from '../data/index.ts'
 import { actOnPet, petPose } from './pet.ts'
+import { horsePose, toggleRide } from './riding.ts'
 import { actOnPlot, isRipe } from './farming.ts'
 import { turnToward, type Dir } from './movement.ts'
 
@@ -29,6 +30,7 @@ type Goal =
   | { kind: 'board' }
   | { kind: 'machine'; id: MachineId }
   | { kind: 'pet' }
+  | { kind: 'horse' }
   | { kind: 'bed'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
@@ -114,6 +116,11 @@ export class Interaction {
   /** Chạm vào chó: đi tới rồi lấy quà / vuốt ve. */
   tapPet(): void {
     this.setGoal({ kind: 'pet' })
+  }
+
+  /** Chạm vào ngựa: đi tới rồi leo lên. */
+  tapHorse(): void {
+    this.setGoal({ kind: 'horse' })
   }
 
   tapMachine(id: MachineId): void {
@@ -292,6 +299,10 @@ export class Interaction {
         const p = petPose()
         return [p.x, p.z, ANIMAL_REACH]
       }
+      case 'horse': {
+        const h = horsePose()
+        return [h.x, h.z, 1.5]
+      }
       case 'machine': {
         const m = MACHINE_BY_ID.get(goal.id)!
         return [m.x, m.z, MACHINE_REACH]
@@ -325,6 +336,8 @@ export class Interaction {
       const me = this.state.player.pos
       turnToward(this.state.player, p.x - me[0], p.z - me[2])
       actOnPet(this.state)
+    } else if (goal.kind === 'horse') {
+      toggleRide(this.state)
     } else if (goal.kind === 'machine') {
       const m = MACHINE_BY_ID.get(goal.id)!
       const me = this.state.player.pos

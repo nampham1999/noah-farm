@@ -158,6 +158,7 @@ function normalize(data: Record<string, unknown>): GameState {
     animals,
     pet: normalizePet(data.pet),
     greenhouse,
+    horse: data.horse === true,
     machines: (Array.isArray(data.machines) ? data.machines : []).flatMap((raw): GameState['machines'] => {
       const m = obj(raw)
       if (typeof m.id !== 'string' || !MACHINE_BY_ID.has(m.id as MachineId)) return []

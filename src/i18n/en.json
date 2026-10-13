@@ -410,5 +410,10 @@
   "shop.greenhouseSub": "An 8-plot bed that grows crops in any season, by the shop",
   "shop.greenhouseOwned": "Built: 8 plots for any season",
   "shop.greenhouseOnly": "🪴 Off-season: greenhouse only",
-  "greenhouse.built": "🪴 Greenhouse built! Its bed grows crops in any season"
+  "greenhouse.built": "🪴 Greenhouse built! Its bed grows crops in any season",
+  "horse.shopName": "Horse",
+  "horse.shopSub": "Ride fast; tap 🐴 from anywhere and it gallops over",
+  "horse.owned": "Your horse waits at the hitching post by the coop",
+  "horse.bought": "🐴 You have a horse! Tap 🐴 (or R) to call and ride it",
+  "horse.called": "🐴 Your horse is on its way…"
 }

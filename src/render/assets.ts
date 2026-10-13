@@ -44,6 +44,7 @@ export const MODELS = {
   jamJar: 'models/jam-jar.glb',
   dog: 'models/dog.glb',
   greenhouse: 'models/greenhouse.glb',
+  horse: 'models/horse.glb',
   beehive: 'models/beehive.glb',
   lilyA: 'kaykit-hex/waterlily_A.gltf',
   lilyB: 'kaykit-hex/waterlily_B.gltf',

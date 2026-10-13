@@ -9,6 +9,7 @@ import { buyGreenhouse, buyLand, GREENHOUSE_LEVEL, GREENHOUSE_PRICE, nextLandPri
 import { countItem } from '../systems/inventory.ts'
 import { buyMachine } from '../systems/machines.ts'
 import { buyPet, PET_PRICE } from '../systems/pet.ts'
+import { buyHorse, HORSE_LEVEL, HORSE_PRICE } from '../systems/riding.ts'
 import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems/shop.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
@@ -127,6 +128,14 @@ export function createShopPanel(state: GameState): PanelSpec {
       houseRow.append(button(`${house.price}g`, 'btn small gold', () => upgradeHouse(state) && refresh(), p.level < house.level || p.gold < house.price))
     }
     list.append(houseRow)
+
+    // Ngựa.
+    const horseRow = iconRow('🐴', t('horse.shopName'), state.horse ? t('horse.owned') : p.level < HORSE_LEVEL ? t('notice.locked', { level: HORSE_LEVEL }) : t('horse.shopSub'))
+    if (!state.horse) {
+      if (p.level < HORSE_LEVEL) horseRow.classList.add('locked')
+      horseRow.append(button(`${HORSE_PRICE}g`, 'btn small gold', () => buyHorse(state) && refresh(), p.level < HORSE_LEVEL || p.gold < HORSE_PRICE))
+    }
+    list.append(horseRow)
 
     // Chó nuôi.
     const petRow = iconRow('🐶', t('pet.shopName'), state.pet ? t('pet.owned', { name: state.pet.name }) : t('pet.shopSub'))

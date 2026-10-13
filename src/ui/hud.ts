@@ -205,8 +205,9 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
         }
       }
       const ride = hooks.rideState()
-      if (changed('ride', ride)) {
+      if (changed('ride', `${ride}|${state.horse}`)) {
         rideBtn.hidden = ride === 'none'
+        rideBtn.querySelector('.emoji')!.textContent = state.horse ? '🐴' : '🐮'
         rideBtn.classList.toggle('is-on', ride === 'riding')
         rideBtn.title = t(ride === 'riding' ? 'ride.off' : 'ride.on')
       }
