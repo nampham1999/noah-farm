@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// Luật bảo mật cho Noah Farm (dán vào Firebase Console → Firestore Database → Rules).
+// Nhóm nhỏ người quen: mỗi người chỉ ghi được dữ liệu của mình; bạn bè đọc được nông trại
+// của nhau; quà và tưới giúp mỗi loại mỗi ngày một lần (mã thư gồm người gửi và ngày).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isMe(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Hồ sơ: ai đã đăng nhập cũng đọc được (để xem danh sách bạn); chỉ chủ được ghi.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if isMe(uid)
+        && request.resource.data.name is string && request.resource.data.name.size() <= 20;
+
+      // Danh sách bạn: ghi hai chiều khi kết bạn, nên chủ hoặc chính người bạn đó được ghi.
+      match /friends/{fid} {
+        allow read: if isMe(uid);
+        allow create, update, delete: if isMe(uid) || isMe(fid);
+      }
+
+      // Hộp thư: chỉ bạn bè được gửi, mỗi mã thư chỉ tạo một lần (không ghi đè được).
+      match /inbox/{id} {
+        allow read, delete: if isMe(uid);
+        allow update: if isMe(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow create: if signedIn()
+          && request.resource.data.from == request.auth.uid
+          && request.resource.data.read == false
+          && id.matches(request.auth.uid + '_(gift|help)_[0-9]{8}')
+          && exists(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid));
+      }
+    }
+
+    // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
+    match /codes/{code} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && code.matches('[a-z0-9]{4,12}');
+    }
+
+    // Bản lưu: chủ ghi; người đã đăng nhập đọc được (để ghé thăm nông trại bạn).
+    match /saves/{uid} {
+      allow read: if signedIn();
+      allow write: if isMe(uid) && request.resource.data.data is string
+        && request.resource.data.data.size() < 900000;
+    }
+  }
+}

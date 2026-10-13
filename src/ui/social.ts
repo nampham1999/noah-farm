@@ -5,6 +5,8 @@ import { t } from '../i18n/index.ts'
 import { encodeFarm, inviteUrl, MAX_SHARE_CHARS, shareUrl } from '../save/share.ts'
 import { checkAchievements } from '../systems/quests.ts'
 import type { PanelSpec } from './panel.ts'
+import { refreshFriends } from '../online/online.ts'
+import { renderOnline } from './online.ts'
 
 /**
  * Bạn bè (GDD mục 8): link khoe nông trại (#visit=…) kèm mã QR, và link mời bạn mới (?ref=…).
@@ -30,9 +32,19 @@ export function createSocialPanel(state: GameState): PanelSpec {
     shared()
   }
 
+  const onlineUi = { gifting: null as string | null, code: '' }
+  let shownOnce = false
   return {
     title: () => `🤝 ${t('social.title')}`,
     render(body, refresh) {
+      // Chơi cùng bạn bè (Firebase); mở cửa sổ thì cập nhật danh sách bạn.
+      if (!shownOnce) {
+        shownOnce = true
+        void refreshFriends().then(refresh)
+        bus.on('onlineChanged', () => refresh())
+      }
+      renderOnline(body, state, refresh, onlineUi)
+
       // Khoe nông trại.
       const visit = section(body, t('social.visitTitle'))
       visit.append(note(t('social.visitHint', { name: state.player.name })))

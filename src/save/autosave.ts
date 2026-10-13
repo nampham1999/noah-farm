@@ -21,6 +21,8 @@ export class AutoSaver {
   /** Chỉ báo lỗi một lần cho tới khi ghi lại được. */
   private warned = false
   lastSavedAt = 0
+  /** Gọi sau mỗi lần lưu thành công (để đồng bộ lên mây). */
+  onSaved: ((savedAt: number) => void) | null = null
 
   constructor(store: SaveStore, state: GameState) {
     this.store = store
@@ -57,6 +59,7 @@ export class AutoSaver {
       .then(() => {
         this.lastSavedAt = savedAt
         this.warned = false
+        this.onSaved?.(savedAt)
       })
       .catch((e: unknown) => {
         console.error('Save failed', e)

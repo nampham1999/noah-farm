@@ -1,0 +1,264 @@
+import type { Look } from '../core/look.ts'
+
+/**
+ * Lớp nói chuyện với Firebase (Auth + Firestore lite). Thư viện Firebase chỉ được tải
+ * khi gọi connect(), nên game chơi một mình không phải tải thêm gì.
+ *
+ * Dữ liệu (luật bảo mật ở firestore.rules):
+ * - users/{uid}: hồ sơ (tên, cấp, ngoại hình, mã bạn bè, lần chơi gần nhất)
+ * - codes/{mã}: mã bạn bè → uid
+ * - saves/{uid}: bản lưu nén (để chơi nhiều máy và để bạn bè ghé thăm)
+ * - users/{uid}/friends/{uid bạn}: danh sách bạn (ghi hai chiều)
+ * - users/{uid}/inbox/{người gửi}_{loại}_{ngày}: quà, tưới giúp; mỗi loại mỗi ngày một lần
+ */
+
+export const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBpppO6xa2Uc00Jv194RD36sWudtUmFkgk',
+  authDomain: 'nsoft-dfe66.firebaseapp.com',
+  projectId: 'nsoft-dfe66',
+  storageBucket: 'nsoft-dfe66.firebasestorage.app',
+  messagingSenderId: '807175980682',
+  appId: '1:807175980682:web:ca1c3bba51ac040d500f73',
+}
+
+export interface Profile {
+  uid: string
+  name: string
+  level: number
+  look: Look | null
+  code: string
+  lastSeen: number
+}
+
+export interface InboxItem {
+  id: string
+  from: string
+  fromName: string
+  kind: 'gift' | 'help'
+  item?: string
+  qty?: number
+}
+
+export interface Account {
+  uid: string
+  anonymous: boolean
+  email: string | null
+}
+
+export type CloudErrorCode = 'offline' | 'notFound' | 'already' | 'denied' | 'setup' | 'popup' | 'other'
+
+export class CloudError extends Error {
+  readonly code: CloudErrorCode
+  constructor(code: CloudErrorCode, cause?: unknown) {
+    super(code, { cause })
+    this.code = code
+  }
+}
+
+/** Đổi lỗi của Firebase sang vài loại người chơi hiểu được. */
+function wrap(e: unknown): CloudError {
+  if (e instanceof CloudError) return e
+  const code = (e as { code?: string })?.code ?? ''
+  if (code.includes('permission-denied')) return new CloudError('denied', e)
+  if (code.includes('unavailable') || code.includes('network')) return new CloudError('offline', e)
+  if (code.includes('configuration-not-found') || code.includes('operation-not-allowed') || code.includes('unauthorized-domain')) return new CloudError('setup', e)
+  if (code.includes('popup')) return new CloudError('popup', e)
+  return new CloudError('other', e)
+}
+
+type Auth = typeof import('firebase/auth')
+type Store = typeof import('firebase/firestore/lite')
+
+/** Ngày thật dạng 20261013, dùng làm mã "mỗi ngày một lần". */
+export function dayKey(d = new Date()): string {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+}
+
+export class Cloud {
+  private readonly authLib: Auth
+  private readonly fs: Store
+  private readonly auth: import('firebase/auth').Auth
+  private readonly db: import('firebase/firestore/lite').Firestore
+
+  private constructor(authLib: Auth, fs: Store, auth: import('firebase/auth').Auth, db: import('firebase/firestore/lite').Firestore) {
+    this.authLib = authLib
+    this.fs = fs
+    this.auth = auth
+    this.db = db
+  }
+
+  /** Tải Firebase, đăng nhập (ẩn danh nếu chưa có tài khoản). */
+  static async connect(): Promise<Cloud> {
+    try {
+      const [{ initializeApp }, authLib, fs] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore/lite')])
+      const app = initializeApp(FIREBASE_CONFIG)
+      const auth = authLib.getAuth(app)
+      await auth.authStateReady()
+      if (!auth.currentUser) await authLib.signInAnonymously(auth)
+      return new Cloud(authLib, fs, auth, fs.getFirestore(app))
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  get account(): Account {
+    const u = this.auth.currentUser!
+    return { uid: u.uid, anonymous: u.isAnonymous, email: u.email }
+  }
+
+  /**
+   * Đăng nhập Google để dùng chung một nông trại trên nhiều máy.
+   * Máy đang ẩn danh thì gắn Google vào tài khoản này; nếu Google đó đã có tài khoản
+   * (đã chơi trên máy khác) thì chuyển sang tài khoản đó và trả về 'switched'.
+   */
+  async signInGoogle(): Promise<'linked' | 'switched'> {
+    const { GoogleAuthProvider, linkWithPopup, signInWithPopup } = this.authLib
+    const provider = new GoogleAuthProvider()
+    try {
+      await linkWithPopup(this.auth.currentUser!, provider)
+      return 'linked'
+    } catch (e) {
+      const code = (e as { code?: string }).code ?? ''
+      if (code === 'auth/credential-already-in-use' || code === 'auth/provider-already-linked') {
+        try {
+          await signInWithPopup(this.auth, provider)
+          return 'switched'
+        } catch (e2) {
+          throw wrap(e2)
+        }
+      }
+      throw wrap(e)
+    }
+  }
+
+  async signOut(): Promise<void> {
+    await this.auth.signOut()
+  }
+
+  /** Ghi hồ sơ; giữ mã bạn bè (đặt chỗ ở codes/{mã}, trùng với người khác thì đổi mã). */
+  async saveProfile(p: Omit<Profile, 'uid' | 'lastSeen'>, newCode: () => string): Promise<string> {
+    const { doc, getDoc, setDoc } = this.fs
+    const uid = this.account.uid
+    try {
+      let code = p.code
+      for (let tries = 0; tries < 5; tries++) {
+        const ref = doc(this.db, 'codes', code)
+        const snap = await getDoc(ref)
+        if (!snap.exists()) {
+          await setDoc(ref, { uid })
+          break
+        }
+        if (snap.data().uid === uid) break
+        code = newCode()
+      }
+      await setDoc(doc(this.db, 'users', uid), { name: p.name, level: p.level, look: p.look, code, lastSeen: Date.now() })
+      return code
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  async uploadSave(data: string, savedAt: number): Promise<void> {
+    const { doc, setDoc } = this.fs
+    try {
+      await setDoc(doc(this.db, 'saves', this.account.uid), { data, savedAt })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Bản lưu trên mây của một người (mình hoặc bạn); null nếu chưa có. */
+  async downloadSave(uid = this.account.uid): Promise<{ data: string; savedAt: number } | null> {
+    const { doc, getDoc } = this.fs
+    try {
+      const snap = await getDoc(doc(this.db, 'saves', uid))
+      return snap.exists() ? (snap.data() as { data: string; savedAt: number }) : null
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Kết bạn bằng mã: ghi vào danh sách của cả hai người. */
+  async addFriend(code: string): Promise<Profile> {
+    const { doc, getDoc, setDoc } = this.fs
+    const me = this.account.uid
+    try {
+      const snap = await getDoc(doc(this.db, 'codes', code.trim().toLowerCase()))
+      if (!snap.exists()) throw new CloudError('notFound')
+      const uid = snap.data().uid as string
+      if (uid === me) throw new CloudError('notFound')
+      const since = Date.now()
+      await setDoc(doc(this.db, 'users', me, 'friends', uid), { since })
+      await setDoc(doc(this.db, 'users', uid, 'friends', me), { since })
+      const profile = await this.profile(uid)
+      if (!profile) throw new CloudError('notFound')
+      return profile
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  async profile(uid: string): Promise<Profile | null> {
+    const { doc, getDoc } = this.fs
+    const snap = await getDoc(doc(this.db, 'users', uid))
+    return snap.exists() ? ({ uid, ...snap.data() } as Profile) : null
+  }
+
+  async friends(): Promise<Profile[]> {
+    const { collection, getDocs } = this.fs
+    try {
+      const snap = await getDocs(collection(this.db, 'users', this.account.uid, 'friends'))
+      const list = await Promise.all(snap.docs.map((d) => this.profile(d.id)))
+      return list.filter((p): p is Profile => p !== null).sort((a, b) => b.lastSeen - a.lastSeen)
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Gửi quà hoặc lượt tưới giúp; mỗi loại mỗi ngày một lần cho mỗi bạn (luật Firestore chặn lần thứ hai). */
+  async send(to: string, kind: InboxItem['kind'], fromName: string, item?: string, qty?: number): Promise<void> {
+    const { doc, getDoc, setDoc } = this.fs
+    const me = this.account.uid
+    const ref = doc(this.db, 'users', to, 'inbox', `${me}_${kind}_${dayKey()}`)
+    try {
+      const data: Record<string, unknown> = { from: me, fromName, kind, at: Date.now(), read: false }
+      if (item) data.item = item
+      if (qty) data.qty = qty
+      await setDoc(ref, data)
+    } catch (e) {
+      // Ghi đè bị chặn: hôm nay đã gửi rồi (đọc lại để phân biệt với lỗi khác).
+      const err = wrap(e)
+      if (err.code === 'denied') {
+        const exists = await getDoc(ref).then((s) => s.exists(), () => false)
+        if (exists) throw new CloudError('already')
+      }
+      throw err
+    }
+  }
+
+  /**
+   * Lấy thư chưa đọc (quà, tưới giúp) rồi đánh dấu đã đọc. Không xoá ngay để người gửi
+   * không gửi lại được trong cùng ngày; thư cũ hơn 7 ngày thì dọn đi.
+   */
+  async takeInbox(): Promise<InboxItem[]> {
+    const { collection, deleteDoc, getDocs, updateDoc } = this.fs
+    try {
+      const snap = await getDocs(collection(this.db, 'users', this.account.uid, 'inbox'))
+      const weekAgo = Date.now() - 7 * 86_400_000
+      const items: InboxItem[] = []
+      await Promise.all(
+        snap.docs.map((d) => {
+          const data = d.data()
+          if (!data.read) {
+            items.push({ id: d.id, ...data } as InboxItem)
+            return updateDoc(d.ref, { read: true })
+          }
+          return typeof data.at === 'number' && data.at < weekAgo ? deleteDoc(d.ref) : null
+        }),
+      )
+      return items
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+}

@@ -54,6 +54,8 @@ export interface GameEvents {
   weatherChanged: Weather
   /** Nhà vừa lên cấp (1..5). */
   houseUpgraded: number
+  /** Trạng thái online (kết nối, bạn bè) vừa đổi. */
+  onlineChanged: undefined
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang

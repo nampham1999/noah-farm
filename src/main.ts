@@ -59,6 +59,8 @@ import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
 import { attachNotifications } from './systems/notifications.ts'
+import { loadFriendFarm, sendHelp, startOnline } from './online/online.ts'
+import { askUseCloud } from './ui/online.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
@@ -185,6 +187,8 @@ async function start(): Promise<void> {
   else {
     autosaver.start()
     if (isNew) void autosaver.saveNow()
+    // Chơi cùng bạn bè: lưu đám mây, mã bạn bè, hộp thư (mất mạng thì bỏ qua).
+    void startOnline(state, store, autosaver, savedAt, askUseCloud)
   }
 
   const shopPanel = createShopPanel(state)
@@ -527,8 +531,26 @@ function showLoading(ui: HTMLElement): { progress(f: number): void; done(): void
   }
 }
 
-/** Đọc link thăm nông trại (#visit=…); null nếu không có hoặc link hỏng. */
+/** Đang thăm nông trại một người bạn online (#friend=uid): để hiện nút tưới giúp. */
+let visitFriend: { uid: string } | null = null
+
+/** Đọc link thăm nông trại (#visit=… ảnh chụp, hoặc #friend=… bản mới nhất trên mây); null nếu không có hoặc hỏng. */
 async function readVisitLink(): Promise<GameState | null> {
+  const f = /[#&]friend=([^&]+)/.exec(location.hash)
+  if (f) {
+    try {
+      const farm = await loadFriendFarm(decodeURIComponent(f[1]))
+      if (farm) {
+        visitFriend = { uid: decodeURIComponent(f[1]) }
+        return farm
+      }
+    } catch (e) {
+      console.warn('Friend farm failed', e)
+    }
+    history.replaceState(null, '', location.pathname + location.search)
+    setTimeout(() => bus.emit('notify', { key: 'online.farmMissing' }), 1500)
+    return null
+  }
   const m = /[#&]visit=([^&]+)/.exec(location.hash)
   if (!m) return null
   try {
@@ -568,8 +590,35 @@ function showVisitBanner(ui: HTMLElement, state: GameState): void {
   home.addEventListener('click', () => {
     location.href = location.pathname + location.search
   })
-  banner.append(text, home)
+  banner.append(text)
+  // Bạn online: tưới giúp mỗi ngày một lần (bạn nhận lúc vào game, mình được thưởng khi về nhà).
+  if (visitFriend) {
+    const friend = visitFriend
+    const help = document.createElement('button')
+    help.className = 'btn small'
+    help.textContent = `💧 ${t('online.help')}`
+    help.addEventListener('click', () => {
+      help.disabled = true
+      void sendHelp(myName(), friend.uid, state.player.name).then((ok) => {
+        if (!ok) help.disabled = false
+      })
+    })
+    banner.append(help)
+  }
+  banner.append(home)
   ui.append(banner)
+}
+
+/** Tên của mình (lúc đang thăm, trạng thái đang mở là của bạn): đọc từ bản lưu trên máy. */
+function myName(): string {
+  try {
+    const raw = localStorage.getItem('cozyfarm.save.v1')
+    const m = raw && /"name":"([^"]{1,20})"/.exec(raw)
+    if (m) return m[1]
+  } catch {
+    // Không đọc được thì dùng tên chung.
+  }
+  return 'Noah'
 }
 
 /** Đọc bản lưu; dữ liệu hỏng thì hỏi người chơi trước, không tự xoá (GDD mục 6.5). */
