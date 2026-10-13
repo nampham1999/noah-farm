@@ -426,5 +426,20 @@
   "tree.picked": "Hái được {qty} {item}",
   "tree.growing": "Cây đang lớn, còn khoảng {minutes} phút",
   "tree.tomorrow": "Hôm nay đã hái rồi, mai cây ra lứa mới",
-  "tree.offSeason": "Cây ra quả vào mùa {a} và {b}"
+  "tree.offSeason": "Cây ra quả vào mùa {a} và {b}",
+  "festival.flower": "Hội hoa xuân",
+  "festival.fishing": "Thi câu cá mùa hè",
+  "festival.fair": "Hội chợ mùa thu",
+  "festival.lantern": "Hội đèn lồng mùa đông",
+  "festival.goal.flower": "Thu hoạch {n} cây trong ngày hội",
+  "festival.goal.fishing": "Câu {n} con cá trong ngày hội",
+  "festival.goal.fair": "Bán được {n} vàng (nông sản giá ×1,5 hôm nay)",
+  "festival.goal.lantern": "Giao {n} đơn hàng cho dân làng",
+  "festival.reward": "Thưởng {gold} vàng + {item}",
+  "festival.next": "Lễ hội kế tiếp: {name}, ngày {day} mùa {season}",
+  "festival.start.flower": "🌸 Hôm nay là Hội hoa xuân! Thu hoạch {n} cây để nhận quà",
+  "festival.start.fishing": "🎣 Hôm nay là Thi câu cá! Câu {n} con cá để nhận quà",
+  "festival.start.fair": "🎪 Hội chợ mùa thu! Quầy mua nông sản giá ×1,5 cả ngày",
+  "festival.start.lantern": "🏮 Hội đèn lồng! Giao {n} đơn hàng cho dân làng để nhận quà",
+  "festival.done": "🎉 Hoàn thành {name}! Nhận {gold} vàng và {item}"
 }

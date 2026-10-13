@@ -1,6 +1,7 @@
 import type { GameState } from '../core/state.ts'
 import { CROPS, FISH } from '../data/index.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
+import { FESTIVAL_DAY, FESTIVALS, festivalProgress, festivalToday, nextFestival } from '../systems/festival.ts'
 import { currentTutorial, dailyReward, dailyTemplate, ensureDaily, questData, statValue } from '../systems/quests.ts'
 import { itemIconHtml } from './icons.ts'
 import { canDeliver, daysLeft, NPCS } from '../systems/orders.ts'
@@ -44,6 +45,22 @@ export function createJournalPanel(state: GameState): PanelSpec {
       list.append(row(tut.icon, tKey(`quest.${tut.id}`, { n: tut.target }), `${state.quests.progress}/${tut.target} · ${t('journal.reward', { gold: tut.gold, xp: tut.xp })}`, state.quests.progress / tut.target))
     }
     ensureDaily(state)
+    // Lễ hội: hôm nay thì hiện thử thách, không thì báo lễ hội kế tiếp.
+    const fest = festivalToday(state)
+    if (fest) {
+      const goal = FESTIVALS[fest]
+      const { progress, done: festDone } = festivalProgress(state)
+      list.append(heading(`🎉 ${tKey(`festival.${fest}`)}`))
+      list.append(row(festDone ? '✅' : goal.icon, tKey(`festival.goal.${fest}`, { n: goal.target }),
+        `${Math.min(progress, goal.target)}/${goal.target} · ${t('festival.reward', { gold: goal.gold, item: itemName(`furn_${goal.furniture}`) })}`, progress / goal.target))
+    } else {
+      const next = nextFestival(state)
+      const p = document.createElement('p')
+      p.className = 'panel__hint'
+      p.textContent = t('festival.next', { name: tKey(`festival.${next.id}`), day: FESTIVAL_DAY, season: tKey(`season.${next.season}`) })
+      list.append(p)
+    }
+
     const daily = state.quests.daily
     const done = daily.list.filter((q) => q.progress >= q.target).length
     list.append(heading(t('journal.daily', { done, total: daily.list.length })))

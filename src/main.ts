@@ -50,6 +50,8 @@ import { createFishingUi } from './ui/fishing.ts'
 import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { createHorseView } from './render/horse.ts'
 import { createOrchardView } from './render/orchard.ts'
+import { createFestivalView } from './render/festival.ts'
+import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -140,6 +142,7 @@ async function start(): Promise<void> {
   const greenhouseView = createGreenhouseView(world.scene, models)
   const horseView = createHorseView(world.scene, models)
   const orchardView = createOrchardView(world.scene, models)
+  const festivalView = createFestivalView(world.scene)
   const fishingView = createFishingView(world.scene)
   // Trong nhà: nội thất chỉ tải khi vào nhà lần đầu.
   let houseView: HouseView | null = null
@@ -180,7 +183,10 @@ async function start(): Promise<void> {
   if (!visiting) {
     ensureDaily(state)
     refillOrders(state)
-    bus.on('progress', (ev) => onProgress(state, ev))
+    bus.on('progress', (ev) => {
+      onProgress(state, ev)
+      onFestivalProgress(state, ev)
+    })
   }
   const socialPanel = createSocialPanel(state)
   const characterPanel = createCharacterPanel(state, () => autosaver.requestSoon(), () => (followCam.closeup = false))
@@ -234,6 +240,7 @@ async function start(): Promise<void> {
   bus.on('newDay', () => {
     animalsNewDay(state, now())
     petNewDay(state)
+    festivalNewDay(state)
     ensureDaily(state)
     if (!visiting) refillOrders(state)
   })
@@ -448,6 +455,7 @@ async function start(): Promise<void> {
     greenhouseView.update(state)
     horseView.update(state, clock.getElapsed(), dt)
     orchardView.update(state, t, clock.getElapsed())
+    festivalView.update(state, clock.getElapsed())
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {

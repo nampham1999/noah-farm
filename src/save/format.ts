@@ -159,6 +159,10 @@ function normalize(data: Record<string, unknown>): GameState {
     pet: normalizePet(data.pet),
     greenhouse,
     horse: data.horse === true,
+    festival: (() => {
+      const f = obj(data.festival)
+      return typeof f.stamp === 'number' ? { stamp: f.stamp, progress: Math.max(0, num(f.progress, 0)), done: f.done === true } : null
+    })(),
     orchard: (Array.isArray(data.orchard) ? data.orchard : []).flatMap((raw): GameState['orchard'] => {
       const o = obj(raw)
       const spot = Math.floor(num(o.spot, -1))

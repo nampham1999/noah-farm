@@ -186,6 +186,8 @@ export interface GameState {
   /** Đã mua ngựa. */
   horse: boolean
   orchard: OrchardTree[]
+  /** Thử thách lễ hội hôm nay: stamp là dayStamp của ngày lễ hội. */
+  festival: { stamp: number; progress: number; done: boolean } | null
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**
@@ -233,6 +235,7 @@ export function createInitialState(): GameState {
     greenhouse: false,
     horse: false,
     orchard: [],
+    festival: null,
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },

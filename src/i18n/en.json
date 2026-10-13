@@ -426,5 +426,20 @@
   "tree.picked": "Picked {qty} {item}",
   "tree.growing": "Still growing, about {minutes} min left",
   "tree.tomorrow": "Already picked today, more fruit tomorrow",
-  "tree.offSeason": "This tree fruits in {a} and {b}"
+  "tree.offSeason": "This tree fruits in {a} and {b}",
+  "festival.flower": "Spring Flower Festival",
+  "festival.fishing": "Summer Fishing Contest",
+  "festival.fair": "Autumn Fair",
+  "festival.lantern": "Winter Lantern Festival",
+  "festival.goal.flower": "Harvest {n} crops during the festival",
+  "festival.goal.fishing": "Catch {n} fish during the festival",
+  "festival.goal.fair": "Earn {n} gold selling (crops sell for ×1.5 today)",
+  "festival.goal.lantern": "Deliver {n} villager orders",
+  "festival.reward": "Reward {gold} gold + {item}",
+  "festival.next": "Next festival: {name}, day {day} of {season}",
+  "festival.start.flower": "🌸 It's the Spring Flower Festival! Harvest {n} crops for a gift",
+  "festival.start.fishing": "🎣 It's the Fishing Contest! Catch {n} fish for a gift",
+  "festival.start.fair": "🎪 Autumn Fair! The shop pays ×1.5 for produce all day",
+  "festival.start.lantern": "🏮 Lantern Festival! Deliver {n} orders for a gift",
+  "festival.done": "🎉 {name} complete! Got {gold} gold and {item}"
 }

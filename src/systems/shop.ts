@@ -1,4 +1,5 @@
 import { bus } from '../core/events.ts'
+import { sellMultiplier } from './festival.ts'
 import type { GameState } from '../core/state.ts'
 import { CROPS, item } from '../data/index.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
@@ -38,8 +39,9 @@ export function supplyCatalog(): ShopEntry[] {
 
 /** Bán theo giá cố định (GDD mục 7.3). */
 export function sell(state: GameState, itemId: string, qty: number): boolean {
-  const price = item(itemId).sellPrice
-  if (!price) return false
+  const base = item(itemId).sellPrice
+  if (!base) return false
+  const price = Math.round(base * sellMultiplier(state, itemId))
   const n = Math.min(qty, countItem(state.inventory, itemId))
   if (n <= 0) return false
   removeItem(state.inventory, itemId, n)
@@ -54,7 +56,7 @@ export function sell(state: GameState, itemId: string, qty: number): boolean {
 /** Các nông sản đang có trong túi, mỗi loại một dòng. */
 export function sellableItems(state: GameState): { itemId: string; qty: number; price: number }[] {
   const ids = [...new Set(state.inventory.slots.flatMap((s) => (s && item(s.id).sellPrice ? [s.id] : [])))]
-  return ids.map((id) => ({ itemId: id, qty: countItem(state.inventory, id), price: item(id).sellPrice! }))
+  return ids.map((id) => ({ itemId: id, qty: countItem(state.inventory, id), price: Math.round(item(id).sellPrice! * sellMultiplier(state, id)) }))
 }
 
 function fail(key: string, params?: Record<string, string | number>): false {
