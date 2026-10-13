@@ -459,5 +459,14 @@
   "fox.fenceBuilt": "🦊 Đã rào bãi thả, gà ngủ yên rồi!",
   "fox.coming": "🦊 Có cáo lẻn vào nông trại! Chạm vào nó để đuổi đi",
   "fox.scared": "🦊 Cáo sợ quá chạy mất!",
-  "fox.stole": "🦊 Cáo đã trộm mất trứng! Rào bãi thả ở quầy hàng để chặn cáo"
+  "fox.stole": "🦊 Cáo đã trộm mất trứng! Rào bãi thả ở quầy hàng để chặn cáo",
+  "menu.notify": "Thông báo",
+  "menu.notifyOn": "Thông báo: Bật",
+  "menu.notifyOff": "Thông báo: Tắt",
+  "menu.notifyHint": "Báo lên máy khi cây chín, gà đẻ trứng, máy chế biến xong… trong lúc game đang chạy nền (chưa đóng hẳn app).",
+  "menu.notifyDenied": "Trình duyệt chưa cho phép thông báo. Hãy bật trong cài đặt của trình duyệt.",
+  "notify.ripe": "🥕 {n} ô cây đã chín",
+  "notify.animals": "🥚 {n} con vật có sản phẩm",
+  "notify.machines": "🫙 {n} máy chế biến đã xong",
+  "notify.trees": "🍎 {n} cây đã ra quả"
 }

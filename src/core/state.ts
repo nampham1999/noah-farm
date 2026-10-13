@@ -154,6 +154,8 @@ export interface Settings {
   lang: Lang
   /** Mức zoom camera, giữ lại giữa các lần chơi. */
   zoom: number
+  /** Báo lên máy khi cây chín, máy xong... lúc game chạy nền. */
+  notify: boolean
 }
 
 export interface MetaState {
@@ -248,7 +250,7 @@ export function createInitialState(): GameState {
     orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
     house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
-    settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1 },
+    settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1, notify: false },
   }
 }
 

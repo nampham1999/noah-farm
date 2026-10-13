@@ -1,4 +1,5 @@
 import { bus } from '../core/events.ts'
+import { enableNotifications, notifySupported } from '../systems/notifications.ts'
 import type { GameState } from '../core/state.ts'
 import { now } from '../core/time.ts'
 import { getLang, setLang, t, tKey } from '../i18n/index.ts'
@@ -132,6 +133,28 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
         }),
         note(t('menu.powerHint'), 'menu-note'),
       )
+
+      // Thông báo khi game chạy nền.
+      if (notifySupported()) {
+        const notifyBox = section(body, t('menu.notify'))
+        const on = state.settings.notify && Notification.permission === 'granted'
+        notifyBox.append(
+          button(on ? `🔔 ${t('menu.notifyOn')}` : `🔕 ${t('menu.notifyOff')}`, on ? 'btn primary' : 'btn', () => {
+            if (on) {
+              state.settings.notify = false
+              autosaver.requestSoon()
+              refresh()
+            } else {
+              void enableNotifications(state).then((ok) => {
+                if (!ok) bus.emit('notify', { key: 'menu.notifyDenied' })
+                autosaver.requestSoon()
+                refresh()
+              })
+            }
+          }),
+          note(t('menu.notifyHint'), 'menu-note'),
+        )
+      }
 
       // Lưu trữ.
       const box = section(body, t('menu.storage'))

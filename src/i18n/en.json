@@ -459,5 +459,14 @@
   "fox.fenceBuilt": "🦊 The pen is fenced, the hens can sleep easy!",
   "fox.coming": "🦊 A fox is sneaking onto the farm! Tap it to chase it off",
   "fox.scared": "🦊 The fox ran away!",
-  "fox.stole": "🦊 A fox stole an egg! Fence the pen at the shop to keep it out"
+  "fox.stole": "🦊 A fox stole an egg! Fence the pen at the shop to keep it out",
+  "menu.notify": "Notifications",
+  "menu.notifyOn": "Notifications: On",
+  "menu.notifyOff": "Notifications: Off",
+  "menu.notifyHint": "Get notified when crops ripen, hens lay, machines finish… while the game runs in the background (not fully closed).",
+  "menu.notifyDenied": "Notifications are blocked. Allow them in your browser settings.",
+  "notify.ripe": "🥕 {n} crops are ripe",
+  "notify.animals": "🥚 {n} animals have produce",
+  "notify.machines": "🫙 {n} machines are done",
+  "notify.trees": "🍎 {n} trees have fruit"
 }

@@ -67,3 +67,14 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(caches.match(req).then((hit) => hit ?? fetch(req)))
   }
 })
+
+// Chạm vào thông báo (cây chín, máy xong...): mở lại cửa sổ game đang có, không thì mở mới.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => 'focus' in c)
+      return open ? open.focus() : self.clients.openWindow(self.registration.scope)
+    }),
+  )
+})

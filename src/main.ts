@@ -53,6 +53,7 @@ import { createOrchardView } from './render/orchard.ts'
 import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
+import { attachNotifications } from './systems/notifications.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
@@ -185,6 +186,7 @@ async function start(): Promise<void> {
   const inventoryPanel = createInventoryPanel(state)
   const journalPanel = createJournalPanel(state)
   const audio = attachAudio(state)
+  if (!visiting) attachNotifications(state)
   if (!visiting) {
     ensureDaily(state)
     refillOrders(state)
