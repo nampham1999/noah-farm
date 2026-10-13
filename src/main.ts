@@ -193,7 +193,7 @@ async function start(): Promise<void> {
     followCam.update(dt, playerPos, input.zoomScale)
     state.settings.zoom = followCam.zoom
     interaction.setHover(hoveredPlot())
-    world.followShadow(playerPos)
+    world.update(clock.getElapsed(), playerPos)
     world.renderer.render(world.scene, followCam.camera)
 
     quality.tick(dt)

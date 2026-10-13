@@ -3,7 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
 
 /**
  * Mô hình 3D dùng lại từ bản cũ (cozyfarmy.com): phần lớn tự dựng bằng Blender,
- * nhân vật là KayKit Adventurers (CC0). File nằm ở public/assets.
+ * nhân vật là KayKit Adventurers, đồ vật nhỏ là KayKit Medieval Hexagon. File nằm ở public/assets.
  */
 export const MODELS = {
   farmer: 'characters/Rogue.glb',
@@ -21,6 +21,22 @@ export const MODELS = {
   grass: 'models/grass.glb',
   crops: 'models/crops.glb',
   debris: 'models/debris.glb',
+  fishingHut: 'models/fishing-hut.glb',
+  boat: 'models/boat.glb',
+  lilyA: 'kaykit-hex/waterlily_A.gltf',
+  lilyB: 'kaykit-hex/waterlily_B.gltf',
+  reedA: 'kaykit-hex/waterplant_A.gltf',
+  reedB: 'kaykit-hex/waterplant_B.gltf',
+  rockA: 'kaykit-hex/rock_single_A.gltf',
+  rockC: 'kaykit-hex/rock_single_C.gltf',
+  well: 'kaykit-hex/building_well_blue.gltf',
+  barrel: 'kaykit-hex/barrel.gltf',
+  crate: 'kaykit-hex/crate_A_big.gltf',
+  sack: 'kaykit-hex/sack.gltf',
+  wheelbarrow: 'kaykit-hex/wheelbarrow.gltf',
+  bucket: 'kaykit-hex/bucket_water.gltf',
+  pallet: 'kaykit-hex/pallet.gltf',
+  lumber: 'kaykit-hex/resource_lumber.gltf',
 } as const
 
 export type ModelName = keyof typeof MODELS
@@ -37,9 +53,18 @@ export async function loadModels(onProgress: (fraction: number) => void): Promis
     names.map(async (name) => {
       const gltf = await loader.loadAsync(BASE + MODELS[name])
       gltf.scene.traverse((o) => {
-        if (o instanceof THREE.Mesh) {
-          o.castShadow = true
-          o.receiveShadow = true
+        if (!(o instanceof THREE.Mesh)) return
+        o.castShadow = true
+        o.receiveShadow = true
+        // Như bản cũ: texture KayKit lọc điểm ảnh cho sắc nét, bỏ ánh kim loại cho hợp phong cách.
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+          if (!(m instanceof THREE.MeshStandardMaterial)) continue
+          if (m.map) {
+            m.map.colorSpace = THREE.SRGBColorSpace
+            m.map.magFilter = THREE.NearestFilter
+          }
+          m.metalness = 0
+          m.roughness = Math.max(m.roughness, 0.75)
         }
       })
       onProgress(++done / names.length)

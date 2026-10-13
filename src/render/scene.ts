@@ -1,15 +1,17 @@
 import * as THREE from 'three'
 import {
-  BUSHES, FARM_HALF, GATE, GROUND_HALF, HOUSE, PATHS, POND, ROCKS, STALL, TREES, TUFTS, type Decor,
+  BUSHES, FARM_HALF, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
 } from '../core/world.ts'
 import type { Models } from './assets.ts'
 import { instanceModel, placeMatrix } from './instancing.ts'
+import { createPond } from './water.ts'
+import { applyWind, windify, windUniforms } from './wind.ts'
 
 export interface World {
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
-  /** Gọi mỗi khung hình để vùng bóng đổ đi theo nhân vật. */
-  followShadow(target: THREE.Vector3): void
+  /** Gọi mỗi khung hình: bóng đổ đi theo nhân vật, gió, mặt nước. */
+  update(time: number, player: THREE.Vector3): void
 }
 
 // Bảng màu và ánh sáng lấy theo bản cũ.
@@ -28,7 +30,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.shadowMap.type = THREE.PCFShadowMap
   container.append(renderer.domElement)
 
   const scene = new THREE.Scene()
@@ -52,7 +54,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
 
   addGround(scene)
   addPaths(scene)
-  addPond(scene)
+  const pond = createPond(scene, models)
   addBuildings(scene, models)
   addFence(scene, models)
   addTrees(scene, models)
@@ -61,9 +63,12 @@ export function createWorld(container: HTMLElement, models: Models): World {
   return {
     renderer,
     scene,
-    followShadow(target) {
-      sun.position.copy(target).add(sunOffset)
-      sun.target.position.copy(target)
+    update(time, player) {
+      sun.position.copy(player).add(sunOffset)
+      sun.target.position.copy(player)
+      windUniforms.uTime.value = time
+      windUniforms.uPlayer.value.set(player.x, player.z)
+      pond.update(time)
     },
   }
 }
@@ -146,23 +151,6 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
   return s
 }
 
-function addPond(scene: THREE.Scene): void {
-  const shore = new THREE.Mesh(new THREE.CircleGeometry(POND.r + 0.7, 40), flat(0xe8cf98))
-  shore.rotation.x = -Math.PI / 2
-  shore.position.set(POND.x, 0.025, POND.z)
-  shore.receiveShadow = true
-  const deep = new THREE.Mesh(new THREE.CircleGeometry(POND.r, 40), new THREE.MeshStandardMaterial({ color: 0x3f9fcf, roughness: 0.15, metalness: 0.1 }))
-  deep.rotation.x = -Math.PI / 2
-  deep.position.set(POND.x, 0.04, POND.z)
-  const shallow = new THREE.Mesh(
-    new THREE.RingGeometry(POND.r - 0.9, POND.r, 40),
-    new THREE.MeshStandardMaterial({ color: 0x7fd0e8, roughness: 0.2, transparent: true, opacity: 0.85 }),
-  )
-  shallow.rotation.x = -Math.PI / 2
-  shallow.position.set(POND.x, 0.045, POND.z)
-  scene.add(shore, deep, shallow)
-}
-
 function addBuildings(scene: THREE.Scene, models: Models): void {
   const house = models.house.scene.clone()
   house.position.set(HOUSE.x, 0, HOUSE.z)
@@ -224,5 +212,46 @@ function addDecor(scene: THREE.Scene, models: Models): void {
   place(models.bush.scene, BUSHES.slice(0, half), true)
   place(models.bushFlower.scene, BUSHES.slice(half), true)
   place(models.debris.scene.getObjectByName('Deb_boulder_0') ?? models.debris.scene, ROCKS, true)
-  place(models.grass.scene, TUFTS, false)
+  // Cỏ lay theo gió và rẽ ra khi nhân vật đi qua, như bản cũ.
+  place(windify(models.grass.scene.clone(), { strength: 0.09, heightScale: 3, push: 0.3 }), TUFTS, false)
+  addFlowers(scene)
+
+  // Đồ vật KayKit (giếng, thùng, bao tải...) rất nhỏ nên phóng lên 3,5 lần.
+  for (const prop of PROPS) {
+    const obj = models[prop.model].scene.clone()
+    obj.position.set(prop.x, 0, prop.z)
+    obj.rotation.y = prop.rotY
+    obj.scale.setScalar(3.5)
+    scene.add(obj)
+  }
+}
+
+/** Hoa dại nhỏ: cuống xanh và bông nhiều màu, lay theo gió. */
+function addFlowers(scene: THREE.Scene): void {
+  const stemGeo = new THREE.CylinderGeometry(0.012, 0.016, 0.22, 4)
+  stemGeo.translate(0, 0.11, 0)
+  const headGeo = new THREE.IcosahedronGeometry(0.065, 0)
+  headGeo.scale(1, 0.6, 1)
+  headGeo.translate(0, 0.24, 0)
+  const centerGeo = new THREE.SphereGeometry(0.03, 6, 4)
+  centerGeo.translate(0, 0.27, 0)
+  const wind = { strength: 0.05, heightScale: 4, push: 0.2 }
+  const make = (geo: THREE.BufferGeometry, material: THREE.Material) => {
+    const mesh = new THREE.InstancedMesh(geo, applyWind(material, wind), FLOWERS.length)
+    mesh.frustumCulled = false
+    return mesh
+  }
+  const stems = make(stemGeo, new THREE.MeshStandardMaterial({ color: 0x4f9a3a, roughness: 1 }))
+  const heads = make(headGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }))
+  const centers = make(centerGeo, new THREE.MeshStandardMaterial({ color: 0xffd23b, roughness: 0.9 }))
+  const palette = [0xffffff, 0xff8fb1, 0xffd34d, 0xb68cff, 0xff6f61, 0x8fd3ff].map((c) => new THREE.Color(c))
+  const m = new THREE.Matrix4()
+  FLOWERS.forEach((f, i) => {
+    placeMatrix(f.x, f.z, f.rotY, f.scale * 1.4, 0, m)
+    stems.setMatrixAt(i, m)
+    heads.setMatrixAt(i, m)
+    centers.setMatrixAt(i, m)
+    heads.setColorAt(i, palette[i % palette.length])
+  })
+  scene.add(stems, heads, centers)
 }

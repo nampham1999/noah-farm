@@ -1,9 +1,11 @@
 import type { PlayerState } from '../core/state.ts'
-import { FARM_HALF, OBSTACLES } from '../core/world.ts'
+import { FARM_HALF, isWater, OBSTACLES } from '../core/world.ts'
 
 export const WALK_SPEED = 4.5
 const PLAYER_RADIUS = 0.35
 const TURN_RATE = 12
+/** Đứng cách mép nước tối thiểu chừng này (âm là được bước hẳn ra mép bọt sóng). */
+const SHORE_MARGIN = -0.15
 
 export interface Dir {
   x: number
@@ -44,6 +46,16 @@ export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: 
   const limit = FARM_HALF - PLAYER_RADIUS - 0.2
   x = Math.min(limit, Math.max(-limit, x))
   z = Math.min(limit, Math.max(-limit, z))
+
+  // Không lội xuống hồ: thử trượt theo từng trục để men theo bờ thay vì đứng khựng.
+  if (isWater(x, z, SHORE_MARGIN)) {
+    if (!isWater(x, player.pos[2], SHORE_MARGIN)) z = player.pos[2]
+    else if (!isWater(player.pos[0], z, SHORE_MARGIN)) x = player.pos[0]
+    else {
+      x = player.pos[0]
+      z = player.pos[2]
+    }
+  }
 
   const moved = Math.hypot(x - player.pos[0], z - player.pos[2])
   player.pos[0] = x

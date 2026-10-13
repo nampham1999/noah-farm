@@ -1,13 +1,14 @@
 import * as THREE from 'three'
+import { mulberry32 } from '../core/random.ts'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameState, PlotState } from '../core/state.ts'
-import { PLOT_AREA, plotCenter } from '../core/world.ts'
+import { PLOT_AREA, plotCenter, SCARECROW } from '../core/world.ts'
 import { cropOf, isRipe, needsWater } from '../systems/farming.ts'
 import { instanceModel, placeMatrix, type InstancedModel } from './instancing.ts'
 
-const GRASS = new THREE.Color(0xb3e07a)
-const DRY = new THREE.Color(0xa86f3e)
-const WET = new THREE.Color(0x6e4626)
+/** Đất khô giữ màu gốc của texture; đất ướt nhân màu tối hơn. */
+const DRY = new THREE.Color(0xffffff)
+const WET = new THREE.Color(0x8a7468)
 
 export interface FarmView {
   /** Cập nhật từ kho trạng thái; 16 ô nên làm mỗi khung hình vẫn rẻ. */
@@ -25,13 +26,24 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
   const n = PLOT_AREA.cols * PLOT_AREA.rows
   const size = PLOT_AREA.size * 0.9
 
+  // Đất đã cuốc: khối đất có luống (texture vẽ bằng canvas).
   const soil = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(size, 0.1, size),
-    new THREE.MeshStandardMaterial({ roughness: 1 }),
+    new THREE.BoxGeometry(size, 0.12, size),
+    new THREE.MeshStandardMaterial({ map: soilTexture(), roughness: 1 }),
     n,
   )
   soil.receiveShadow = true
   soil.frustumCulled = false
+
+  // Ô chưa cuốc: chỉ viền mờ trên cỏ để biết chỗ nào trồng được.
+  const outlinePlane = new THREE.PlaneGeometry(size, size)
+  outlinePlane.rotateX(-Math.PI / 2)
+  const outlines = new THREE.InstancedMesh(
+    outlinePlane,
+    new THREE.MeshBasicMaterial({ map: outlineTexture(), transparent: true, depthWrite: false }),
+    n,
+  )
+  outlines.frustumCulled = false
 
   const drops = new THREE.InstancedMesh(
     new THREE.OctahedronGeometry(0.12, 0),
@@ -47,7 +59,7 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
   )
   highlight.rotation.x = -Math.PI / 2
   highlight.scale.set(Math.SQRT2, Math.SQRT2, 1)
-  scene.add(soil, drops, highlight)
+  scene.add(soil, outlines, drops, highlight, createScarecrow())
 
   // Mỗi biến thể cây (vd. carrot_3) là một nhóm InstancedMesh, tạo khi cần lần đầu.
   const variants = new Map<string, { inst: InstancedModel; count: number }>()
@@ -70,11 +82,17 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
     update(state, focus, time) {
       for (const v of variants.values()) v.count = 0
       let nDrops = 0
+      let nSoil = 0
+      let nOutline = 0
 
       state.plots.forEach((plot, i) => {
         const c = plotCenter(plot.x, plot.z)
-        soil.setMatrixAt(i, m.makeTranslation(c.x, 0.05, c.z))
-        soil.setColorAt(i, !plot.tilled ? GRASS : plot.crop && plot.wateredAt !== null ? WET : DRY)
+        if (plot.tilled) {
+          soil.setMatrixAt(nSoil, m.makeTranslation(c.x, 0.05, c.z))
+          soil.setColorAt(nSoil++, plot.crop && plot.wateredAt !== null ? WET : DRY)
+        } else {
+          outlines.setMatrixAt(nOutline++, m.makeTranslation(c.x, 0.016, c.z))
+        }
 
         const crop = cropOf(plot)
         if (!crop) return
@@ -96,6 +114,9 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
       }
       drops.count = nDrops
       drops.instanceMatrix.needsUpdate = true
+      soil.count = nSoil
+      outlines.count = nOutline
+      outlines.instanceMatrix.needsUpdate = true
       soil.instanceMatrix.needsUpdate = true
       if (soil.instanceColor) soil.instanceColor.needsUpdate = true
 
@@ -107,4 +128,88 @@ export function createFarmView(scene: THREE.Scene, crops: GLTF): FarmView {
       }
     },
   }
+}
+
+/** Đất cuốc: nền nâu, bốn luống đất có rãnh tối và gờ sáng, lốm đốm sỏi. */
+function soilTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const g = c.getContext('2d')!
+  g.fillStyle = '#a86f3e'
+  g.fillRect(0, 0, 64, 64)
+  for (let row = 0; row < 4; row++) {
+    const y = row * 16
+    g.fillStyle = '#c4884f'
+    g.fillRect(0, y + 2, 64, 5)
+    g.fillStyle = '#7b4a26'
+    g.fillRect(0, y + 10, 64, 4)
+  }
+  const rand = mulberry32(3)
+  for (let i = 0; i < 60; i++) {
+    g.fillStyle = rand() > 0.5 ? 'rgba(60,35,15,0.35)' : 'rgba(230,190,140,0.35)'
+    g.fillRect(Math.floor(rand() * 64), Math.floor(rand() * 64), 2, 2)
+  }
+  // Viền tối quanh ô cho khối đất rõ cạnh.
+  g.strokeStyle = 'rgba(70,40,15,0.55)'
+  g.lineWidth = 3
+  g.strokeRect(1.5, 1.5, 61, 61)
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.magFilter = THREE.NearestFilter
+  return tex
+}
+
+/** Viền ô chưa cuốc: khung bo góc mờ màu cỏ sẫm, giữa trong suốt. */
+function outlineTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const g = c.getContext('2d')!
+  g.strokeStyle = 'rgba(70,110,35,0.55)'
+  g.lineWidth = 4
+  g.setLineDash([9, 5])
+  g.beginPath()
+  g.roundRect(4, 4, 56, 56, 9)
+  g.stroke()
+  g.fillStyle = 'rgba(255,255,255,0.08)'
+  g.fill()
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+/** Bù nhìn dựng từ khối cơ bản: cọc, tay ngang, áo, đầu bao tải và mũ rơm. */
+function createScarecrow(): THREE.Group {
+  const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 1 })
+  const wood = mat(0x8a5a2b)
+  const g = new THREE.Group()
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 1.9, 6), wood)
+  post.position.y = 0.95
+  const arms = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.5, 6), wood)
+  arms.rotation.z = Math.PI / 2
+  arms.position.y = 1.35
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.62, 0.32), mat(0x5b8fd6))
+  shirt.position.y = 1.2
+  const patch = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.02), mat(0xe05a47))
+  patch.position.set(0.12, 1.12, 0.17)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.23, 10, 8), mat(0xe8cf98))
+  head.position.y = 1.72
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.45, 0.04, 14), mat(0xf2c75c))
+  brim.position.y = 1.9
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.2, 12), mat(0xf2c75c))
+  crown.position.y = 2.01
+  // Rơm thò ra ở hai đầu tay.
+  const strawGeo = new THREE.ConeGeometry(0.08, 0.2, 5)
+  for (const side of [-1, 1]) {
+    const straw = new THREE.Mesh(strawGeo, mat(0xf2d27a))
+    straw.rotation.z = (side * Math.PI) / 2
+    straw.position.set(side * 0.82, 1.35, 0)
+    g.add(straw)
+  }
+  g.add(post, arms, shirt, patch, head, brim, crown)
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = true
+  })
+  g.position.set(SCARECROW.x, 0, SCARECROW.z)
+  g.rotation.y = -0.5
+  return g
 }

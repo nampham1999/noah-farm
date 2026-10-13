@@ -102,12 +102,13 @@
 
 ## 4. Điều khiển, camera và giao diện
 
-**Người chơi đi tự do trong thế giới 3D bằng WASD trên máy tính và joystick ảo trên điện thoại, cùng một bộ hành động cho cả hai.**
+**Người chơi ấn giữ rồi kéo ở bất kỳ đâu trên màn hình để đi và chạm để dùng, giống bản cũ cozyfarmy.com; máy tính dùng thêm WASD. Hai nền tảng chung một bộ hành động.**
 
 | Hành động | Bàn phím, chuột | Cảm ứng |
 | --- | --- | --- |
-| Di chuyển | WASD hoặc mũi tên | Joystick ảo bên trái |
-| Dùng công cụ | Space hoặc click | Nút hành động lớn bên phải |
+| Di chuyển | WASD, mũi tên, hoặc giữ chuột trái rồi kéo | Ấn giữ rồi kéo ở bất kỳ đâu; joystick nổi hiện ở chỗ ấn |
+| Dùng lên ô đất, quầy hàng | Click vào đó (nhân vật tự đi tới) | Chạm vào đó (nhân vật tự đi tới) |
+| Dùng công cụ trước mặt | Space | Nút hành động lớn bên phải |
 | Tương tác (nói chuyện, mở cửa, thu hoạch) | E | Nút tương tác hiện khi đứng gần |
 | Cưỡi bò | R | Nút cưỡi hiện khi đứng gần |
 | Ăn | F | Chạm vào thanh thể lực |
@@ -115,8 +116,9 @@
 | Nhật ký | J | Biểu tượng nhật ký |
 | Menu | Esc | Biểu tượng menu |
 | Đổi công cụ | 1 đến 9 hoặc cuộn chuột | Chạm vào thanh công cụ |
+| Zoom | Ctrl + cuộn chuột, phím + và − | Chụm hai ngón |
 
-**Camera:** góc nhìn thứ ba, nghiêng khoảng 45 độ, đi theo nhân vật mượt. Cuộn chuột hoặc chụm hai ngón để zoom trong khoảng giới hạn; xoay camera bằng chuột phải hoặc kéo một ngón ngoài joystick.
+**Camera:** góc nhìn thứ ba nghiêng 45 độ, cố định không xoay, đi theo nhân vật mượt; zoom trong khoảng 0,6 đến 2,45 lần và được lưu lại. Góc cố định giúp hướng kéo trên màn hình trùng với hướng đi trong thế giới. Khi cầm điện thoại dọc, camera mở rộng góc nhìn và lùi xa hơn để vẫn thấy đủ hai bên.
 
 **Màn hình HUD**
 
@@ -126,7 +128,7 @@
 - Góc dưới phải: nút Social (mã chia sẻ), túi đồ, nhật ký, menu.
 - Giữa màn hình: gợi ý tương tác khi đứng gần vật thể.
 
-**Mobile:** chặn zoom trang, chỉ dùng chế độ ngang, tự giảm độ phân giải render khi khung hình dưới 40 FPS, và có nút bật chế độ tiết kiệm pin.
+**Mobile:** chơi được cả màn hình dọc và ngang (đa số người chơi dùng điện thoại, thường cầm dọc). Chặn zoom trang, tự giảm độ phân giải render khi khung hình dưới 40 FPS, và có nút bật chế độ tiết kiệm pin. Giao diện phải kiểm tra ở cả cỡ dọc (khoảng 390 x 844), ngang (khoảng 844 x 390) và máy tính.
 
 ## 5. Kiến trúc kỹ thuật
 
@@ -371,3 +373,5 @@ Mỗi cổng là một phép thử chơi thật; chưa qua cổng thì chưa san
 - [x] Dùng bộ tài nguyên miễn phí (Kenney, Quaternius, CC0).
 - [x] Giữ nguyên độ dài ngày 12 phút thật và độ dài tài liệu hiện tại.
 - [x] Bản này không có server. Nếu sau này muốn có bạn bè thật thì làm backend như mục 8.3.
+- [x] Điện thoại chơi được cả màn hình dọc và ngang (thay cho "chỉ dùng chế độ ngang" trước đây).
+- [x] Điều khiển, camera, giao diện và mô hình 3D theo bản cũ cozyfarmy.com (xem mục 4 và `public/assets/CREDITS.md`).
