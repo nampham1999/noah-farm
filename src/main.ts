@@ -2,6 +2,10 @@ import './style.css'
 import * as THREE from 'three'
 import type { Season, Weather } from './core/state.ts'
 import { addItem, countItem } from './systems/inventory.ts'
+import { blockPlots, greenhousePlots } from './core/state.ts'
+import { ANIMAL_BY_ID, animalData, CROPS, DAY_MS, FRUIT_TREES, MACHINES, ORCHARD, type AnimalType } from './data/index.ts'
+import { inGreenhouse, LAND_BLOCKS, ROOM_SIZES } from './core/world.ts'
+import { NPCS } from './systems/orders.ts'
 import { applyWeather, setWeather, WEATHERS } from './systems/weather.ts'
 import { collect, machineStatus, updateMachines } from './systems/machines.ts'
 import { createMachinesView } from './render/machines.ts'
@@ -107,6 +111,7 @@ async function start(): Promise<void> {
   loading.done()
   setLang(state.settings.lang)
   const offline = applyOfflineProgress(state, savedAt, now())
+  if (!visiting) applyTestParams(state)
 
   const world = createWorld(app, models)
   const canvas = world.renderer.domElement
@@ -186,7 +191,6 @@ async function start(): Promise<void> {
   const menuPanel = createMenuPanel(state, store, autosaver)
   const inventoryPanel = createInventoryPanel(state)
   const journalPanel = createJournalPanel(state)
-  if (!visiting) applyTestParams(state)
   const audio = attachAudio(state)
   if (!visiting) attachNotifications(state)
   if (!visiting) {
@@ -615,28 +619,12 @@ void start()
 
 /**
  * Tham số thử nghiệm trên link (để tự test nhanh các tính năng):
- * - ?max: cấp 10, 999.999 vàng, đầy thể lực, túi đủ nguyên liệu (trứng, sữa, mật, cá, nông sản, hạt, cây giống).
+ * - ?max: mở hết và mua sẵn mọi thứ (ruộng, chuồng đầy vật nuôi, máy chế biến, chó, ngựa,
+ *   nhà kính, nhà cấp 5, rào bãi thả, cây ăn quả đã lớn), cấp 10, 999.999 vàng, túi đủ nguyên liệu.
  * - &season=spring|summer|autumn|winter, &day=1..7 (ngày 4 là lễ hội), &time=0..23 (giờ), &weather=sunny|rain|storm|snow.
  */
 function applyTestParams(state: GameState): void {
   const q = new URLSearchParams(location.search)
-  if (q.has('max')) {
-    const p = state.player
-    p.level = 10
-    p.xp = 0
-    p.gold = 999_999
-    p.stamina = balance.staminaMax
-    const items: [string, number][] = [
-      ['egg', 20], ['milk', 10], ['honey', 5], ['fish_carp', 5], ['feed_hay', 30],
-      ['crop_strawberry', 10], ['crop_pumpkin', 5], ['crop_corn', 10], ['crop_tomato', 5], ['crop_watermelon', 3],
-      ['seed_tomato', 10], ['seed_pumpkin', 10], ['fruit_apple', 5],
-      ['sapling_apple', 1], ['sapling_orange', 1], ['sapling_cherry', 1],
-    ]
-    for (const [id, qty] of items) {
-      const have = countItem(state.inventory, id)
-      if (have < qty) addItem(state.inventory, id, qty - have)
-    }
-  }
   const season = q.get('season')
   if (season && SEASONS.includes(season as Season)) state.clock.season = season as Season
   const day = Number(q.get('day'))
@@ -645,9 +633,81 @@ function applyTestParams(state: GameState): void {
   if (q.has('time') && hour >= 0 && hour < 24) state.clock.minuteOfDay = hour * 60
   const weather = q.get('weather')
   if (weather && WEATHERS.includes(weather as Weather)) state.clock.weather = weather as Weather
+  if (q.has('max')) maxOut(state)
   if ([...q.keys()].some((k) => ['max', 'season', 'day', 'time', 'weather'].includes(k))) {
     bus.emit('notify', { key: 'debug.testMode', good: true })
     bus.emit('saveRequest', undefined)
   }
 }
 
+/** ?max: mọi thứ ở mức đầy đủ nhất để thử. */
+function maxOut(state: GameState): void {
+  const t = now()
+  const p = state.player
+  p.level = 10
+  p.xp = 0
+  p.gold = 999_999
+  p.stamina = balance.staminaMax
+
+  // Ruộng: mở hết các khu, cuốc sẵn, trồng cây đúng mùa đã chín.
+  while (state.landLevel < LAND_BLOCKS.length - 1) {
+    state.landLevel++
+    state.plots.push(...blockPlots(state.landLevel))
+  }
+  if (!state.greenhouse) {
+    state.greenhouse = true
+    state.plots.push(...greenhousePlots())
+  }
+  const seasonal = CROPS.filter((c) => c.seasons.includes(state.clock.season))
+  state.plots.forEach((plot, i) => {
+    plot.tilled = true
+    if (plot.crop || inGreenhouse(plot.x, plot.z)) return
+    plot.crop = seasonal[i % seasonal.length].id
+    plot.stage = balance.cropStages
+    plot.stageStartedAt = t
+    plot.wateredAt = null
+  })
+
+  // Chuồng cấp cao nhất, đầy gà, lợn, bò (no, có sẵn sản phẩm; bò đã thuần để cưỡi).
+  state.coopLevel = animalData.coopLevels.length
+  state.coopFence = true
+  const capacity = animalData.coopLevels[state.coopLevel - 1].capacity
+  const mix: AnimalType[] = ['chicken', 'chicken', 'chicken', 'pig', 'pig', 'cow', 'cow', 'cow']
+  for (let i = state.animals.length; i < capacity; i++) {
+    const type = mix[i % mix.length]
+    const def = ANIMAL_BY_ID.get(type)!
+    state.animals.push({ id: `max${i}`, type, name: `${def.icon}${i + 1}`, fedAt: t, progress: def.cycleDays * DAY_MS, happiness: 100, pettedDay: -1, tamed: type === 'cow' })
+  }
+
+  // Máy chế biến (tổ ong có sẵn mật), chó, ngựa, nhà cấp 5.
+  for (const m of MACHINES) {
+    if (!state.machines.some((x) => x.id === m.id)) state.machines.push({ id: m.id, output: m.id === 'beehive' ? 'honey' : null, qty: m.id === 'beehive' ? 1 : 0, readyAt: t })
+  }
+  state.pet ??= { name: 'Lu', pettedDay: -1, gift: { id: 'gold', qty: 50 } }
+  state.horse = true
+  if (state.house.level < ROOM_SIZES.length) {
+    state.house.level = ROOM_SIZES.length
+    setRoomSize(state.house.level)
+  }
+
+  // Cây ăn quả đã lớn ở mọi ô vườn.
+  ORCHARD.spots.forEach((_, spot) => {
+    if (state.orchard.some((o) => o.spot === spot)) return
+    state.orchard.push({ spot, type: FRUIT_TREES[spot % FRUIT_TREES.length].id, plantedAt: t - ORCHARD.growMinutes * 60_000, pickedAt: null })
+  })
+
+  // Dân làng 4 tim (tặng thêm một món là lên 5 tim, nhận thư).
+  for (const npc of NPCS) state.friends[npc.id] = { points: 230, giftDay: -1, rewarded: 3 }
+
+  // Túi: nguyên liệu để chế biến, tặng quà, trồng nhà kính.
+  const items: [string, number][] = [
+    ['egg', 20], ['milk', 10], ['honey', 5], ['fish_carp', 5], ['feed_hay', 30],
+    ['crop_strawberry', 10], ['crop_pumpkin', 5], ['crop_corn', 10], ['crop_tomato', 5], ['crop_watermelon', 3],
+    ['seed_tomato', 10], ['seed_pumpkin', 10], ['fruit_apple', 5],
+    ['sapling_apple', 1], ['sapling_orange', 1], ['sapling_cherry', 1],
+  ]
+  for (const [id, qty] of items) {
+    const have = countItem(state.inventory, id)
+    if (have < qty) addItem(state.inventory, id, qty - have)
+  }
+}
