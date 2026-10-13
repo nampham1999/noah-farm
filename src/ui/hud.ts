@@ -14,6 +14,8 @@ export interface HudHooks {
   backupDue(): boolean
   /** Nút cưỡi: hiện khi đứng gần bò đã thuần hoặc đang cưỡi (GDD mục 4). */
   rideState(): 'none' | 'can' | 'riding'
+  indoors(): boolean
+  toggleDecor(): void
 }
 
 export interface Hud {
@@ -73,7 +75,16 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
   const useBtn = actionButton('act-btn big', 'useTool', '✋')
   const rideBtn = actionButton('act-btn', 'ride', '🐮')
   rideBtn.hidden = true
-  const actions = el('div', 'hud-actions', rideBtn, interactBtn, useBtn)
+  // Trong nhà: nút Trang trí.
+  const decorBtn = el('button', 'act-btn')
+  decorBtn.innerHTML = `<span class="icon"><span class="emoji">🛋️</span></span>`
+  decorBtn.hidden = true
+  decorBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    hooks.toggleDecor()
+  })
+  const actions = el('div', 'hud-actions', decorBtn, rideBtn, interactBtn, useBtn)
 
   const toasts = el('div', 'toasts')
 
@@ -157,6 +168,10 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
 
       const bar = state.inventory.slots.slice(0, balance.toolbarSize).map((s) => (s ? `${s.id}:${s.qty}` : '-'))
       if (changed('hotbar', `${state.inventory.selected}|${bar.join(',')}`)) drawHotbar()
+      if (changed('indoors', `${hooks.indoors()}`)) {
+        decorBtn.hidden = !hooks.indoors()
+        decorBtn.title = t('decor.title')
+      }
       const ride = hooks.rideState()
       if (changed('ride', ride)) {
         rideBtn.hidden = ride === 'none'

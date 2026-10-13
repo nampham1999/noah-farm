@@ -4,6 +4,7 @@ import cropsJson from './crops.json'
 import itemsJson from './items.json'
 import animalsJson from './animals.json'
 import fishJson from './fish.json'
+import furnitureJson from './furniture.json'
 
 export interface CropDef {
   id: string
@@ -20,7 +21,7 @@ export interface CropDef {
   model: string
 }
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish'
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'feed' | 'product' | 'fish' | 'furniture'
 
 export interface ItemDef {
   id: string
@@ -73,6 +74,21 @@ export interface FishDef {
 
 export const FISH = fishJson as FishDef[]
 
+export interface FurnitureDef {
+  id: string
+  price: number
+  level: number
+  /** Số ô chiếm theo chiều x (rộng) và z (sâu) khi chưa xoay. */
+  w: number
+  d: number
+  icon: string
+  /** bed: ngủ được; rug: thảm, đi lên được và đặt đồ khác lên trên. */
+  kind?: 'bed' | 'rug'
+}
+
+export const FURNITURE = furnitureJson as FurnitureDef[]
+export const FURNITURE_BY_ID = new Map(FURNITURE.map((f) => [f.id, f]))
+
 /** Độ dài một ngày trong game, tính bằng mili giây thật. */
 export const DAY_MS = balance.dayRealMinutes * 60_000
 export const CROPS = cropsJson as CropDef[]
@@ -84,6 +100,11 @@ for (const def of itemsJson as ItemDef[]) ITEMS.set(def.id, def)
 for (const c of CROPS) {
   ITEMS.set(`seed_${c.id}`, { id: `seed_${c.id}`, kind: 'seed', icon: c.icon, cropId: c.id, buyPrice: c.seedPrice })
   ITEMS.set(`crop_${c.id}`, { id: `crop_${c.id}`, kind: 'crop', icon: c.icon, cropId: c.id, sellPrice: c.sellPrice, energy: c.energy })
+}
+
+// Nội thất mua về (furn_x) nằm trong túi đồ cho tới khi đặt trong nhà.
+for (const f of FURNITURE) {
+  ITEMS.set(`furn_${f.id}`, { id: `furn_${f.id}`, kind: 'furniture', icon: f.icon, buyPrice: f.price })
 }
 
 // Cá câu được (fish_x) sinh từ fish.json.

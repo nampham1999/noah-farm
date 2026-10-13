@@ -1,5 +1,6 @@
 import type { PlayerState } from '../core/state.ts'
-import { FARM_HALF, isWater, OBSTACLES } from '../core/world.ts'
+import { FARM_HALF, isWater, OBSTACLES, ROOM, roomCorner } from '../core/world.ts'
+import type { Rect } from './house.ts'
 
 export const WALK_SPEED = 4.5
 const PLAYER_RADIUS = 0.35
@@ -25,10 +26,11 @@ export function cameraRelative(move: { x: number; y: number }, cameraYaw: number
  * Di chuyển nhân vật theo hướng thế giới (độ dài tối đa 1), có va chạm với vật cản tròn
  * và hàng rào. Trả về tốc độ thực tế (m/s) để hoạt ảnh dùng.
  */
-export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: number): number {
+export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: number, indoorBlocks: Rect[] = []): number {
   if (Math.hypot(dir.x, dir.z) < 0.05) return 0
 
   const step = WALK_SPEED * speedMul * dt
+  if (player.indoors) return moveIndoors(player, dir, step, dt, indoorBlocks)
   let x = player.pos[0] + dir.x * step
   let z = player.pos[2] + dir.z * step
 
@@ -62,6 +64,34 @@ export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: 
   player.pos[2] = z
   turnToward(player, dir.x, dir.z, Math.min(1, TURN_RATE * dt))
 
+  return dt > 0 ? moved / dt : 0
+}
+
+/** Trong nhà: giữ trong tường phòng, không đi xuyên đồ đạc (trượt theo từng trục). */
+function moveIndoors(player: PlayerState, dir: Dir, step: number, dt: number, blocks: Rect[]): number {
+  const c = roomCorner()
+  const m = PLAYER_RADIUS
+  const blocked = (x: number, z: number) =>
+    blocks.some((r) => x > r.x0 - m && x < r.x1 + m && z > r.z0 - m && z < r.z1 + m)
+  const clampX = (x: number) => Math.min(c.x + ROOM.w - m, Math.max(c.x + m, x))
+  // Cạnh nam để mở: đứng được lên thảm cửa để ra ngoài.
+  const clampZ = (z: number) => Math.min(c.z + ROOM.d, Math.max(c.z + m, z))
+  const ox = player.pos[0]
+  const oz = player.pos[2]
+  let x = clampX(ox + dir.x * step)
+  let z = clampZ(oz + dir.z * step)
+  if (blocked(x, z)) {
+    if (!blocked(x, oz)) z = oz
+    else if (!blocked(ox, z)) x = ox
+    else {
+      x = ox
+      z = oz
+    }
+  }
+  player.pos[0] = x
+  player.pos[2] = z
+  turnToward(player, dir.x, dir.z, Math.min(1, TURN_RATE * dt))
+  const moved = Math.hypot(x - ox, z - oz)
   return dt > 0 ? moved / dt : 0
 }
 

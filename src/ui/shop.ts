@@ -1,5 +1,6 @@
 import type { GameState } from '../core/state.ts'
-import { animalData, CROP_BY_ID, item } from '../data/index.ts'
+import { animalData, CROP_BY_ID, FURNITURE, item } from '../data/index.ts'
+import { buyFurniture } from '../systems/house.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { now } from '../core/time.ts'
 import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
@@ -9,7 +10,7 @@ import { buy, seedCatalog, sell, sellableItems, supplyCatalog } from '../systems
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
 
-type Tab = 'buy' | 'animals' | 'sell'
+type Tab = 'buy' | 'animals' | 'furniture' | 'sell'
 
 /** Cửa hàng ở quầy: tab Mua hạt giống và tab Bán nông sản. */
 export function createShopPanel(state: GameState): PanelSpec {
@@ -20,7 +21,7 @@ export function createShopPanel(state: GameState): PanelSpec {
     render(body, refresh) {
       const tabs = document.createElement('div')
       tabs.className = 'tabs'
-      for (const id of ['buy', 'animals', 'sell'] as const) {
+      for (const id of ['buy', 'animals', 'furniture', 'sell'] as const) {
         const b = button(t(`shop.tab.${id}`), 'btn small tab' + (tab === id ? ' is-active' : ''), () => {
           tab = id
           refresh()
@@ -37,6 +38,7 @@ export function createShopPanel(state: GameState): PanelSpec {
       list.className = 'rows'
       if (tab === 'buy') renderBuy(list, refresh)
       else if (tab === 'animals') renderAnimals(list, refresh)
+      else if (tab === 'furniture') renderFurniture(list, refresh)
       else renderSell(list, refresh)
       body.append(tabs, list)
     },
@@ -109,6 +111,25 @@ export function createShopPanel(state: GameState): PanelSpec {
       for (const qty of [1, 10]) {
         row.append(button(`${qty > 1 ? `×${qty} · ` : ''}${entry.price * qty}g`, 'btn small gold', () => buy(state, entry, qty) && refresh(), p.gold < entry.price * qty))
       }
+      list.append(row)
+    }
+  }
+
+  function renderFurniture(list: HTMLElement, refresh: () => void): void {
+    const p = state.player
+    const hint = document.createElement('p')
+    hint.className = 'panel__hint'
+    hint.textContent = t('shop.furnitureHint')
+    list.append(hint)
+    for (const def of [...FURNITURE].sort((a, b) => a.level - b.level || a.price - b.price)) {
+      const id = `furn_${def.id}`
+      const locked = p.level < def.level
+      const sub = locked
+        ? t('notice.locked', { level: def.level })
+        : `${def.w}×${def.d} · ${t('shop.owned', { n: countItem(state.inventory, id) + state.house.furniture.filter((f) => f.id === def.id).length })}`
+      const row = shopRow(id, itemName(id), sub)
+      if (locked) row.classList.add('locked')
+      row.append(button(`${def.price}g`, 'btn small gold', () => buyFurniture(state, def.id) && refresh(), locked || p.gold < def.price))
       list.append(row)
     }
   }

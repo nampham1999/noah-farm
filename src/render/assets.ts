@@ -34,6 +34,7 @@ export const MODELS = {
   debris: 'models/debris.glb',
   fishingHut: 'models/fishing-hut.glb',
   coop: 'models/coop.glb',
+  furniture: 'models/furniture.glb',
   cowbarn: 'models/cowbarn.glb',
   chicken: 'models/chicken.glb',
   pig: 'models/pig.glb',

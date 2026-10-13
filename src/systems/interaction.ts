@@ -1,7 +1,8 @@
 import { bus } from '../core/events.ts'
-import type { AnimalState, GameState, PlotState } from '../core/state.ts'
+import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
-import { isWater, plotAt, plotCenter, STALL } from '../core/world.ts'
+import { HOUSE_DOOR, isWater, plotAt, plotCenter, roomCellAt, STALL } from '../core/world.ts'
+import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
 import { balance } from '../data/index.ts'
@@ -19,6 +20,12 @@ type Goal =
   | { kind: 'stall' }
   | { kind: 'animal'; id: string }
   | { kind: 'fish'; x: number; z: number }
+  | { kind: 'house' }
+  | { kind: 'bed'; x: number; z: number }
+
+/** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
+const DOOR_REACH = 1.8
+const BED_REACH = 1.7
 
 /** Thả cần xa tối đa chừng này (m) tính từ chỗ đứng. */
 const CAST_RANGE = 4.5
@@ -28,6 +35,7 @@ const ANIMAL_REACH = 1.3
 
 export interface InteractionHooks {
   openShop(): void
+  enterHouse(): void
   now(): number
 }
 
@@ -50,7 +58,12 @@ export class Interaction {
   }
 
   /** Người chơi chạm vào điểm (wx, wz) trên mặt đất; onStall là chạm trúng quầy hàng. */
-  tapWorld(wx: number, wz: number, onStall: boolean): void {
+  tapWorld(wx: number, wz: number, onStall: boolean, onHouse = false): void {
+    if (this.state.player.indoors) {
+      const bed = this.bedAt(wx, wz)
+      return this.setGoal(bed ? { kind: 'bed', ...bed } : { kind: 'walk', x: wx, z: wz })
+    }
+    if (onHouse) return this.setGoal({ kind: 'house' })
     if (onStall) return this.setGoal({ kind: 'stall' })
     if (isWater(wx, wz)) {
       if (this.distTo(wx, wz) <= CAST_RANGE) return this.castAt(wx, wz)
@@ -95,6 +108,12 @@ export class Interaction {
 
   /** E / nút "Tương tác": mở cửa hàng nếu đứng gần quầy, không thì như useFront. */
   interact(): void {
+    if (this.state.player.indoors) {
+      const bed = this.state.house.furniture.find((f) => furnitureDef(f.id).kind === 'bed' && this.distToFurniture(f) < BED_REACH)
+      if (bed) sleep(this.state)
+      return
+    }
+    if (this.distTo(HOUSE_DOOR.x, HOUSE_DOOR.z) <= DOOR_REACH) return this.hooks.enterHouse()
     if (this.distTo(STALL.x, STALL.z) <= STALL_REACH) return this.hooks.openShop()
     const animal = this.nearestAnimal()
     if (animal) return this.actAnimal(animal)
@@ -165,6 +184,10 @@ export class Interaction {
       }
       case 'fish':
         return [goal.x, goal.z, CAST_RANGE - 0.3]
+      case 'house':
+        return [HOUSE_DOOR.x, HOUSE_DOOR.z, 0.5]
+      case 'bed':
+        return [goal.x, goal.z, BED_REACH - 0.3]
       case 'animal': {
         const p = animalPose(goal.id)
         return p ? [p.x, p.z, ANIMAL_REACH - 0.2] : [this.state.player.pos[0], this.state.player.pos[2], 1]
@@ -179,6 +202,10 @@ export class Interaction {
       this.hooks.openShop()
     } else if (goal.kind === 'plot') {
       this.act(goal.plot)
+    } else if (goal.kind === 'house') {
+      this.hooks.enterHouse()
+    } else if (goal.kind === 'bed') {
+      sleep(this.state)
     } else if (goal.kind === 'fish') {
       this.castAt(goal.x, goal.z)
     } else if (goal.kind === 'animal') {
@@ -195,6 +222,20 @@ export class Interaction {
       holdStill(animal.id, 2)
     }
     if (actOnAnimal(this.state, animal, this.hooks.now())) bus.emit('saveRequest', undefined)
+  }
+
+  /** Giường ở điểm chạm (trong nhà); trả về tâm giường. */
+  private bedAt(wx: number, wz: number): { x: number; z: number } | null {
+    const cell = roomCellAt(wx, wz)
+    if (!cell) return null
+    const i = furnitureAt(this.state, cell.cx, cell.cz)
+    const f = this.state.house.furniture[i]
+    return f && furnitureDef(f.id).kind === 'bed' ? furnitureCenter(f) : null
+  }
+
+  private distToFurniture(f: PlacedFurniture): number {
+    const c = furnitureCenter(f)
+    return this.distTo(c.x, c.z)
   }
 
   /** Con vật gần nhất trong tầm tay, cho phím E / nút Tương tác. */

@@ -36,6 +36,7 @@ export function itemName(id: string): string {
   if (def.kind === 'seed') return t('item.seed', { crop: tKey(`crop.${def.cropId}`) })
   if (def.kind === 'crop') return tKey(`crop.${def.cropId}`)
   if (def.kind === 'fish') return tKey(`fish.${id.slice('fish_'.length)}`)
+  if (def.kind === 'furniture') return tKey(`furn.${id.slice('furn_'.length)}`)
   return tKey(`item.${id}`)
 }
 

@@ -18,6 +18,30 @@ export interface Circle {
 
 /** Nhà (mô hình house-1, khoảng 4,4 x 3,9 m), cửa quay về phía +Z. */
 export const HOUSE = { x: -11, z: -11, r: 2.7 }
+/** Chỗ đứng trước cửa nhà để vào nhà, và chỗ ra lại sau khi ra khỏi nhà. */
+export const HOUSE_DOOR = { x: -11, z: -7.9 }
+
+/**
+ * Trong nhà: một phòng W x D ô (1 ô = 1 m), dựng ở xa nông trại để khỏi thấy nhau.
+ * Ô (cx, cz) tính từ góc tây bắc; cửa ra ở giữa cạnh nam (phía camera).
+ */
+export const ROOM = { x: 0, z: -200, w: 8, d: 6 }
+
+/** Toạ độ thế giới của góc tây bắc phòng. */
+export function roomCorner(): { x: number; z: number } {
+  return { x: ROOM.x - ROOM.w / 2, z: ROOM.z - ROOM.d / 2 }
+}
+
+/** Ô trong phòng chứa điểm thế giới; null nếu ngoài phòng. */
+export function roomCellAt(wx: number, wz: number): { cx: number; cz: number } | null {
+  const c = roomCorner()
+  const cx = Math.floor(wx - c.x)
+  const cz = Math.floor(wz - c.z)
+  return cx >= 0 && cx < ROOM.w && cz >= 0 && cz < ROOM.d ? { cx, cz } : null
+}
+
+/** Chỗ xuất hiện khi vào nhà (ngay trong cửa). */
+export const ROOM_ENTRY = { x: ROOM.x, z: ROOM.z + ROOM.d / 2 - 0.7 }
 /** Hồ cá: tâm và bán kính trung bình; viền thật uốn lượn theo pondRadius(). */
 export const POND = { x: 12, z: 11, r: 5 }
 

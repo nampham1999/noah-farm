@@ -12,7 +12,7 @@ export interface World {
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
   /** Gọi mỗi khung hình: bóng đổ theo nhân vật, ánh sáng theo giờ, cảnh theo mùa, gió, mặt nước. */
-  update(time: number, player: THREE.Vector3, clock: ClockState): void
+  update(time: number, player: THREE.Vector3, clock: ClockState, indoors: boolean): void
 }
 
 // Bảng màu lấy theo bản cũ; cỏ đổi màu theo mùa (GDD mục 3.2).
@@ -73,7 +73,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
   return {
     renderer,
     scene,
-    update(time, player, clock) {
+    update(time, player, clock, indoors) {
       if (clock.season !== season) {
         season = clock.season
         ground.setSeason(season)
@@ -83,7 +83,9 @@ export function createWorld(container: HTMLElement, models: Models): World {
       }
 
       // Ánh sáng theo giờ: mặt trời đi từ đông sang tây, đêm chuyển sang ánh trăng xanh.
-      const light = lightAt(clock.minuteOfDay)
+      // Trong nhà: nền gỗ tối, ánh sáng ấm, không sương mù.
+      const light = indoors ? INDOOR_LIGHT : lightAt(clock.minuteOfDay)
+      ;(scene.fog as THREE.Fog).far = indoors ? 1000 : 75
       sky.copy(light.sky)
       ;(scene.background as THREE.Color).copy(sky)
       ;(scene.fog as THREE.Fog).color.copy(sky)
@@ -100,6 +102,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
       windUniforms.uPlayer.value.set(player.x, player.z)
       pond.update(time)
       if (snow.points.visible) snow.update(time, player)
+      snow.points.visible = season === 'winter' && !indoors
     },
   }
 }
@@ -124,6 +127,14 @@ const LIGHT_KEYS: LightKey[] = [
   { m: 1230, sky: 0x2c3f6a, sun: 0x9fb8ff, sunI: 0.7, hemi: 0x8fa6d8, hemiI: 0.9 },
   { m: 1440, sky: 0x24365e, sun: 0x9fb8ff, sunI: 0.7, hemi: 0x8fa6d8, hemiI: 0.9 },
 ]
+
+const INDOOR_LIGHT = {
+  sky: new THREE.Color(0x2b1d14),
+  sun: new THREE.Color(0xffe2c0),
+  hemi: new THREE.Color(0xffe2c0),
+  sunI: 1.2,
+  hemiI: 1.3,
+}
 
 const lightOut = { sky: new THREE.Color(), sun: new THREE.Color(), hemi: new THREE.Color(), sunI: 0, hemiI: 0 }
 const ca = new THREE.Color()

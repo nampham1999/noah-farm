@@ -19,6 +19,16 @@ export interface PlayerState {
   pos: [number, number, number]
   /** Hướng nhân vật quay mặt, radian quanh trục Y. */
   rotY: number
+  /** Đang ở trong nhà. */
+  indoors: boolean
+}
+
+/** Đồ nội thất đã đặt trong nhà: ô góc tây bắc của món đồ và hướng xoay (0..3, mỗi bước 90°). */
+export interface PlacedFurniture {
+  id: string
+  cx: number
+  cz: number
+  rot: number
 }
 
 export interface ClockState {
@@ -97,6 +107,7 @@ export interface GameState {
   /** Cấp chuồng: 0 là chưa có chuồng. */
   coopLevel: number
   animals: AnimalState[]
+  house: { furniture: PlacedFurniture[] }
   /** Nhật ký (GDD mục 3.7): sổ cá ghi số con đã câu của từng loài. */
   journal: { fish: Record<string, number> }
   settings: Settings
@@ -119,6 +130,7 @@ export function createInitialState(): GameState {
       stamina: balance.staminaMax,
       pos: [0, 0, 6],
       rotY: Math.PI,
+      indoors: false,
     },
     clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
     inventory: { slots, selected: 0 },
@@ -127,6 +139,8 @@ export function createInitialState(): GameState {
     coopLevel: 0,
     animals: [],
     journal: { fish: {} },
+    // Nhà mới có sẵn một giường đơn ở góc tây bắc.
+    house: { furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
     settings: { volume: 0.7, quality: 'auto', lang: detectLang(), zoom: 1 },
   }
 }

@@ -1,6 +1,6 @@
 import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type PlotState } from '../core/state.ts'
 import { LAND_BLOCKS } from '../core/world.ts'
-import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
+import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
 
 /**
@@ -152,6 +152,16 @@ function normalize(data: Record<string, unknown>): GameState {
     landLevel,
     coopLevel,
     animals,
+    house: Array.isArray(obj(data.house).furniture)
+      ? {
+          furniture: (obj(data.house).furniture as unknown[]).flatMap((raw) => {
+            const f = obj(raw)
+            return typeof f.id === 'string' && FURNITURE_BY_ID.has(f.id)
+              ? [{ id: f.id, cx: Math.floor(num(f.cx, 0)), cz: Math.floor(num(f.cz, 0)), rot: Math.floor(num(f.rot, 0)) & 3 }]
+              : []
+          }),
+        }
+      : base.house,
     journal: {
       fish: Object.fromEntries(
         Object.entries(obj(obj(data.journal).fish)).filter(([, v]) => typeof v === 'number' && v > 0),

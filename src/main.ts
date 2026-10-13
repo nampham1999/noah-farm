@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { bus, type GameAction } from './core/events.ts'
 import { createInitialState, type GameState } from './core/state.ts'
 import { now, TIME_SPEED } from './core/time.ts'
-import { plotAt } from './core/world.ts'
+import { plotAt, roomCellAt } from './core/world.ts'
 import { balance } from './data/index.ts'
 import { setLang, t } from './i18n/index.ts'
 import { Input } from './input/input.ts'
@@ -13,6 +13,9 @@ import { FollowCamera } from './render/camera.ts'
 import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
 import { createFishingView } from './render/fishing.ts'
+import { createHouseView } from './render/house.ts'
+import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
+import { createDecorUi } from './ui/decorate.ts'
 import { createFarmer } from './render/models.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
@@ -22,7 +25,7 @@ import { animalPose, animalsNewDay, updateAnimals, updateWander } from './system
 import { advanceClock } from './systems/clock.ts'
 import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from './systems/fishing.ts'
 import { createFishingUi } from './ui/fishing.ts'
-import { mountable, RIDE_SPEED, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
+import { dismount, mountable, RIDE_SPEED, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
@@ -78,6 +81,9 @@ async function start(): Promise<void> {
   world.scene.add(farmer.root)
   const animalsView = createAnimalsView(world.scene, models)
   const fishingView = createFishingView(world.scene)
+  const windowModel = models.furniture.scene.getObjectByName('FurnRoot_room_window')?.clone() ?? null
+  windowModel?.position.set(0, 0, 0)
+  const houseView = createHouseView(world.scene, models.furniture, windowModel)
 
   const autosaver = new AutoSaver(store, state)
   autosaver.start()
@@ -86,7 +92,12 @@ async function start(): Promise<void> {
   const shopPanel = createShopPanel(state)
   const menuPanel = createMenuPanel(state, store, autosaver)
   const inventoryPanel = createInventoryPanel(state)
-  const interaction = new Interaction(state, { openShop: () => openPanel(shopPanel), now })
+  const goInside = () => {
+    if (ridingAnimal()) dismount(state)
+    if (isFishing()) stopFishing()
+    enterHouse(state)
+  }
+  const interaction = new Interaction(state, { openShop: () => openPanel(shopPanel), enterHouse: goInside, now })
 
   const input = new Input()
   attachKeyboard(input)
@@ -98,8 +109,11 @@ async function start(): Promise<void> {
     openMenu: () => togglePanel(menuPanel),
     backupDue: () => backupDue(state),
     rideState: () => (ridingAnimal() ? 'riding' : mountable(state) ? 'can' : 'none'),
+    indoors: () => state.player.indoors,
+    toggleDecor: () => decorUi.toggle(),
   })
   const fishingUi = createFishingUi(ui, state)
+  const decorUi = createDecorUi(ui, state)
 
   if (offline.elapsed > WELCOME_BACK_MS) {
     bus.emit('notify', { key: 'save.welcomeBack', params: { time: formatDuration(offline.elapsed) }, good: true })
@@ -115,10 +129,20 @@ async function start(): Promise<void> {
     if (isPanelOpen()) return
     // Đang câu: chạm là giật cần (sớm quá thì thu cần).
     if (isFishing()) return strike(state)
+    if (state.player.indoors) {
+      const hit = pickGround(followCam.camera, x, y)
+      if (!hit) return
+      const cell = roomCellAt(hit.x, hit.z)
+      if (decorUi.active) {
+        if (cell) decorUi.tapCell(cell.cx, cell.cz)
+        return
+      }
+      return interaction.tapWorld(hit.x, hit.z, false)
+    }
     const animal = animalsView.hitTest(followCam.camera, x, y)
     if (animal) return interaction.tapAnimal(animal)
     const hit = pickGround(followCam.camera, x, y)
-    if (hit) interaction.tapWorld(hit.x, hit.z, hit.onStall)
+    if (hit) interaction.tapWorld(hit.x, hit.z, hit.onStall, hit.onHouse)
   })
 
   bus.on('selectSlot', (n) => {
@@ -150,7 +174,7 @@ async function start(): Promise<void> {
       case 'menu':
         return isPanelOpen() ? closePanel() : openPanel(menuPanel)
       case 'ride':
-        return toggleRide(state)
+        return state.player.indoors ? undefined : toggleRide(state)
       default:
         return comingSoon(action)
     }
@@ -223,7 +247,16 @@ async function start(): Promise<void> {
       dir = interaction.autoWalk(dt)
     }
     const riding = ridingAnimal() !== null
-    const speed = movePlayer(state.player, dir, speedMultiplier(state) * (riding ? RIDE_SPEED : 1), dt)
+    const speed = movePlayer(
+      state.player, dir, speedMultiplier(state) * (riding ? RIDE_SPEED : 1), dt,
+      state.player.indoors ? blockedRects(state) : [],
+    )
+    // Bước ra thảm cửa thì ra ngoài.
+    if (state.player.indoors && atRoomDoor(state.player.pos[0], state.player.pos[2])) {
+      interaction.cancel()
+      decorUi.close()
+      exitHouse(state)
+    }
     updateRiding(state, Math.min(1, speed / (WALK_SPEED * RIDE_SPEED)))
     farmer.setRiding(riding)
 
@@ -235,11 +268,18 @@ async function start(): Promise<void> {
     animalsView.update(state, t, clock.getElapsed(), dt, ridingAnimal())
     fishingView.update(state.player, clock.getElapsed())
     fishingUi.update()
+    houseView.update(state, decorUi.ghost, decorUi.active)
+    decorUi.update()
+    if (decorUi.active && input.hover) {
+      const h = pickGround(followCam.camera, input.hover.x, input.hover.y)
+      const cell = h && roomCellAt(h.x, h.z)
+      if (cell) decorUi.hoverCell(cell.cx, cell.cz)
+    }
 
     followCam.update(dt, playerPos, input.zoomScale)
     state.settings.zoom = followCam.zoom
     interaction.setHover(hoveredPlot())
-    world.update(clock.getElapsed(), playerPos, state.clock)
+    world.update(clock.getElapsed(), playerPos, state.clock, state.player.indoors)
     world.renderer.render(world.scene, followCam.camera)
 
     quality.tick(dt)
