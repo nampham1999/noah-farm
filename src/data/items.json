@@ -1,0 +1,5 @@
+[
+  { "id": "tool_hoe", "kind": "tool", "icon": "⛏️" },
+  { "id": "tool_watering_can", "kind": "tool", "icon": "💧" },
+  { "id": "tool_fishing_rod", "kind": "tool", "icon": "🎣" }
+]
