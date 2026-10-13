@@ -468,5 +468,6 @@
   "notify.ripe": "🥕 {n} ô cây đã chín",
   "notify.animals": "🥚 {n} con vật có sản phẩm",
   "notify.machines": "🫙 {n} máy chế biến đã xong",
-  "notify.trees": "🍎 {n} cây đã ra quả"
+  "notify.trees": "🍎 {n} cây đã ra quả",
+  "debug.testMode": "🧪 Chế độ thử: đã đặt cấp, vàng, nguyên liệu theo link"
 }

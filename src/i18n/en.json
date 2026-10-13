@@ -468,5 +468,6 @@
   "notify.ripe": "🥕 {n} crops are ripe",
   "notify.animals": "🥚 {n} animals have produce",
   "notify.machines": "🫙 {n} machines are done",
-  "notify.trees": "🍎 {n} trees have fruit"
+  "notify.trees": "🍎 {n} trees have fruit",
+  "debug.testMode": "🧪 Test mode: level, gold and items set from the link"
 }

@@ -1,7 +1,8 @@
 import './style.css'
 import * as THREE from 'three'
-import type { Weather } from './core/state.ts'
-import { applyWeather, setWeather } from './systems/weather.ts'
+import type { Season, Weather } from './core/state.ts'
+import { addItem, countItem } from './systems/inventory.ts'
+import { applyWeather, setWeather, WEATHERS } from './systems/weather.ts'
 import { collect, machineStatus, updateMachines } from './systems/machines.ts'
 import { createMachinesView } from './render/machines.ts'
 import { setRoomSize } from './core/world.ts'
@@ -44,7 +45,7 @@ import { AdaptiveQuality } from './render/quality.ts'
 import { createWorld } from './render/scene.ts'
 import { loadFurniture, loadModels } from './render/assets.ts'
 import { animalPose, animalsNewDay, updateAnimals, updateWander } from './systems/animals.ts'
-import { advanceClock } from './systems/clock.ts'
+import { advanceClock, SEASONS } from './systems/clock.ts'
 import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from './systems/fishing.ts'
 import { createFishingUi } from './ui/fishing.ts'
 import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
@@ -185,6 +186,7 @@ async function start(): Promise<void> {
   const menuPanel = createMenuPanel(state, store, autosaver)
   const inventoryPanel = createInventoryPanel(state)
   const journalPanel = createJournalPanel(state)
+  if (!visiting) applyTestParams(state)
   const audio = attachAudio(state)
   if (!visiting) attachNotifications(state)
   if (!visiting) {
@@ -610,3 +612,42 @@ window.addEventListener('hashchange', () => {
 
 registerServiceWorker()
 void start()
+
+/**
+ * Tham số thử nghiệm trên link (để tự test nhanh các tính năng):
+ * - ?max: cấp 10, 999.999 vàng, đầy thể lực, túi đủ nguyên liệu (trứng, sữa, mật, cá, nông sản, hạt, cây giống).
+ * - &season=spring|summer|autumn|winter, &day=1..7 (ngày 4 là lễ hội), &time=0..23 (giờ), &weather=sunny|rain|storm|snow.
+ */
+function applyTestParams(state: GameState): void {
+  const q = new URLSearchParams(location.search)
+  if (q.has('max')) {
+    const p = state.player
+    p.level = 10
+    p.xp = 0
+    p.gold = 999_999
+    p.stamina = balance.staminaMax
+    const items: [string, number][] = [
+      ['egg', 20], ['milk', 10], ['honey', 5], ['fish_carp', 5], ['feed_hay', 30],
+      ['crop_strawberry', 10], ['crop_pumpkin', 5], ['crop_corn', 10], ['crop_tomato', 5], ['crop_watermelon', 3],
+      ['seed_tomato', 10], ['seed_pumpkin', 10], ['fruit_apple', 5],
+      ['sapling_apple', 1], ['sapling_orange', 1], ['sapling_cherry', 1],
+    ]
+    for (const [id, qty] of items) {
+      const have = countItem(state.inventory, id)
+      if (have < qty) addItem(state.inventory, id, qty - have)
+    }
+  }
+  const season = q.get('season')
+  if (season && SEASONS.includes(season as Season)) state.clock.season = season as Season
+  const day = Number(q.get('day'))
+  if (day >= 1 && day <= balance.daysPerSeason) state.clock.day = Math.floor(day)
+  const hour = Number(q.get('time'))
+  if (q.has('time') && hour >= 0 && hour < 24) state.clock.minuteOfDay = hour * 60
+  const weather = q.get('weather')
+  if (weather && WEATHERS.includes(weather as Weather)) state.clock.weather = weather as Weather
+  if ([...q.keys()].some((k) => ['max', 'season', 'day', 'time', 'weather'].includes(k))) {
+    bus.emit('notify', { key: 'debug.testMode', good: true })
+    bus.emit('saveRequest', undefined)
+  }
+}
+
