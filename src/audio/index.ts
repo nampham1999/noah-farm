@@ -58,6 +58,10 @@ export function attachAudio(state: GameState): Audio {
         lastPhase = fishing.phase
       }
       music.setCalm(state.player.indoors || dayPhase(state.clock.minuteOfDay) === 'night')
+      // Tiếng mưa: trong nhà nghe nhỏ hơn.
+      const w = state.clock.weather
+      const rain = w === 'storm' ? 0.22 : w === 'rain' ? 0.13 : 0
+      sound.setRain(state.player.indoors ? rain * 0.35 : rain)
       if (state.settings.musicVolume > 0) music.update()
     },
   }

@@ -1,6 +1,7 @@
 import { bus } from '../core/events.ts'
 import type { ClockState, GameState, Season } from '../core/state.ts'
 import { balance } from '../data/index.ts'
+import { startWeatherDay } from './weather.ts'
 
 /**
  * Đồng hồ trong game (GDD mục 3.2): một ngày dài 12 phút thật, một mùa 7 ngày, một năm 4 mùa.
@@ -35,6 +36,7 @@ function startNewDay(state: GameState): void {
   }
   // Ngủ qua đêm: sáng ra thể lực đầy lại.
   state.player.stamina = balance.staminaMax
+  startWeatherDay(state)
   bus.emit('newDay', c.day)
   bus.emit('notify', { key: 'clock.newDay', params: { day: c.day }, good: true })
   bus.emit('saveRequest', undefined)

@@ -6,7 +6,7 @@
 export type SfxName =
   | 'till' | 'plant' | 'water' | 'harvest' | 'coin' | 'levelUp' | 'quest'
   | 'cast' | 'bite' | 'catch' | 'escape' | 'chicken' | 'cow' | 'pig'
-  | 'place' | 'error' | 'click' | 'newDay'
+  | 'place' | 'error' | 'click' | 'newDay' | 'thunder'
 
 class Sound {
   ctx: AudioContext | null = null
@@ -51,6 +51,34 @@ class Sound {
     const now = this.ctx.currentTime
     this.sfxGain.gain.setTargetAtTime(this.sfxVolume * 0.8, now, 0.05)
     this.musicGain.gain.setTargetAtTime(this.musicVolume * 0.35, now, 0.2)
+  }
+
+  private rainGain: GainNode | null = null
+
+  /** Tiếng mưa chạy nền: 0 là tắt; đổi dần cho êm. */
+  setRain(level: number): void {
+    if (!this.ctx || !this.noise || !this.sfxGain) return
+    if (!this.rainGain) {
+      if (level <= 0) return
+      const ctx = this.ctx
+      const src = ctx.createBufferSource()
+      src.buffer = this.noise
+      src.loop = true
+      const hp = ctx.createBiquadFilter()
+      hp.type = 'highpass'
+      hp.frequency.value = 700
+      const lp = ctx.createBiquadFilter()
+      lp.type = 'lowpass'
+      lp.frequency.value = 4500
+      this.rainGain = ctx.createGain()
+      this.rainGain.gain.value = 0
+      src.connect(hp)
+      hp.connect(lp)
+      lp.connect(this.rainGain)
+      this.rainGain.connect(this.sfxGain)
+      src.start()
+    }
+    this.rainGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.8)
   }
 
   /** Ẩn tab thì dừng hẳn cho đỡ tốn pin. */
@@ -129,6 +157,11 @@ class Sound {
         break
       case 'newDay':
         ;[784, 1047, 1319].forEach((f, i) => this.pluck(t + i * 0.12, f, 0.6, 0.2))
+        break
+      case 'thunder':
+        // Tiếng nổ ngắn rồi rền trầm kéo dài.
+        this.noiseBurst(t, 0.35, 'bandpass', 1400, 200, 0.35)
+        this.noiseBurst(t + 0.05, 2.4, 'lowpass', 320, 50, 0.9)
         break
     }
   }

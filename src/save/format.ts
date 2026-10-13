@@ -1,4 +1,5 @@
 import { normalizeLook } from '../core/look.ts'
+import { WEATHERS } from '../systems/weather.ts'
 import { blockPlots, createInitialState, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
 import { FARM_HALF, isWater, LAND_BLOCKS, SPAWN } from '../core/world.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, type AnimalType } from '../data/index.ts'
@@ -147,7 +148,7 @@ function normalize(data: Record<string, unknown>): GameState {
     version: SAVE_VERSION,
     meta: { ...base.meta, ...obj(data.meta) },
     player: { ...base.player, ...p, look: normalizeLook(p.look), ...outdoorPos(p) },
-    clock: { ...base.clock, ...obj(data.clock) },
+    clock: { ...base.clock, ...obj(data.clock), weather: normalizeWeather(obj(data.clock).weather) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
     landLevel,
@@ -243,4 +244,8 @@ function outdoorPos(p: Record<string, unknown>): { pos?: [number, number, number
     Math.abs(pos[2]) < FARM_HALF - 0.5 &&
     !isWater(pos[0], pos[2], 0.3)
   return ok ? {} : { pos: [SPAWN.x, 0, SPAWN.z], rotY: SPAWN.rotY }
+}
+
+function normalizeWeather(v: unknown): GameState['clock']['weather'] {
+  return WEATHERS.includes(v as GameState['clock']['weather']) ? (v as GameState['clock']['weather']) : 'sunny'
 }

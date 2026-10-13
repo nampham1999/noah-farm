@@ -1,5 +1,7 @@
 import './style.css'
 import * as THREE from 'three'
+import type { Weather } from './core/state.ts'
+import { applyWeather, setWeather } from './systems/weather.ts'
 import { bus, type GameAction } from './core/events.ts'
 import { createInitialState, type GameState } from './core/state.ts'
 import { now, TIME_SPEED } from './core/time.ts'
@@ -311,6 +313,7 @@ async function start(): Promise<void> {
         npcPose,
         /** Cho nhân vật làm một động tác (để xem hoạt ảnh). */
         act: (name: ActionName) => farmer.playAction?.(name),
+        setWeather: (w: Weather) => setWeather(state, w),
         /** Dụng cụ đang cầm: kích thước thật trong thế giới (để kiểm tra tỉ lệ, hướng). */
         heldTool: () => {
           let info: { name: string; size: number[]; center: number[] } | null = null
@@ -368,6 +371,7 @@ async function start(): Promise<void> {
 
     const t = now()
     advanceClock(state, dt * TIME_SPEED)
+    if (!visiting) applyWeather(state, t)
     updateCrops(state, t, lastT)
     updateAnimals(state, t, lastT)
     updateWander(state, dt, ridingAnimal())

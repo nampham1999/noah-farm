@@ -3,6 +3,7 @@ import type { GameState } from '../core/state.ts'
 import { FISH, type FishDef } from '../data/index.ts'
 import { addItem, canFit, countItem } from './inventory.ts'
 import { gainXp, useStamina } from './progress.ts'
+import { isWet, RAIN_BITE_FACTOR } from './weather.ts'
 
 /**
  * Câu cá (GDD mục 3.4): thả cần, chờ phao chìm, chạm trong 1 giây; rồi mini-game kéo cá:
@@ -64,9 +65,11 @@ export function availableFish(state: GameState): FishDef[] {
 
 function pickFish(state: GameState): FishDef {
   const pool = availableFish(state)
-  let r = Math.random() * pool.reduce((sum, f) => sum + f.weight, 0)
+  // Trời giông: cá hiếm (giá cao) dễ cắn gấp đôi.
+  const weight = (f: FishDef) => f.weight * (state.clock.weather === 'storm' && f.price >= 100 ? 2 : 1)
+  let r = Math.random() * pool.reduce((sum, f) => sum + weight(f), 0)
   for (const f of pool) {
-    r -= f.weight
+    r -= weight(f)
     if (r <= 0) return f
   }
   return pool[0]
@@ -77,7 +80,8 @@ export function cast(state: GameState, x: number, z: number): boolean {
   if (isFishing()) return false
   if (!countItem(state.inventory, 'tool_fishing_rod')) return fail('fish.needRod')
   useStamina(state, STAMINA_PER_CAST)
-  Object.assign(fishing, { phase: 'waiting', x, z, timer: 2 + Math.random() * 4, fish: null, holding: false, dragY: null })
+  const wait = (2 + Math.random() * 4) * (isWet(state.clock.weather) ? RAIN_BITE_FACTOR : 1)
+  Object.assign(fishing, { phase: 'waiting', x, z, timer: wait, fish: null, holding: false, dragY: null })
   return true
 }
 

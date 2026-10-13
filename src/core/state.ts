@@ -65,11 +65,15 @@ export interface PlacedFurniture {
   rot: number
 }
 
+export type Weather = 'sunny' | 'rain' | 'storm' | 'snow'
+
 export interface ClockState {
   day: number
   season: Season
   year: number
   minuteOfDay: number
+  /** Thời tiết hôm nay, gieo lại mỗi sáng theo mùa. */
+  weather: Weather
 }
 
 export interface ItemStack {
@@ -183,7 +187,7 @@ export function createInitialState(): GameState {
       indoors: false,
       look: null,
     },
-    clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute },
+    clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute, weather: 'sunny' },
     inventory: { slots, selected: 0 },
     plots,
     landLevel: 0,

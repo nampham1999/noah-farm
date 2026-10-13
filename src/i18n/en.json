@@ -360,5 +360,12 @@
   "look.extras": "Extras",
   "look.glasses": "Glasses",
   "look.cane": "Cane",
-  "fish.reelHintMouse": "Hold the mouse and move it up or down to keep the green zone on the fish"
+  "fish.reelHintMouse": "Hold the mouse and move it up or down to keep the green zone on the fish",
+  "weather.sunny": "Sunny",
+  "weather.rain": "Rain",
+  "weather.storm": "Storm",
+  "weather.snow": "Snow",
+  "weather.today.rain": "🌧️ Rainy day: crops get watered and fish bite faster",
+  "weather.today.storm": "⛈️ Stormy day: crops get watered and rare fish bite more often",
+  "weather.today.snow": "🌨️ Snow is falling on the farm"
 }

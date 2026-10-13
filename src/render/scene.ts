@@ -1,3 +1,4 @@
+import { bus } from '../core/events.ts'
 import * as THREE from 'three'
 import type { ClockState, Season } from '../core/state.ts'
 import {
@@ -67,7 +68,13 @@ export function createWorld(container: HTMLElement, models: Models): World {
   const trees = addTrees(scene, models)
   const decor = addDecor(scene, models)
   const snow = createSnow()
-  scene.add(snow.points)
+  const rain = createRain()
+  scene.add(snow.points, rain.lines)
+  // Độ "ướt" của trời (0 nắng .. 1 mưa, 1.4 giông), đổi dần cho mượt; chớp khi giông.
+  let gloom = 0
+  let lastTime = 0
+  let nextFlash = 0
+  let flashAt = -10
 
   let season: Season | null = null
   const sky = new THREE.Color()
@@ -86,8 +93,22 @@ export function createWorld(container: HTMLElement, models: Models): World {
         ground.setSeason(season)
         trees.setSeason(season)
         decor.setSeason(season)
-        snow.points.visible = season === 'winter'
       }
+      const dt = Math.min(0.1, Math.max(0, time - lastTime))
+      lastTime = time
+      const weather = clock.weather
+      const wet = weather === 'rain' || weather === 'storm'
+      const targetGloom = weather === 'storm' ? 1.4 : weather === 'rain' ? 1 : weather === 'snow' ? 0.5 : 0
+      gloom += (targetGloom - gloom) * Math.min(1, dt * 0.8)
+      // Giông: chớp loé sáng vài giây một lần, sấm vang sau đó.
+      if (weather === 'storm' && !indoors && time > nextFlash) {
+        if (nextFlash > 0) {
+          flashAt = time
+          setTimeout(() => bus.emit('sfx', 'thunder'), 500 + Math.random() * 900)
+        }
+        nextFlash = time + 5 + Math.random() * 9
+      }
+      const flash = Math.max(0, 1 - (time - flashAt) / 0.25)
 
       // Ánh sáng theo giờ: mặt trời đi từ đông sang tây, đêm chuyển sang ánh trăng xanh.
       // Trong nhà: nền gỗ tối, ánh sáng ấm, không sương mù.
@@ -100,6 +121,23 @@ export function createWorld(container: HTMLElement, models: Models): World {
       sun.intensity = light.sunI
       hemi.intensity = light.hemiI
       hemi.color.copy(light.hemi)
+      if (!indoors && gloom > 0.01) {
+        // Trời mưa: nắng yếu, bầu trời xám, sương mù gần hơn.
+        const g = Math.min(1, gloom)
+        sun.intensity *= 1 - 0.6 * g
+        hemi.intensity *= 1 - 0.2 * g
+        sky.lerp(cb.setHex(RAIN_SKY).multiplyScalar(Math.min(1, 0.35 + light.sunI / 2.6)), 0.6 * g)
+        ;(scene.background as THREE.Color).copy(sky)
+        ;(scene.fog as THREE.Fog).color.copy(sky)
+        ;(scene.fog as THREE.Fog).near = 38 - 16 * gloom
+        ;(scene.fog as THREE.Fog).far = 75 - 22 * gloom
+      } else if (!indoors) {
+        ;(scene.fog as THREE.Fog).near = 38
+      }
+      if (flash > 0) {
+        hemi.intensity += 3 * flash
+        ;(scene.background as THREE.Color).lerp(ca.setHex(0xe8eeff), 0.6 * flash)
+      }
       const arc = ((clock.minuteOfDay / 1440) * 2 - 0.5) * Math.PI
       sunDir.set(Math.sin(arc) * 16, 24, 10)
       sun.position.copy(player).add(sunDir)
@@ -108,8 +146,10 @@ export function createWorld(container: HTMLElement, models: Models): World {
       windUniforms.uTime.value = time
       windUniforms.uPlayer.value.set(player.x, player.z)
       pond.update(time)
+      snow.points.visible = weather === 'snow' && !indoors
       if (snow.points.visible) snow.update(time, player)
-      snow.points.visible = season === 'winter' && !indoors
+      rain.lines.visible = wet && !indoors
+      if (rain.lines.visible) rain.update(time, player, weather === 'storm')
     },
   }
 }
@@ -161,7 +201,51 @@ function lightAt(minute: number): typeof lightOut {
   return lightOut
 }
 
-/** Tuyết rơi quanh nhân vật vào mùa đông. */
+/** Màu trời khi mưa (giữa trưa); buổi tối thì tối theo. */
+const RAIN_SKY = 0x8794a6
+
+/** Mưa: các vệt nước rơi xiên quanh nhân vật; giông thì rơi nhanh và xiên hơn. */
+function createRain(): { lines: THREE.LineSegments; update(time: number, player: THREE.Vector3, storm: boolean): void } {
+  const count = 900
+  const span = 30
+  const height = 14
+  const seeds = new Float32Array(count * 3)
+  for (let i = 0; i < count; i++) {
+    seeds[i * 3] = (Math.random() - 0.5) * span
+    seeds[i * 3 + 1] = Math.random() * height
+    seeds[i * 3 + 2] = (Math.random() - 0.5) * span
+  }
+  const pos = new Float32Array(count * 6)
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+  const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xcfe2ff, transparent: true, opacity: 0.55, depthWrite: false }))
+  lines.frustumCulled = false
+  lines.visible = false
+  return {
+    lines,
+    update(time, player, storm) {
+      const speed = storm ? 20 : 14
+      const slant = storm ? 0.35 : 0.12
+      const len = storm ? 0.8 : 0.55
+      for (let i = 0; i < count; i++) {
+        let y = (seeds[i * 3 + 1] - time * speed) % height
+        if (y < 0) y += height
+        const x = player.x + seeds[i * 3] + y * slant
+        const z = player.z + seeds[i * 3 + 2]
+        const k = i * 6
+        pos[k] = x
+        pos[k + 1] = y
+        pos[k + 2] = z
+        pos[k + 3] = x - len * slant
+        pos[k + 4] = y + len
+        pos[k + 5] = z
+      }
+      geo.attributes.position.needsUpdate = true
+    },
+  }
+}
+
+/** Tuyết rơi quanh nhân vật vào ngày tuyết. */
 function createSnow(): { points: THREE.Points; update(time: number, player: THREE.Vector3): void } {
   const count = 1200
   const span = 30

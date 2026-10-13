@@ -360,5 +360,12 @@
   "look.extras": "Phụ kiện",
   "look.glasses": "Kính",
   "look.cane": "Gậy",
-  "fish.reelHintMouse": "Giữ chuột rồi rê lên xuống để vùng xanh bám theo con cá"
+  "fish.reelHintMouse": "Giữ chuột rồi rê lên xuống để vùng xanh bám theo con cá",
+  "weather.sunny": "Nắng",
+  "weather.rain": "Mưa",
+  "weather.storm": "Giông",
+  "weather.snow": "Tuyết",
+  "weather.today.rain": "🌧️ Hôm nay trời mưa: cây được tưới tự nhiên, cá cắn câu nhanh hơn",
+  "weather.today.storm": "⛈️ Trời giông: cây được tưới, cá hiếm hay cắn câu hơn",
+  "weather.today.snow": "🌨️ Tuyết rơi trắng nông trại"
 }

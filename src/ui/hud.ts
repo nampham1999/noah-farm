@@ -2,6 +2,7 @@ import { bus, type GameAction } from '../core/events.ts'
 import type { GameState } from '../core/state.ts'
 import { balance, xpToNext } from '../data/index.ts'
 import { getLang, itemName, noticeText, t, tKey } from '../i18n/index.ts'
+import type { Weather } from '../core/state.ts'
 import { dayPhase, type DayPhase } from '../systems/clock.ts'
 import { currentTutorial } from '../systems/quests.ts'
 import { itemIconHtml } from './icons.ts'
@@ -176,9 +177,10 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
       const c = state.clock
       // Đồng hồ nhảy theo bước 10 phút trong game như bản cũ, đỡ phải vẽ lại mỗi khung hình.
       const shownMinute = Math.floor(c.minuteOfDay / 10) * 10
-      if (changed('clock', `${shownMinute}|${c.season}|${c.day}|${getLang()}`)) {
+      if (changed('clock', `${shownMinute}|${c.season}|${c.day}|${c.weather}|${getLang()}`)) {
         clockTime.textContent = formatClock(shownMinute)
-        clockIco.textContent = PHASE_ICON[dayPhase(c.minuteOfDay)]
+        clockIco.textContent = WEATHER_ICON[c.weather] ?? PHASE_ICON[dayPhase(c.minuteOfDay)]
+        clockIco.title = tKey(`weather.${c.weather}`)
         clockDate.textContent = t('hud.date', { day: c.day, season: tKey(`season.${c.season}`) })
       }
 
@@ -224,6 +226,8 @@ export function createHud(ui: HTMLElement, state: GameState, hooks: HudHooks): H
 }
 
 const PHASE_ICON: Record<DayPhase, string> = { dawn: '🌅', day: '☀️', dusk: '🌇', night: '🌙' }
+/** Trời không nắng thì biểu tượng thời tiết thay cho biểu tượng giờ trong ngày. */
+const WEATHER_ICON: Partial<Record<Weather, string>> = { rain: '🌧️', storm: '⛈️', snow: '🌨️' }
 
 /** Giờ trong game dạng 6:10 SA / 6:10 AM. */
 function formatClock(minuteOfDay: number): string {
