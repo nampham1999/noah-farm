@@ -47,6 +47,25 @@ service cloud.firestore {
         && request.resource.data.have <= resource.data.qty;
     }
 
+    // Đổi đồ: người gửi tạo (status open); người nhận chỉ đổi open → accepted/declined;
+    // người gửi chỉ đổi open → cancelled hoặc accepted/declined → done. Không sửa được nội dung.
+    match /trades/{id} {
+      allow read: if signedIn()
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.give.qty > 0 && request.resource.data.want.qty > 0;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && ((resource.data.to == request.auth.uid && resource.data.status == 'open'
+              && request.resource.data.status in ['accepted', 'declined'])
+          || (resource.data.from == request.auth.uid && resource.data.status == 'open'
+              && request.resource.data.status == 'cancelled')
+          || (resource.data.from == request.auth.uid && resource.data.status in ['accepted', 'declined']
+              && request.resource.data.status == 'done'));
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();

@@ -6,6 +6,7 @@ import { encodeFarm, inviteUrl, MAX_SHARE_CHARS, shareUrl } from '../save/share.
 import { checkAchievements } from '../systems/quests.ts'
 import type { PanelSpec } from './panel.ts'
 import { refreshFriends, refreshRequests } from '../online/online.ts'
+import { refreshTrades } from '../online/trade.ts'
 import { renderOnline } from './online.ts'
 
 /**
@@ -40,7 +41,7 @@ export function createSocialPanel(state: GameState): PanelSpec {
       // Chơi cùng bạn bè (Firebase); mở cửa sổ thì cập nhật danh sách bạn.
       if (!shownOnce) {
         shownOnce = true
-        void refreshFriends().then(refreshRequests).then(refresh)
+        void refreshFriends().then(refreshRequests).then(() => refreshTrades(state)).then(refresh)
         bus.on('onlineChanged', () => refresh())
       }
       renderOnline(body, state, refresh, onlineUi)

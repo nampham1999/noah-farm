@@ -1201,6 +1201,43 @@ button {
   width: 100%;
 }
 
+/* Đổi đồ. */
+.trade-heading {
+  margin: 12px 0 6px;
+  font: 700 14px var(--display);
+  color: var(--wood);
+}
+
+.gift-pick__item.is-selected {
+  outline: 3px solid var(--green-dark);
+}
+
+.gift-pick__item .count {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font: 700 11px var(--display);
+}
+
+.trade-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.trade-row__deal {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.trade-row__deal .icon {
+  width: 26px;
+  height: 26px;
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

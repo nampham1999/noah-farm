@@ -66,6 +66,7 @@ import { attachNotifications } from './systems/notifications.ts'
 import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.ts'
 import { askUseCloud, guestbookPanel } from './ui/online.ts'
 import { announce, startChat } from './online/chat.ts'
+import { refreshTrades } from './online/trade.ts'
 import { attachChatButton } from './ui/chat.ts'
 import { showWelcome } from './ui/welcome.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
@@ -217,8 +218,15 @@ async function start(): Promise<void> {
     // Chơi cùng bạn bè: lưu đám mây, mã bạn bè, hộp thư (mất mạng thì bỏ qua).
     void startOnline(state, store, autosaver, savedAt, askUseCloud)
     // Chat: kênh Làng và tin riêng; khởi động lại khi danh sách bạn đổi.
+    let tradesChecked = false
     bus.on('onlineChanged', () => {
-      if (online.status === 'on') startChat(state)
+      if (online.status !== 'on') return
+      startChat(state)
+      // Lần đầu kết nối: nhận kết quả các đề nghị đổi đồ đã gửi.
+      if (!tradesChecked) {
+        tradesChecked = true
+        void refreshTrades(state)
+      }
     })
     attachChatButton(ui, state)
     bus.on('levelUp', (level) => {

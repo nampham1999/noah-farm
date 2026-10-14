@@ -576,5 +576,20 @@
   "emote.p5": "So pretty!",
   "emote.p6": "Bye bye!",
   "presence.joined": "👋 {name} arrived at the farm",
-  "presence.left": "{name} left the farm"
+  "presence.left": "{name} left the farm",
+  "trade.title": "Trades",
+  "trade.with": "Trade with {name}",
+  "trade.give": "You give",
+  "trade.want": "You want",
+  "trade.pick": "Pick what you give and what you want",
+  "trade.send": "Offer: {give} ⇄ {want}",
+  "trade.incoming": "{name} wants to trade",
+  "trade.outgoing": "Waiting for {name}",
+  "trade.accept": "Accept",
+  "trade.decline": "Decline",
+  "trade.sent": "🔄 Trade offer sent to {name}",
+  "trade.done": "🔄 Traded! Got {qty} {item} from {name}",
+  "trade.accepted": "🔄 {name} accepted! You got {qty} {item}",
+  "trade.declined": "{name} declined; {qty} {item} returned",
+  "trade.notEnough": "Not enough items to trade"
 }

@@ -576,5 +576,20 @@
   "emote.p5": "Đẹp quá!",
   "emote.p6": "Tạm biệt!",
   "presence.joined": "👋 {name} vừa tới nông trại",
-  "presence.left": "{name} đã rời nông trại"
+  "presence.left": "{name} đã rời nông trại",
+  "trade.title": "Đổi đồ",
+  "trade.with": "Đổi đồ với {name}",
+  "trade.give": "Bạn đưa",
+  "trade.want": "Bạn muốn nhận",
+  "trade.pick": "Chọn món đưa và món muốn nhận",
+  "trade.send": "Đề nghị: {give} ⇄ {want}",
+  "trade.incoming": "{name} muốn đổi",
+  "trade.outgoing": "Đang chờ {name} trả lời",
+  "trade.accept": "Đồng ý",
+  "trade.decline": "Từ chối",
+  "trade.sent": "🔄 Đã gửi đề nghị đổi đồ cho {name}",
+  "trade.done": "🔄 Đổi xong! Nhận {qty} {item} từ {name}",
+  "trade.accepted": "🔄 {name} đồng ý đổi! Bạn nhận {qty} {item}",
+  "trade.declined": "{name} từ chối đổi; trả lại {qty} {item}",
+  "trade.notEnough": "Không đủ đồ để đổi"
 }
