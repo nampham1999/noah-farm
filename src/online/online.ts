@@ -6,9 +6,10 @@ import { gunzipBase64Url, gzipBase64Url } from '../save/codec.ts'
 import { parseSave, serialize, type ParsedSave } from '../save/format.ts'
 import type { SaveStore } from '../save/SaveStore.ts'
 import { needsWater } from '../systems/farming.ts'
-import { addItem, canFit } from '../systems/inventory.ts'
+import { addItem, canFit, countItem, removeItem } from '../systems/inventory.ts'
+import { item } from '../data/index.ts'
 import { gainXp } from '../systems/progress.ts'
-import { Cloud, CloudError, type CloudErrorCode, type Profile } from './cloud.ts'
+import { Cloud, CloudError, type CloudErrorCode, type HelpRequest, type Profile } from './cloud.ts'
 
 /**
  * Chơi cùng bạn bè qua Firebase: lưu đám mây, mã bạn bè, thăm nông trại bạn (bản mới nhất),
@@ -28,6 +29,31 @@ const HELP_GOLD = 20
 const HELP_XP = 5
 /** Thưởng tưới giúp chờ nhận (ghi lúc đang thăm, cộng khi về nông trại mình). */
 const PENDING_KEY = 'noahfarm.helpReward'
+/** Người chơi đã xoá dữ liệu online: không tự kết nối và đồng bộ nữa cho tới khi bật lại. */
+export const OFFLINE_KEY = 'noahfarm.onlineOff'
+
+export function onlineDisabled(): boolean {
+  try {
+    return localStorage.getItem(OFFLINE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function setOnlineDisabled(off: boolean): void {
+  try {
+    if (off) localStorage.setItem(OFFLINE_KEY, '1')
+    else localStorage.removeItem(OFFLINE_KEY)
+  } catch {
+    // Không lưu được thì thôi.
+  }
+}
+const GUESTBOOK_MAX = 20
+/** Câu chúc có sẵn cho sổ khách (khoá i18n guest.pN). */
+export const GUEST_LINES = 8
+/** Thưởng cho người gửi đồ giúp: giá bán của món + chừng này vàng mỗi món, và XP. */
+const GIVE_BONUS = 10
+const GIVE_XP = 4
 
 export const online = {
   status: 'off' as OnlineStatus,
@@ -36,6 +62,8 @@ export const online = {
   friends: [] as Profile[],
   /** Lần gửi bản lưu lên mây gần nhất (0 là chưa). */
   uploadedAt: 0,
+  /** Lời nhờ giúp đang mở của bạn bè và của mình. */
+  requests: [] as HelpRequest[],
 }
 
 function setStatus(status: OnlineStatus, error: CloudErrorCode | null = null): void {
@@ -77,6 +105,10 @@ export async function connect(): Promise<Cloud> {
  */
 export async function startOnline(state: GameState, store: SaveStore, autosaver: AutoSaver, localSavedAt: number, askUseCloud: (save: ParsedSave) => Promise<boolean>): Promise<void> {
   claimHelpReward(state)
+  if (onlineDisabled()) {
+    setStatus('off')
+    return
+  }
   let cloud: Cloud
   try {
     cloud = await connect()
@@ -133,7 +165,10 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
 async function syncProfile(state: GameState): Promise<void> {
   const cloud = online.cloud
   if (!cloud) return
-  const code = await cloud.saveProfile({ name: state.player.name, level: state.player.level, look: state.player.look, code: state.meta.inviteCode }, randomCode)
+  const code = await cloud.saveProfile({
+    name: state.player.name, level: state.player.level, look: state.player.look, code: state.meta.inviteCode,
+    harvest: state.stats.harvest, fish: state.stats.fish, goldEarned: state.stats.goldEarned,
+  }, randomCode)
   if (code !== state.meta.inviteCode) {
     state.meta.inviteCode = code
     bus.emit('saveRequest', undefined)
@@ -160,6 +195,13 @@ async function readInbox(state: GameState): Promise<void> {
     if (it.kind === 'gift' && it.item && it.qty) {
       if (canFit(state.inventory, it.item, it.qty)) addItem(state.inventory, it.item, it.qty)
       bus.emit('notify', { key: 'online.gotGift', params: { name: it.fromName, item: it.item, qty: it.qty }, good: true })
+    } else if (it.kind === 'give' && it.item && it.qty) {
+      if (canFit(state.inventory, it.item, it.qty)) addItem(state.inventory, it.item, it.qty)
+      bus.emit('notify', { key: 'request.received', params: { name: it.fromName, item: it.item, qty: it.qty }, good: true })
+    } else if (it.kind === 'note' && it.text) {
+      state.guestbook.unshift({ from: it.fromName, text: it.text, at: Date.now() })
+      state.guestbook.length = Math.min(state.guestbook.length, GUESTBOOK_MAX)
+      bus.emit('notify', { key: 'guest.got', params: { name: it.fromName, text: it.text }, good: true })
     } else if (it.kind === 'help') {
       const t = now()
       const thirsty = state.plots.filter(needsWater).slice(0, HELP_PLOTS)
@@ -175,7 +217,7 @@ export async function sendGift(state: GameState, friend: Profile, itemId: string
   const cloud = online.cloud
   if (!cloud) return false
   try {
-    await cloud.send(friend.uid, 'gift', state.player.name, itemId, 1)
+    await cloud.send(friend.uid, 'gift', state.player.name, { item: itemId, qty: 1 })
   } catch (e) {
     notifyError(e)
     return false
@@ -230,3 +272,82 @@ export async function loadFriendFarm(uid: string): Promise<GameState | null> {
   if (!remote) return null
   return (await decodeSave(remote.data)).state
 }
+
+/** Đang thăm nông trại bạn: ghi sổ khách (một câu có sẵn, mỗi ngày một lần). */
+export async function sendNote(fromName: string, friendUid: string, friendName: string, text: string): Promise<boolean> {
+  const cloud = online.cloud
+  if (!cloud) return false
+  try {
+    await cloud.send(friendUid, 'note', fromName, { text })
+  } catch (e) {
+    notifyError(e)
+    return false
+  }
+  bus.emit('notify', { key: 'guest.sent', params: { name: friendName }, good: true })
+  return true
+}
+
+/** Nhờ bạn bè: thiếu qty món item (cho đơn hàng). */
+export async function postRequest(state: GameState, item: string, qty: number): Promise<boolean> {
+  const cloud = online.cloud
+  if (!cloud) {
+    bus.emit('notify', { key: 'online.error.offline' })
+    return false
+  }
+  try {
+    await cloud.postRequest({ name: state.player.name, item, qty })
+  } catch (e) {
+    notifyError(e)
+    return false
+  }
+  bus.emit('notify', { key: 'request.posted', params: { item, qty }, good: true })
+  return true
+}
+
+/** Gửi đồ trong túi cho lời nhờ của bạn; được thưởng vàng (giá món + thêm) và XP. */
+export async function giveToRequest(state: GameState, req: HelpRequest): Promise<boolean> {
+  const cloud = online.cloud
+  const n = Math.min(req.qty - req.have, countItem(state.inventory, req.item))
+  if (!cloud || n <= 0) return false
+  try {
+    await cloud.fulfill(req, n, state.player.name)
+  } catch (e) {
+    notifyError(e)
+    return false
+  }
+  removeItem(state.inventory, req.item, n)
+  const gold = ((item(req.item).sellPrice ?? 0) + GIVE_BONUS) * n
+  state.player.gold += gold
+  gainXp(state, GIVE_XP * n)
+  req.have += n
+  bus.emit('notify', { key: 'request.gave', params: { name: req.name, item: req.item, qty: n, gold }, good: true })
+  bus.emit('saveRequest', undefined)
+  return true
+}
+
+/** Tải lại các lời nhờ đang mở (của bạn bè và của mình); lời nhờ đã đủ thì của mình được dọn. */
+export async function refreshRequests(): Promise<HelpRequest[]> {
+  const cloud = online.cloud
+  if (!cloud) return []
+  try {
+    const me = cloud.account.uid
+    const list = await cloud.requests([me, ...online.friends.map((f) => f.uid)])
+    const mine = list.find((r) => r.uid === me)
+    if (mine && mine.have >= mine.qty) await cloud.cancelRequest()
+    online.requests = list.filter((r) => r.have < r.qty)
+    bus.emit('onlineChanged', undefined)
+  } catch (e) {
+    console.warn('Requests failed', e)
+  }
+  return online.requests
+}
+
+export async function cancelRequest(): Promise<void> {
+  try {
+    await online.cloud?.cancelRequest()
+    await refreshRequests()
+  } catch (e) {
+    notifyError(e)
+  }
+}
+

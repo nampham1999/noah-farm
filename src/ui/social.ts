@@ -5,7 +5,7 @@ import { t } from '../i18n/index.ts'
 import { encodeFarm, inviteUrl, MAX_SHARE_CHARS, shareUrl } from '../save/share.ts'
 import { checkAchievements } from '../systems/quests.ts'
 import type { PanelSpec } from './panel.ts'
-import { refreshFriends } from '../online/online.ts'
+import { refreshFriends, refreshRequests } from '../online/online.ts'
 import { renderOnline } from './online.ts'
 
 /**
@@ -40,7 +40,7 @@ export function createSocialPanel(state: GameState): PanelSpec {
       // Chơi cùng bạn bè (Firebase); mở cửa sổ thì cập nhật danh sách bạn.
       if (!shownOnce) {
         shownOnce = true
-        void refreshFriends().then(refresh)
+        void refreshFriends().then(refreshRequests).then(refresh)
         bus.on('onlineChanged', () => refresh())
       }
       renderOnline(body, state, refresh, onlineUi)

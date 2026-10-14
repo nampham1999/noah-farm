@@ -60,7 +60,7 @@ import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
 import { attachNotifications } from './systems/notifications.ts'
 import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.ts'
-import { askUseCloud } from './ui/online.ts'
+import { askUseCloud, guestbookPanel } from './ui/online.ts'
 import { announce, startChat } from './online/chat.ts'
 import { attachChatButton } from './ui/chat.ts'
 import { showWelcome } from './ui/welcome.ts'
@@ -714,7 +714,11 @@ function showVisitBanner(ui: HTMLElement, state: GameState): void {
         if (!ok) help.disabled = false
       })
     })
-    banner.append(help)
+    const note = document.createElement('button')
+    note.className = 'btn small'
+    note.textContent = `✍️ ${t('guest.write')}`
+    note.addEventListener('click', () => guestbookPanel(myName(), friend.uid, state.player.name))
+    banner.append(help, note)
   }
   banner.append(home)
   ui.append(banner)

@@ -1136,6 +1136,35 @@ button {
   font-size: 18px;
 }
 
+/* Bảng xếp hạng. */
+.rank-row__pos {
+  width: 34px;
+  flex: none;
+  font: 700 18px var(--display);
+  text-align: center;
+}
+
+.rank-row__value {
+  margin-left: auto;
+  font: 700 16px var(--display);
+  color: var(--wood);
+}
+
+.rank-row.is-me {
+  border-color: var(--gold);
+  background: #fff6d6;
+}
+
+/* Sổ khách và nhờ giúp. */
+.guest-lines {
+  display: grid;
+  gap: 8px;
+}
+
+.order-card__ask {
+  margin-top: 8px;
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

@@ -2,6 +2,7 @@ import type { GameState, Order } from '../core/state.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { countItem } from '../systems/inventory.ts'
 import { canDeliver, daysLeft, deliver, npcDef } from '../systems/orders.ts'
+import { online, postRequest } from '../online/online.ts'
 import { giftable, giftedToday, giveGift, hearts, likeIcons, MAX_HEARTS } from '../systems/friendship.ts'
 import { itemIconHtml } from './icons.ts'
 import type { PanelSpec } from './panel.ts'
@@ -46,6 +47,18 @@ function orderCard(state: GameState, o: Order, refresh: () => void, showWho: boo
   btn.addEventListener('click', () => deliver(state, o.id) && refresh())
   foot.append(reward, due, btn)
   card.append(foot)
+  // Còn thiếu đồ và đang online: nhờ bạn bè gửi giúp món đầu tiên còn thiếu.
+  const missing = o.lines.find((l) => countItem(state.inventory, l.itemId) < l.qty)
+  if (missing && online.status === 'on') {
+    const ask = document.createElement('button')
+    ask.className = 'btn small order-card__ask'
+    ask.textContent = `🙋 ${t('request.ask')}`
+    ask.addEventListener('click', () => {
+      ask.disabled = true
+      void postRequest(state, missing.itemId, missing.qty - countItem(state.inventory, missing.itemId))
+    })
+    card.append(ask)
+  }
   return card
 }
 

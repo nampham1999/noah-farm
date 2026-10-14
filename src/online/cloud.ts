@@ -28,15 +28,39 @@ export interface Profile {
   look: Look | null
   code: string
   lastSeen: number
+  /** Số liệu cho bảng xếp hạng (bản cũ chưa có thì thiếu). */
+  harvest?: number
+  fish?: number
+  goldEarned?: number
 }
+
+/** Trường dùng để xếp hạng. */
+export type RankField = 'level' | 'goldEarned' | 'fish' | 'harvest'
+
+/** Đang chơi nếu hồ sơ được cập nhật trong chừng này ms (game gửi lên khoảng mỗi phút). */
+export const ONLINE_WINDOW_MS = 3 * 60_000
 
 export interface InboxItem {
   id: string
   from: string
   fromName: string
-  kind: 'gift' | 'help'
+  /** gift: quà hằng ngày; help: tưới giúp; note: sổ khách; give: gửi đồ cho lời nhờ giúp. */
+  kind: 'gift' | 'help' | 'note' | 'give'
   item?: string
   qty?: number
+  /** Sổ khách: khoá câu chúc (vd. guest.p1) để chủ nhà đọc đúng ngôn ngữ của mình. */
+  text?: string
+}
+
+/** Lời nhờ bạn bè giúp: thiếu bao nhiêu món gì cho đơn hàng; mỗi người chỉ có một lời nhờ đang mở. */
+export interface HelpRequest {
+  uid: string
+  name: string
+  item: string
+  qty: number
+  have: number
+  /** Mốc tạo (ms), cũng là mã để mỗi người giúp chỉ gửi một lần cho lời nhờ này. */
+  at: number
 }
 
 /** Một tin nhắn (kênh Làng hoặc chat riêng). kind 'event' là tin hệ thống (lên cấp, người mới...). */
@@ -152,12 +176,15 @@ export class Cloud {
   }
 
   /** Ghi hồ sơ; giữ mã bạn bè (đặt chỗ ở codes/{mã}, trùng với người khác thì đổi mã). */
+  /** Mã bạn bè đã kiểm tra thuộc về mình (khỏi đọc lại mỗi lần đồng bộ). */
+  private codeChecked = ''
+
   async saveProfile(p: Omit<Profile, 'uid' | 'lastSeen'>, newCode: () => string): Promise<string> {
     const { doc, getDoc, setDoc } = this.fs
     const uid = this.account.uid
     try {
       let code = p.code
-      for (let tries = 0; tries < 5; tries++) {
+      for (let tries = 0; tries < 5 && code !== this.codeChecked; tries++) {
         const ref = doc(this.db, 'codes', code)
         const snap = await getDoc(ref)
         if (!snap.exists()) {
@@ -167,7 +194,11 @@ export class Cloud {
         if (snap.data().uid === uid) break
         code = newCode()
       }
-      await setDoc(doc(this.db, 'users', uid), { name: p.name, level: p.level, look: p.look, code, lastSeen: Date.now() })
+      this.codeChecked = code
+      await setDoc(doc(this.db, 'users', uid), {
+        name: p.name, level: p.level, look: p.look, code, lastSeen: Date.now(),
+        harvest: p.harvest ?? 0, fish: p.fish ?? 0, goldEarned: p.goldEarned ?? 0,
+      })
       return code
     } catch (e) {
       throw wrap(e)
@@ -220,6 +251,17 @@ export class Cloud {
     return snap.exists() ? ({ uid, ...snap.data() } as Profile) : null
   }
 
+  /** Người chơi đứng đầu theo một chỉ số (cả làng). */
+  async topPlayers(field: RankField, n = 20): Promise<Profile[]> {
+    const { collection, getDocs, limit, orderBy, query } = this.fs
+    try {
+      const snap = await getDocs(query(collection(this.db, 'users'), orderBy(field, 'desc'), limit(n)))
+      return snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Profile)
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
   async friends(): Promise<Profile[]> {
     const { collection, getDocs } = this.fs
     try {
@@ -232,14 +274,19 @@ export class Cloud {
   }
 
   /** Gửi quà hoặc lượt tưới giúp; mỗi loại mỗi ngày một lần cho mỗi bạn (luật Firestore chặn lần thứ hai). */
-  async send(to: string, kind: InboxItem['kind'], fromName: string, item?: string, qty?: number): Promise<void> {
+  /**
+   * Gửi thư vào hộp thư của bạn. Mã thư gồm người gửi + loại + ngày (gift/help/note: mỗi ngày
+   * một lần) hoặc + mã lời nhờ (give: mỗi lời nhờ một lần); luật Firestore chặn tạo trùng.
+   */
+  async send(to: string, kind: InboxItem['kind'], fromName: string, extra: { item?: string; qty?: number; text?: string; key?: string } = {}): Promise<void> {
     const { doc, getDoc, setDoc } = this.fs
     const me = this.account.uid
-    const ref = doc(this.db, 'users', to, 'inbox', `${me}_${kind}_${dayKey()}`)
+    const ref = doc(this.db, 'users', to, 'inbox', `${me}_${kind}_${extra.key ?? dayKey()}`)
     try {
       const data: Record<string, unknown> = { from: me, fromName, kind, at: Date.now(), read: false }
-      if (item) data.item = item
-      if (qty) data.qty = qty
+      if (extra.item) data.item = extra.item
+      if (extra.qty) data.qty = extra.qty
+      if (extra.text) data.text = extra.text
       await setDoc(ref, data)
     } catch (e) {
       // Ghi đè bị chặn: hôm nay đã gửi rồi (đọc lại để phân biệt với lỗi khác).
@@ -273,6 +320,76 @@ export class Cloud {
         }),
       )
       return items
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  // ---- Nhờ giúp ----
+
+  /** Đăng (hoặc thay) lời nhờ giúp của mình. */
+  async postRequest(r: Omit<HelpRequest, 'uid' | 'have' | 'at'>): Promise<void> {
+    const { doc, setDoc } = this.fs
+    const uid = this.account.uid
+    try {
+      await setDoc(doc(this.db, 'requests', uid), { uid, name: r.name, item: r.item, qty: r.qty, have: 0, at: Date.now() })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  async cancelRequest(): Promise<void> {
+    const { deleteDoc, doc } = this.fs
+    try {
+      await deleteDoc(doc(this.db, 'requests', this.account.uid))
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Lời nhờ đang mở của các bạn (và của mình). */
+  async requests(uids: string[]): Promise<HelpRequest[]> {
+    const { doc, getDoc } = this.fs
+    try {
+      const snaps = await Promise.all(uids.map((u) => getDoc(doc(this.db, 'requests', u))))
+      return snaps.filter((s) => s.exists()).map((s) => s.data() as HelpRequest)
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Gửi đồ cho lời nhờ của bạn: cộng số đã có (trong giới hạn) rồi bỏ đồ vào hộp thư người nhờ. */
+  async fulfill(req: HelpRequest, n: number, fromName: string): Promise<void> {
+    const { doc, increment, updateDoc } = this.fs
+    try {
+      // Thư trước (mỗi người giúp chỉ một lần cho lời nhờ này), rồi mới cộng số đã có.
+      await this.send(req.uid, 'give', fromName, { item: req.item, qty: n, key: String(req.at) })
+      await updateDoc(doc(this.db, 'requests', req.uid), { have: increment(n) })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /**
+   * Xoá dữ liệu online của mình: hồ sơ, mã bạn bè, bản lưu trên mây, lời nhờ, hộp thư,
+   * tên mình trong danh sách bạn của người khác, và tin đã gửi ở kênh Làng.
+   */
+  async deleteMyData(code: string): Promise<void> {
+    const { collection, deleteDoc, doc, getDocs, query, where } = this.fs
+    const me = this.account.uid
+    try {
+      const friends = await getDocs(collection(this.db, 'users', me, 'friends'))
+      await Promise.all(friends.docs.flatMap((d) => [deleteDoc(d.ref), deleteDoc(doc(this.db, 'users', d.id, 'friends', me))]))
+      const inbox = await getDocs(collection(this.db, 'users', me, 'inbox'))
+      await Promise.all(inbox.docs.map((d) => deleteDoc(d.ref)))
+      const said = await getDocs(query(collection(this.db, 'world'), where('uid', '==', me)))
+      await Promise.all(said.docs.map((d) => deleteDoc(d.ref)))
+      await Promise.all([
+        deleteDoc(doc(this.db, 'requests', me)),
+        deleteDoc(doc(this.db, 'saves', me)),
+        deleteDoc(doc(this.db, 'codes', code)),
+        deleteDoc(doc(this.db, 'users', me)),
+      ])
     } catch (e) {
       throw wrap(e)
     }

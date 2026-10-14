@@ -32,9 +32,19 @@ service cloud.firestore {
         allow create: if signedIn()
           && request.resource.data.from == request.auth.uid
           && request.resource.data.read == false
-          && id.matches(request.auth.uid + '_(gift|help)_[0-9]{8}')
+          && id.matches(request.auth.uid + '_((gift|help|note)_[0-9]{8}|give_[0-9]+)')
           && exists(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid));
       }
+    }
+
+    // Lời nhờ giúp: chủ tạo/xoá; người khác chỉ được cộng thêm số "đã có" (không vượt số cần).
+    match /requests/{uid} {
+      allow read: if signedIn();
+      allow create, update, delete: if isMe(uid);
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['have'])
+        && request.resource.data.have > resource.data.have
+        && request.resource.data.have <= resource.data.qty;
     }
 
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
@@ -42,6 +52,7 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid
         && code.matches('[a-z0-9]{4,12}');
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     // Kênh Làng: ai đã đăng nhập cũng đọc và nói được; tin có tên mình, tối đa 200 ký tự,

@@ -159,6 +159,10 @@ function normalize(data: Record<string, unknown>): GameState {
     pet: normalizePet(data.pet),
     greenhouse,
     horse: data.horse === true,
+    guestbook: (Array.isArray(data.guestbook) ? data.guestbook : []).flatMap((raw) => {
+      const g = obj(raw)
+      return typeof g.from === 'string' && typeof g.text === 'string' ? [{ from: g.from.slice(0, 20), text: g.text.slice(0, 40), at: num(g.at, 0) }] : []
+    }).slice(0, 20),
     coopFence: data.coopFence === true,
     friends: Object.fromEntries(Object.entries(obj(data.friends)).map(([id, raw]) => {
       const f = obj(raw)

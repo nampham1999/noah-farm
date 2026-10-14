@@ -1,13 +1,14 @@
 import { bus } from '../core/events.ts'
 import type { GameState } from '../core/state.ts'
-import { itemName, t } from '../i18n/index.ts'
-import type { Profile } from '../online/cloud.ts'
-import { connect, notifyError, online, refreshFriends, sendGift } from '../online/online.ts'
+import { itemName, t, tKey } from '../i18n/index.ts'
+import { ONLINE_WINDOW_MS, type Profile } from '../online/cloud.ts'
+import { cancelRequest, connect, onlineDisabled, setOnlineDisabled, giveToRequest, GUEST_LINES, notifyError, online, refreshFriends, sendGift, sendNote } from '../online/online.ts'
 import type { ParsedSave } from '../save/format.ts'
 import { giftable } from '../systems/friendship.ts'
-import { removeItem } from '../systems/inventory.ts'
+import { countItem, removeItem } from '../systems/inventory.ts'
 import { itemIconHtml } from './icons.ts'
 import { closePanel, openPanel } from './panel.ts'
+import { leaderboardPanel } from './leaderboard.ts'
 
 /** Bản trên mây mới hơn bản trên máy (chơi ở máy khác): hỏi dùng bản nào. */
 export function askUseCloud(save: ParsedSave): Promise<boolean> {
@@ -37,7 +38,7 @@ export function askUseCloud(save: ParsedSave): Promise<boolean> {
 }
 
 /** Phần "Chơi cùng bạn bè" trong cửa sổ Bạn bè. */
-export function renderOnline(body: HTMLElement, state: GameState, refresh: () => void, ui: { gifting: string | null; code: string }): void {
+export function renderOnline(body: HTMLElement, state: GameState, refresh: () => void, ui: { gifting: string | null; code: string; confirmDelete?: boolean }): void {
   const box = document.createElement('section')
   box.className = 'menu-section'
   const h = document.createElement('h3')
@@ -45,6 +46,14 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
   box.append(h)
   body.append(box)
 
+  if (onlineDisabled()) {
+    box.append(note(t('online.disabled')))
+    box.append(button(`🌐 ${t('online.enable')}`, 'btn primary', () => {
+      setOnlineDisabled(false)
+      location.reload()
+    }))
+    return
+  }
   if (online.status === 'connecting' || online.status === 'off') {
     box.append(note(t('online.connecting')))
     return
@@ -75,6 +84,7 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
       )
     }))
   }
+  accRow.append(button(`🏆 ${t('rank.title')}`, 'btn', () => openPanel(leaderboardPanel(state))))
   box.append(accRow)
   box.append(note(acc.anonymous ? t('online.anonHint') : t('online.signedIn', { email: acc.email ?? 'Google' })))
 
@@ -109,6 +119,102 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
   // Danh sách bạn.
   if (online.friends.length === 0) box.append(note(t('online.noFriends')))
   for (const f of online.friends) box.append(friendRow(state, f, refresh, ui))
+
+  renderRequests(body, state, refresh)
+  renderGuestbook(body, state)
+
+  // Xoá dữ liệu online của mình (bấm hai lần để chắc chắn); nông trại trên máy vẫn giữ.
+  const del = button(ui.confirmDelete ? `⚠️ ${t('online.deleteConfirm')}` : `🗑️ ${t('online.delete')}`, 'btn small', () => {
+    if (!ui.confirmDelete) {
+      ui.confirmDelete = true
+      refresh()
+      return
+    }
+    del.disabled = true
+    void cloud.deleteMyData(state.meta.inviteCode).then(
+      () => {
+        // Tắt online trên máy này để lần lưu sau không tạo lại dữ liệu vừa xoá.
+        setOnlineDisabled(true)
+        bus.emit('notify', { key: 'online.deleted', good: true })
+        setTimeout(() => location.reload(), 1200)
+      },
+      (e: unknown) => notifyError(e),
+    )
+  })
+  body.append(del)
+}
+
+/** Bạn bè cần giúp (gửi đồ trong túi, được thưởng) và lời nhờ của chính mình. */
+function renderRequests(body: HTMLElement, state: GameState, refresh: () => void): void {
+  const me = online.cloud?.account.uid
+  const mine = online.requests.find((r) => r.uid === me)
+  const others = online.requests.filter((r) => r.uid !== me)
+  if (!mine && others.length === 0) return
+  const box = document.createElement('section')
+  box.className = 'menu-section'
+  const h = document.createElement('h3')
+  h.textContent = `🙋 ${t('request.title')}`
+  box.append(h)
+  if (mine) {
+    const row = document.createElement('div')
+    row.className = 'row'
+    row.innerHTML = `<span class="row-icon">${itemIconHtml(mine.item)}</span><span class="row-main"><strong></strong><span class="muted"></span></span>`
+    row.querySelector('strong')!.textContent = t('request.mine', { qty: mine.qty, item: itemName(mine.item) })
+    row.querySelector('.muted')!.textContent = t('request.progress', { have: mine.have, qty: mine.qty })
+    row.append(button(t('request.cancel'), 'btn small', () => void cancelRequest().then(refresh)))
+    box.append(row)
+  }
+  for (const r of others) {
+    const have = countItem(state.inventory, r.item)
+    const n = Math.min(r.qty - r.have, have)
+    const row = document.createElement('div')
+    row.className = 'row'
+    row.innerHTML = `<span class="row-icon">${itemIconHtml(r.item)}</span><span class="row-main"><strong></strong><span class="muted"></span></span>`
+    row.querySelector('strong')!.textContent = t('request.needs', { name: r.name, qty: r.qty, item: itemName(r.item) })
+    row.querySelector('.muted')!.textContent = `${t('request.progress', { have: r.have, qty: r.qty })} · ${t('request.youHave', { n: have })}`
+    const give = button(n > 0 ? t('request.give', { n }) : t('request.none'), 'btn small gold', () => {
+      give.disabled = true
+      void giveToRequest(state, r).then(refresh)
+    })
+    give.disabled = n <= 0
+    row.append(give)
+    box.append(row)
+  }
+  body.append(box)
+}
+
+/** Sổ khách: bạn bè ghé thăm để lại câu chúc. */
+function renderGuestbook(body: HTMLElement, state: GameState): void {
+  if (state.guestbook.length === 0) return
+  const box = document.createElement('section')
+  box.className = 'menu-section'
+  const h = document.createElement('h3')
+  h.textContent = `📖 ${t('guest.title')}`
+  box.append(h)
+  for (const g of state.guestbook.slice(0, 8)) {
+    box.append(note(`${g.from}: ${tKey(g.text)} · ${new Date(g.at).toLocaleDateString()}`))
+  }
+  body.append(box)
+}
+
+/** Đang thăm bạn: chọn một câu chúc để ghi vào sổ khách. */
+export function guestbookPanel(fromName: string, friendUid: string, friendName: string): void {
+  openPanel({
+    title: () => `✍️ ${t('guest.title')}`,
+    render(body) {
+      body.append(note(t('guest.pick', { name: friendName })))
+      const list = document.createElement('div')
+      list.className = 'guest-lines'
+      for (let i = 1; i <= GUEST_LINES; i++) {
+        const key = `guest.p${i}`
+        list.append(button(tKey(key), 'btn', () => {
+          closePanel()
+          void sendNote(fromName, friendUid, friendName, key)
+        }))
+      }
+      body.append(list)
+    },
+  })
 }
 
 function friendRow(state: GameState, f: Profile, refresh: () => void, ui: { gifting: string | null }): HTMLElement {
@@ -116,8 +222,8 @@ function friendRow(state: GameState, f: Profile, refresh: () => void, ui: { gift
   const row = document.createElement('div')
   row.className = 'row'
   row.innerHTML = `<span class="row-icon"><span class="icon"><span class="emoji">🧑‍🌾</span></span></span><span class="row-main"><strong></strong><span class="muted"></span></span>`
-  row.querySelector('strong')!.textContent = f.name
-  row.querySelector('.muted')!.textContent = t('online.friendSub', { level: f.level, ago: ago(f.lastSeen) })
+  row.querySelector('strong')!.textContent = `${Date.now() - f.lastSeen < ONLINE_WINDOW_MS ? '🟢 ' : ''}${f.name}`
+  row.querySelector('.muted')!.textContent = Date.now() - f.lastSeen < ONLINE_WINDOW_MS ? t('online.playingNow', { level: f.level }) : t('online.friendSub', { level: f.level, ago: ago(f.lastSeen) })
   row.append(
     button(`🏡 ${t('online.visit')}`, 'btn small primary', () => {
       location.href = `${location.pathname}#friend=${encodeURIComponent(f.uid)}`
