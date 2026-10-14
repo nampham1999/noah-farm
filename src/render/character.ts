@@ -33,7 +33,25 @@ function bake(group: THREE.Group): THREE.Object3D {
   const baked = staticModel(group)
   baked.position.copy(group.position)
   baked.rotation.copy(group.rotation)
+  // Không gộp được (trả về bản sao dùng chung hình) thì để nguyên, không giải phóng gì.
+  if (!(baked instanceof THREE.Mesh)) return baked
+  // Khối gộp là của riêng nhân vật này: đánh dấu để giải phóng khi đổi ngoại hình.
+  baked.userData.ownGeometry = true
+  // Các khối cơ bản chỉ dùng để gộp, xong là bỏ ngay.
+  group.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.geometry.dispose()
+      ;(o.material as THREE.Material).dispose()
+    }
+  })
   return baked
+}
+
+/** Giải phóng các khối gộp riêng của một nhân vật (không đụng dụng cụ hay mô hình dùng chung). */
+export function disposeCharacter(root: THREE.Object3D): void {
+  root.traverse((o) => {
+    if (o instanceof THREE.Mesh && o.userData.ownGeometry) o.geometry.dispose()
+  })
 }
 
 export function createCharacter(look: Look): Farmer {

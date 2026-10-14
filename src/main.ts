@@ -42,7 +42,7 @@ import { attachAudio } from './audio/index.ts'
 import { sound } from './audio/sound.ts'
 import { checkAchievements, ensureDaily, onProgress } from './systems/quests.ts'
 import { createFarmer } from './render/models.ts'
-import { createCharacter } from './render/character.ts'
+import { createCharacter, disposeCharacter } from './render/character.ts'
 import { initTools, type ActionName } from './render/tools.ts'
 import { pickGround } from './render/picking.ts'
 import { AdaptiveQuality } from './render/quality.ts'
@@ -134,6 +134,7 @@ async function start(): Promise<void> {
   world.scene.add(farmer.root)
   bus.on('lookChanged', () => {
     world.scene.remove(farmer.root)
+    disposeCharacter(farmer.root)
     farmer = makePlayerModel()
     world.scene.add(farmer.root)
   })
@@ -262,7 +263,14 @@ async function start(): Promise<void> {
   // Avatar trên HUD: chân dung nhân vật tự tạo (mẫu gốc thì biểu tượng nông dân).
   const updatePortrait = () => hud.setPortrait(state.player.look ? renderPortrait(state.player.look) : null)
   updatePortrait()
-  bus.on('lookChanged', updatePortrait)
+  // Đang bấm chọn ngoại hình liên tục thì chờ dừng tay rồi mới chụp ảnh đại diện.
+  let portraitTimer = 0
+  bus.on('lookChanged', () => {
+    clearTimeout(portraitTimer)
+    // Mẫu gốc không cần chụp: đổi ngay về biểu tượng nông dân.
+    if (!state.player.look) updatePortrait()
+    else portraitTimer = window.setTimeout(updatePortrait, 900)
+  })
   if (visiting) showVisitBanner(ui, state)
   const fishingUi = createFishingUi(ui, state)
   const decorUi = createDecorUi(ui, state)

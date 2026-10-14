@@ -6,20 +6,26 @@ import { createCharacter } from './character.ts'
  * Ảnh chân dung (đầu và vai) của nhân vật tự tạo cho avatar trên HUD.
  * Dùng một bộ vẽ nhỏ riêng, vẽ một lần rồi bỏ; trả về data URL, hoặc null nếu không vẽ được.
  */
+/** Bộ vẽ nhỏ dùng chung cho mọi lần chụp (tạo WebGL mới mỗi lần rất chậm trên điện thoại). */
+let shared: THREE.WebGLRenderer | null = null
+
 export function renderPortrait(look: Look, size = 160): string | null {
-  let renderer: THREE.WebGLRenderer | null = null
+  let character: ReturnType<typeof createCharacter> | null = null
   try {
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })
-    renderer.setPixelRatio(1)
+    if (!shared) {
+      shared = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })
+      shared.setPixelRatio(1)
+      shared.outputColorSpace = THREE.SRGBColorSpace
+    }
+    const renderer = shared
     renderer.setSize(size, size, false)
-    renderer.outputColorSpace = THREE.SRGBColorSpace
     const scene = new THREE.Scene()
     scene.add(new THREE.HemisphereLight(0xfff4e6, 0x8a6a4a, 2.4))
     const key = new THREE.DirectionalLight(0xffffff, 1.6)
     key.position.set(1.5, 3, 4)
     scene.add(key)
 
-    const character = createCharacter(look)
+    character = createCharacter(look)
     character.animate(0, 0)
     scene.add(character.root)
     character.root.updateMatrixWorld(true)
@@ -35,7 +41,8 @@ export function renderPortrait(look: Look, size = 160): string | null {
   } catch {
     return null
   } finally {
-    renderer?.dispose()
-    renderer?.forceContextLoss()
+    character?.root.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose()
+    })
   }
 }
