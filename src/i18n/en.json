@@ -522,5 +522,12 @@
   "chat.blocked": "🚫 {name} is blocked: you won't see their messages any more.",
   "chat.event.joined": "🌱 A new farmer, {name}, has arrived in the village. Someone bring them a turnip!",
   "chat.event.level": "🎉 {name} reached level {level}! The crops gave a standing ovation.",
-  "chat.event.house": "🏡 {name} upgraded their house to level {level}. Please wipe your boots!"
+  "chat.event.house": "🏡 {name} upgraded their house to level {level}. Please wipe your boots!",
+  "welcome.hello": "Welcome to Noah Farm! A little farm is waiting for you 🌾",
+  "welcome.name": "Your farmer's name",
+  "welcome.play": "Play now",
+  "welcome.google": "Sign in with Google",
+  "welcome.hint": "Sign in with Google to keep one farm across devices and play with friends. You can also play now and sign in later from 🤝 Friends.",
+  "welcome.restored": "☁️ Your farm was loaded from the cloud!",
+  "welcome.signedIn": "🔑 Signed in with Google. Let's start a new farm!"
 }

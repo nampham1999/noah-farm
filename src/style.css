@@ -1110,6 +1110,32 @@ button {
   color: var(--red);
 }
 
+/* Màn hình chào người chơi mới. */
+.welcome-hello {
+  margin: 0 0 12px;
+  font: 700 16px var(--display);
+  text-align: center;
+}
+
+.welcome-label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  font: 700 14px var(--display);
+  color: var(--wood);
+}
+
+.welcome-actions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.welcome-actions .btn.big {
+  min-height: 52px;
+  font-size: 18px;
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

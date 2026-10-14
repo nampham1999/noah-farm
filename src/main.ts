@@ -63,6 +63,7 @@ import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.t
 import { askUseCloud } from './ui/online.ts'
 import { announce, startChat } from './online/chat.ts'
 import { attachChatButton } from './ui/chat.ts'
+import { showWelcome } from './ui/welcome.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
@@ -114,6 +115,9 @@ async function start(): Promise<void> {
   })
   loading.done()
   setLang(state.settings.lang)
+  // Người chơi mới: màn hình chào (đăng nhập Google hoặc chơi ngay, đặt tên).
+  const devMode = /[?&](debug|max)\b/.test(location.search)
+  if (!visiting && isNew && !devMode && (await showWelcome(state, store)) === 'reload') return
   const offline = applyOfflineProgress(state, savedAt, now())
   if (!visiting) applyTestParams(state)
 
@@ -435,6 +439,9 @@ async function start(): Promise<void> {
   let lastT = now()
 
   let lastFrame = 0
+  // Người chơi mới: mở bảng Tạo nhân vật ngay khi vào game.
+  if (!visiting && isNew && !devMode) setTimeout(() => bus.emit('action', 'character'), 800)
+
   world.renderer.setAnimationLoop((time) => {
     // Tiết kiệm pin: bỏ bớt khung hình để còn khoảng 30 FPS.
     if (state.settings.quality === 'low' && time - lastFrame < 1000 / 31) return

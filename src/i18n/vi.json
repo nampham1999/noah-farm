@@ -522,5 +522,12 @@
   "chat.blocked": "🚫 Đã chặn {name}: bạn sẽ không thấy tin của họ nữa.",
   "chat.event.joined": "🌱 Có bác nông dân mới tên {name} vừa tới làng. Ai mang củ cải ra chào nào!",
   "chat.event.level": "🎉 {name} vừa lên cấp {level}! Cả ruộng rau đứng dậy vỗ tay.",
-  "chat.event.house": "🏡 {name} vừa nâng nhà lên cấp {level}. Nhớ chùi chân trước khi vào nhé!"
+  "chat.event.house": "🏡 {name} vừa nâng nhà lên cấp {level}. Nhớ chùi chân trước khi vào nhé!",
+  "welcome.hello": "Chào mừng tới Noah Farm! Một nông trại nhỏ đang chờ bạn chăm sóc 🌾",
+  "welcome.name": "Tên nông dân của bạn",
+  "welcome.play": "Chơi ngay",
+  "welcome.google": "Đăng nhập Google",
+  "welcome.hint": "Đăng nhập Google để dùng chung nông trại trên nhiều máy và chơi cùng bạn bè. Chơi ngay cũng được, sau này vẫn đăng nhập được trong 🤝 Bạn bè.",
+  "welcome.restored": "☁️ Đã tải nông trại của bạn từ mây!",
+  "welcome.signedIn": "🔑 Đã đăng nhập Google. Bắt đầu nông trại mới nào!"
 }
