@@ -55,7 +55,7 @@ import { createFishingUi } from './ui/fishing.ts'
 import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { createHorseView } from './render/horse.ts'
 import { createRemoteView } from './render/remote.ts'
-import { joinRoom, presence, sendEmote, sendPose } from './online/presence.ts'
+import { joinRoom, presence, sendEmote, sendPose, updateIdentity } from './online/presence.ts'
 import { attachEmoteButton } from './ui/emotes.ts'
 import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
@@ -515,6 +515,7 @@ async function start(): Promise<void> {
         setWeather: (w: Weather) => setWeather(state, w),
         fox,
         online,
+        presence,
         saveNow: () => autosaver.saveNow(),
         /** Dụng cụ đang cầm: kích thước thật trong thế giới (để kiểm tra tỉ lệ, hướng). */
         heldTool: () => {
@@ -628,6 +629,7 @@ async function start(): Promise<void> {
     greenhouseView.update(state)
     horseView.update(state, clock.getElapsed(), dt)
     sendPose(state.player.pos[0], state.player.pos[2], state.player.rotY, Math.min(1, speed / WALK_SPEED), state.player.indoors)
+    if (!visiting) updateIdentity({ name: state.player.name, look: state.player.look })
     remoteView.update(dt, state.player.indoors)
     orchardView.update(state, t, clock.getElapsed())
     festivalView.update(state, clock.getElapsed())

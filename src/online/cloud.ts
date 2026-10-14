@@ -14,7 +14,7 @@ import type { Look } from '../core/look.ts'
 
 export const FIREBASE_CONFIG = {
   /** Realtime Database (vị trí người chơi khi gặp nhau); để trống thì tắt tính năng gặp nhau. */
-  databaseURL: '',
+  databaseURL: 'https://nsoft-dfe66-default-rtdb.asia-southeast1.firebasedatabase.app',
   apiKey: 'AIzaSyBpppO6xa2Uc00Jv194RD36sWudtUmFkgk',
   authDomain: 'nsoft-dfe66.firebaseapp.com',
   projectId: 'nsoft-dfe66',
@@ -382,19 +382,32 @@ export class Cloud {
   async deleteMyData(code: string): Promise<void> {
     const { collection, deleteDoc, doc, getDocs, query, where } = this.fs
     const me = this.account.uid
-    try {
+    // Xoá từng phần riêng: một phần lỗi (vd. mã bạn bè chưa từng lưu) không chặn các phần khác.
+    const tasks: Promise<unknown>[] = []
+    const run = async (fn: () => Promise<unknown>) => {
+      try {
+        await fn()
+      } catch (e) {
+        console.warn('Delete part failed', e)
+      }
+    }
+    await run(async () => {
       const friends = await getDocs(collection(this.db, 'users', me, 'friends'))
-      await Promise.all(friends.docs.flatMap((d) => [deleteDoc(d.ref), deleteDoc(doc(this.db, 'users', d.id, 'friends', me))]))
+      await Promise.all(friends.docs.flatMap((d) => [run(() => deleteDoc(d.ref)), run(() => deleteDoc(doc(this.db, 'users', d.id, 'friends', me)))]))
+    })
+    await run(async () => {
       const inbox = await getDocs(collection(this.db, 'users', me, 'inbox'))
-      await Promise.all(inbox.docs.map((d) => deleteDoc(d.ref)))
+      await Promise.all(inbox.docs.map((d) => run(() => deleteDoc(d.ref))))
+    })
+    await run(async () => {
       const said = await getDocs(query(collection(this.db, 'world'), where('uid', '==', me)))
-      await Promise.all(said.docs.map((d) => deleteDoc(d.ref)))
-      await Promise.all([
-        deleteDoc(doc(this.db, 'requests', me)),
-        deleteDoc(doc(this.db, 'saves', me)),
-        deleteDoc(doc(this.db, 'codes', code)),
-        deleteDoc(doc(this.db, 'users', me)),
-      ])
+      await Promise.all(said.docs.map((d) => run(() => deleteDoc(d.ref))))
+    })
+    tasks.push(run(() => deleteDoc(doc(this.db, 'requests', me))), run(() => deleteDoc(doc(this.db, 'saves', me))), run(() => deleteDoc(doc(this.db, 'codes', code))))
+    await Promise.all(tasks)
+    // Hồ sơ xoá cuối cùng; lỗi ở bước này mới báo cho người chơi.
+    try {
+      await deleteDoc(doc(this.db, 'users', me))
     } catch (e) {
       throw wrap(e)
     }

@@ -40,14 +40,28 @@ let lib: Db | null = null
 let myRef: import('firebase/database').DatabaseReference | null = null
 let stops: (() => void)[] = []
 let last = { x: 0, z: 0, r: 0, in: false, at: 0, sent: 0 }
+/** Tên + ngoại hình đã gửi lên phòng (JSON), để chỉ gửi khi đổi. */
+let identity = ''
 
 export function presenceAvailable(): boolean {
   return FIREBASE_CONFIG.databaseURL !== '' && online.cloud !== null
 }
 
-/** Vào phòng của nông trại farmUid với tên và ngoại hình của mình. */
-export async function joinRoom(farmUid: string, me: { name: string; look: Look | null }): Promise<void> {
-  if (!presenceAvailable() || presence.room === farmUid) return
+/** Phòng đang vào (để hai lần gọi gần nhau không giẫm lên nhau). */
+let joining: { room: string; done: Promise<void> } | null = null
+
+/** Vào phòng của nông trại farmUid với tên và ngoại hình của mình (gọi lặp lại thì bỏ qua). */
+export function joinRoom(farmUid: string, me: { name: string; look: Look | null }): Promise<void> {
+  if (!presenceAvailable() || presence.room === farmUid) return Promise.resolve()
+  if (joining?.room === farmUid) return joining.done
+  const prev = joining?.done ?? Promise.resolve()
+  const done = prev.then(() => doJoin(farmUid, me))
+  joining = { room: farmUid, done }
+  return done
+}
+
+async function doJoin(farmUid: string, me: { name: string; look: Look | null }): Promise<void> {
+  if (presence.room === farmUid) return
   await leaveRoom()
   try {
     lib ??= await import('firebase/database')
@@ -55,9 +69,13 @@ export async function joinRoom(farmUid: string, me: { name: string; look: Look |
     const db = getDatabase(online.cloud!.app)
     const uid = online.cloud!.account.uid
     presence.room = farmUid
-    myRef = ref(db, `rooms/${farmUid}/${uid}`)
-    await onDisconnect(myRef).remove()
-    await set(myRef, { name: me.name, look: me.look ?? null, x: 0, z: 0, r: 0, s: 0, in: false, at: Date.now() })
+    // Chỉ gán myRef sau khi đã tạo xong chỗ của mình: gửi vị trí trước lúc đó sẽ bị máy chủ
+    // từ chối (thiếu tên) và tên mới sẽ không bao giờ được gửi lại.
+    const mine = ref(db, `rooms/${farmUid}/${uid}`)
+    await onDisconnect(mine).remove()
+    await set(mine, { name: me.name, look: me.look ?? null, x: 0, z: 0, r: 0, s: 0, in: false, at: Date.now() })
+    myRef = mine
+    identity = JSON.stringify(me)
     const roomRef = ref(db, `rooms/${farmUid}`)
     const upsert = (snap: import('firebase/database').DataSnapshot) => {
       if (!snap.key || snap.key === uid) return
@@ -111,3 +129,14 @@ export function sendEmote(e: string): void {
   if (!myRef || !lib) return
   void lib.update(myRef, { e, et: Date.now() }).catch(() => {})
 }
+
+
+/** Cập nhật tên / ngoại hình trong phòng khi người chơi đổi (gọi thường xuyên được, chỉ gửi khi khác). */
+export function updateIdentity(me: { name: string; look: Look | null }): void {
+  const key = JSON.stringify(me)
+  if (!myRef || !lib || key === identity) return
+  identity = key
+  // Gửi lỗi thì cho gửi lại lần sau.
+  void lib.update(myRef, { name: me.name, look: me.look ?? null }).catch(() => (identity = ''))
+}
+

@@ -15,8 +15,9 @@ service cloud.firestore {
     // Hồ sơ: ai đã đăng nhập cũng đọc được (để xem danh sách bạn); chỉ chủ được ghi.
     match /users/{uid} {
       allow read: if signedIn();
-      allow write: if isMe(uid)
+      allow create, update: if isMe(uid)
         && request.resource.data.name is string && request.resource.data.name.size() <= 20;
+      allow delete: if isMe(uid);
 
       // Danh sách bạn: ghi hai chiều khi kết bạn, nên chủ hoặc chính người bạn đó được ghi.
       match /friends/{fid} {
@@ -69,13 +70,13 @@ service cloud.firestore {
     // Thách đấu 5 phút: người thách tạo; người được thách nhận/từ chối; khi đang thi mỗi người
     // chỉ cộng điểm của mình (trước khi hết giờ); hết giờ thì ai cũng được đóng trận.
     match /contests/{id} {
-      allow read: if signedIn() && request.auth.uid in resource.data.players;
+      allow read: if signedIn() && (resource.data.a == request.auth.uid || resource.data.b == request.auth.uid);
       allow create: if signedIn()
         && request.resource.data.a == request.auth.uid
         && request.resource.data.players == [request.resource.data.a, request.resource.data.b]
         && request.resource.data.status == 'pending'
         && request.resource.data.scoreA == 0 && request.resource.data.scoreB == 0;
-      allow update: if signedIn() && request.auth.uid in resource.data.players
+      allow update: if signedIn() && (resource.data.a == request.auth.uid || resource.data.b == request.auth.uid)
         && ((request.auth.uid == resource.data.b && resource.data.status == 'pending'
               && request.resource.data.status in ['live', 'declined']
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startAt', 'endAt'])

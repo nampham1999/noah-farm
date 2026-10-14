@@ -57,13 +57,21 @@ export async function watchContests(state: GameState): Promise<void> {
   const fs = await lib()
   const me = cloud.account.uid
   const db = fs.getFirestore(cloud.app)
-  stop = fs.onSnapshot(fs.query(fs.collection(db, 'contests'), fs.where('players', 'array-contains', me)), (snap) => {
-    const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Contest)
+  // Hai truy vấn (mình là người thách / người được thách): luật Firestore xác minh được a == mình, b == mình.
+  const byId = new Map<string, Contest>()
+  const onSnap = (side: 'a' | 'b') => (snap: import('firebase/firestore').QuerySnapshot) => {
+    for (const [id, c] of byId) if (c[side] === me) byId.delete(id)
+    for (const d of snap.docs) byId.set(d.id, { id: d.id, ...d.data() } as Contest)
+    const all = [...byId.values()]
     contests.incoming = all.filter((c) => c.status === 'pending' && c.b === me)
-    contests.live = all.find((c) => c.status === 'live') ?? null
+    contests.live = all.find((c) => c.status === 'live' && Date.now() <= c.endAt) ?? null
     for (const c of all) if (c.status === 'over' || (c.status === 'live' && Date.now() > c.endAt)) void finish(state, c)
     bus.emit('contestChanged', undefined)
-  }, (e) => console.warn('Contests', e))
+  }
+  const stops = (['a', 'b'] as const).map((side) =>
+    fs.onSnapshot(fs.query(fs.collection(db, 'contests'), fs.where(side, '==', me)), onSnap(side), (e) => console.warn('Contests', e)),
+  )
+  stop = () => stops.forEach((f) => f())
   // Hết giờ mà không có ai cộng điểm thì snapshot không tới: tự kiểm tra mỗi vài giây.
   window.setInterval(() => {
     const c = contests.live

@@ -34,15 +34,24 @@ export function createSocialPanel(state: GameState): PanelSpec {
   }
 
   const onlineUi = { gifting: null as string | null, code: '' }
-  let shownOnce = false
+  // Mỗi lần mở cửa sổ thì tải lại bạn bè, lời nhờ, đổi đồ; chỉ vẽ lại khi cửa sổ còn mở.
+  let open = false
+  let redraw: (() => void) | null = null
+  bus.on('onlineChanged', () => {
+    if (open) redraw?.()
+  })
   return {
     title: () => `🤝 ${t('social.title')}`,
+    onClose: () => {
+      open = false
+    },
     render(body, refresh) {
-      // Chơi cùng bạn bè (Firebase); mở cửa sổ thì cập nhật danh sách bạn.
-      if (!shownOnce) {
-        shownOnce = true
-        void refreshFriends().then(refreshRequests).then(() => refreshTrades(state)).then(refresh)
-        bus.on('onlineChanged', () => refresh())
+      redraw = refresh
+      if (!open) {
+        open = true
+        void refreshFriends().then(refreshRequests).then(() => refreshTrades(state)).then(() => {
+          if (open) refresh()
+        })
       }
       renderOnline(body, state, refresh, onlineUi)
 
