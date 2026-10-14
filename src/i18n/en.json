@@ -601,5 +601,9 @@
   "contest.win": "🏆 You beat {name} ({mine}–{theirs})! +{gold} gold",
   "contest.tie": "🤝 Tie with {name} ({mine}–{theirs}), +{gold} gold",
   "contest.lose": "{name} won ({theirs}–{mine}). Next time! +{gold} gold",
-  "contest.teamFish": "🎣 {n} fish caught together! +{gold} gold"
+  "contest.teamFish": "🎣 {n} fish caught together! +{gold} gold",
+  "rename.title": "Name your farmer",
+  "rename.hint": "Lots of farmers are called Mia! Pick your own name so friends can spot you (tap 🎲 for ideas).",
+  "rename.save": "Save name",
+  "rename.done": "Hello, {name}!"
 }

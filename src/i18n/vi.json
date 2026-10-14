@@ -601,5 +601,9 @@
   "contest.win": "🏆 Bạn thắng {name} ({mine}–{theirs})! Nhận {gold} vàng",
   "contest.tie": "🤝 Hoà với {name} ({mine}–{theirs}), nhận {gold} vàng",
   "contest.lose": "{name} thắng ({theirs}–{mine}). Lần sau nhé! Nhận {gold} vàng an ủi",
-  "contest.teamFish": "🎣 Câu cùng bạn được {n} con! Thưởng {gold} vàng"
+  "contest.teamFish": "🎣 Câu cùng bạn được {n} con! Thưởng {gold} vàng",
+  "rename.title": "Đặt tên nông dân",
+  "rename.hint": "Đang có nhiều bác nông dân cùng tên Mia quá! Đặt tên riêng để bạn bè nhận ra bạn nhé (bấm 🎲 để gợi ý).",
+  "rename.save": "Lưu tên",
+  "rename.done": "Xin chào, {name}!"
 }

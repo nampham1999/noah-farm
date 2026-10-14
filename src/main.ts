@@ -71,6 +71,8 @@ import { onContestProgress, watchContests } from './online/contest.ts'
 import { attachContestBar } from './ui/contest.ts'
 import { attachChatButton } from './ui/chat.ts'
 import { showWelcome } from './ui/welcome.ts'
+import { openRenamePrompt } from './ui/rename.ts'
+import { OLD_DEFAULT_NAME } from './core/names.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
@@ -567,6 +569,8 @@ async function start(): Promise<void> {
   let lastFrame = 0
   // Người chơi mới: mở bảng Tạo nhân vật ngay khi vào game.
   if (!visiting && isNew && !devMode) setTimeout(() => bus.emit('action', 'character'), 800)
+  // Người chơi cũ còn tên mặc định "Mia" (trùng cô Mia thợ bánh): nhắc đặt tên.
+  if (!visiting && !isNew && !devMode && state.player.name === OLD_DEFAULT_NAME) setTimeout(() => openRenamePrompt(state), 1200)
 
   // Đo thời gian CPU mỗi khung hình (cập nhật / vẽ / HUD), xem qua window.cozy.perf khi ?debug.
   const perf = { update: 0, render: 0, hud: 0, frames: 0 }

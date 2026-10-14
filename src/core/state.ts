@@ -5,6 +5,7 @@
 import { balance, type AnimalType, type MachineId, type TreeId } from '../data/index.ts'
 import { blockCells, greenhouseCells, SPAWN } from './world.ts'
 import type { Look } from './look.ts'
+import { randomFarmerName } from './names.ts'
 
 export type Lang = 'vi' | 'en'
 export type Quality = 'auto' | 'low' | 'high'
@@ -222,7 +223,7 @@ export function createInitialState(): GameState {
     version: 1,
     meta: { createdAt: Date.now(), lastBackupAt: null, inviteCode: randomCode(), referredBy: null },
     player: {
-      name: 'Mia',
+      name: randomFarmerName(detectLang()),
       gold: balance.startGold,
       xp: 0,
       level: 1,

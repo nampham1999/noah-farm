@@ -5,6 +5,7 @@ import { connect, notifyError } from '../online/online.ts'
 import { gunzipBase64Url } from '../save/codec.ts'
 import type { SaveStore } from '../save/SaveStore.ts'
 import { closePanel, openPanel } from './panel.ts'
+import { randomFarmerName } from '../core/names.ts'
 
 /**
  * Màn hình chào người chơi mới (chưa có bản lưu trên máy):
@@ -46,7 +47,16 @@ export function showWelcome(state: GameState, store: SaveStore): Promise<'play' 
         input.placeholder = state.player.name
         input.value = name
         input.addEventListener('input', () => (name = input.value))
-        label.append(input)
+        // Chưa nghĩ ra tên: bấm 🎲 để đổi gợi ý (để trống thì dùng tên gợi ý).
+        const dice = button('🎲', 'btn small', () => {
+          state.player.name = randomFarmerName(getLang())
+          name = ''
+          refresh()
+        })
+        const nameRow = document.createElement('div')
+        nameRow.className = 'chat-compose__row'
+        nameRow.append(input, dice)
+        label.append(nameRow)
         body.append(label)
 
         const actions = document.createElement('div')
