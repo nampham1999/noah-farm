@@ -197,6 +197,8 @@ export interface GameState {
   friends: Record<string, { points: number; giftDay: number; rewarded: number }>
   /** Sổ khách: bạn bè ghé thăm để lại câu chúc (mới nhất trước, tối đa 20). */
   guestbook: { from: string; text: string; at: number }[]
+  /** Cược đua chó gần nhất: cuộc đua số id, chó, số vàng, tỉ lệ ăn lúc đặt, đã trả thưởng chưa. */
+  race: { id: number; dog: number; amount: number; odds: number; paid: boolean } | null
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**
@@ -248,6 +250,7 @@ export function createInitialState(): GameState {
     festival: null,
     friends: {},
     guestbook: [],
+    race: null,
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },

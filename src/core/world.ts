@@ -131,6 +131,8 @@ export const PEN = { x: 11, z: -7.2, r: 3 }
 /** Bảng đơn hàng của dân làng, cạnh lối vào; dân làng có đơn đi loanh quanh khu VILLAGE. */
 export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.6 }
 export const VILLAGE = { x: 10.8, z: 14.6, r: 2.2 }
+/** Quầy trường đua chó, góc đông nam cạnh làng. */
+export const RACE_BOOTH = { x: 15.2, z: 11.8, r: 0.6 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
 export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
 
@@ -288,6 +290,7 @@ export const FLOWERS: Decor[] = scatter(decorRand, 130, FARM_HALF - 0.8, 0.8)
 export const OBSTACLES: Circle[] = [
   HOUSE,
   GREENHOUSE,
+  RACE_BOOTH,
   // Gốc cây ăn quả ở các ô vườn.
   ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 0.45 })),
   // Chái phía tây của nhà cấp 4, 5.
@@ -347,6 +350,7 @@ function isReserved(x: number, z: number, margin: number): boolean {
     ...PROPS.map((p) => ({ x: p.x, z: p.z, r: Math.max(0.6, p.r + 0.3) })),
     ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 1.4 })),
     { x: GREENHOUSE.x, z: GREENHOUSE.z, r: GREENHOUSE.r + 0.6 },
+    { x: RACE_BOOTH.x, z: RACE_BOOTH.z, r: 1.6 },
     { x: GH_BED.x, z: GH_BED.z, r: 3.4 },
     ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 1.8 })),
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },

@@ -2,7 +2,7 @@ import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
 import {
-  FARM_HALF, FIELD, FIELD_GATE, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
+  FARM_HALF, FIELD, FIELD_GATE, RACE_BOOTH, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
 } from '../core/world.ts'
 import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
@@ -33,6 +33,7 @@ type Goal =
   | { kind: 'pet' }
   | { kind: 'horse' }
   | { kind: 'tree'; spot: number }
+  | { kind: 'race' }
   | { kind: 'bed'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
@@ -58,6 +59,8 @@ export interface InteractionHooks {
   openBoard(): void
   /** Tới máy chế biến: lấy hàng nếu xong, không thì mở cửa sổ máy. */
   openMachine(id: MachineId): void
+  /** Tới quầy trường đua chó. */
+  openRace(): void
   now(): number
 }
 
@@ -128,6 +131,10 @@ export class Interaction {
   /** Chạm vào ô vườn: đi tới rồi trồng cây / hái quả. */
   tapTree(spot: number): void {
     this.setGoal({ kind: 'tree', spot })
+  }
+
+  tapRace(): void {
+    this.setGoal({ kind: 'race' })
   }
 
   tapMachine(id: MachineId): void {
@@ -314,6 +321,8 @@ export class Interaction {
         const p = ORCHARD.spots[goal.spot]
         return [p.x, p.z, 1.5]
       }
+      case 'race':
+        return [RACE_BOOTH.x, RACE_BOOTH.z, NPC_REACH + 0.4]
       case 'machine': {
         const m = MACHINE_BY_ID.get(goal.id)!
         return [m.x, m.z, MACHINE_REACH]
@@ -354,6 +363,10 @@ export class Interaction {
       const me = this.state.player.pos
       turnToward(this.state.player, p.x - me[0], p.z - me[2])
       actOnSpot(this.state, goal.spot, this.hooks.now())
+    } else if (goal.kind === 'race') {
+      const me = this.state.player.pos
+      turnToward(this.state.player, RACE_BOOTH.x - me[0], RACE_BOOTH.z - me[2])
+      this.hooks.openRace()
     } else if (goal.kind === 'machine') {
       const m = MACHINE_BY_ID.get(goal.id)!
       const me = this.state.player.pos

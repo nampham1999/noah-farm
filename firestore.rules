@@ -89,6 +89,14 @@ service cloud.firestore {
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])));
     }
 
+    // Đua chó: mỗi người một vé cược công khai cho mỗi cuộc đua (để mọi người thấy ai đặt chó nào).
+    match /races/{race}/bets/{uid} {
+      allow read: if signedIn();
+      allow create: if isMe(uid)
+        && request.resource.data.dog is int && request.resource.data.dog >= 0 && request.resource.data.dog < 5
+        && request.resource.data.amount is int && request.resource.data.amount <= 500;
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();

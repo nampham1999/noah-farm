@@ -59,6 +59,9 @@ import { joinRoom, presence, sendEmote, sendPose, updateIdentity } from './onlin
 import { attachEmoteButton } from './ui/emotes.ts'
 import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
+import { createRaceBooth } from './render/raceBooth.ts'
+import { racePanel } from './ui/race.ts'
+import { settleBet } from './systems/race.ts'
 import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
@@ -187,6 +190,7 @@ async function start(): Promise<void> {
   bus.on('onlineChanged', joinMyRoom)
   joinMyRoom()
   const orchardView = createOrchardView(world.scene, models)
+  const raceBooth = createRaceBooth(world.scene)
   const festivalView = createFestivalView(world.scene)
   const foxView = createFoxView(world.scene, models)
   const fishingView = createFishingView(world.scene)
@@ -235,6 +239,13 @@ async function start(): Promise<void> {
     })
     attachChatButton(ui, state)
     attachContestBar(ui)
+    // Đua chó: trả thưởng khi có kết quả (cả cược từ lần chơi trước); thắng lớn thì báo lên kênh Làng.
+    const settle = () => {
+      const won = settleBet(state)
+      if (won && won >= RACE_ANNOUNCE_GOLD && online.status === 'on') void announce(state, 'chat.event.raceWin', { gold: won })
+    }
+    settle()
+    window.setInterval(settle, 2000)
     // Thi đấu: cộng điểm; câu cá khi có bạn cùng nông trại thì thêm XP, đủ 5 con thưởng vàng.
     let teamFish = 0
     bus.on('progress', (ev) => {
@@ -279,11 +290,13 @@ async function start(): Promise<void> {
     enterHouse(state)
   }
   const boardPanel = createBoardPanel(state)
+  const racePanelSpec = racePanel(state)
   const interaction = new Interaction(state, {
     openShop: () => openPanel(shopPanel),
     enterHouse: goInside,
     openNpc: (id) => openPanel(npcDialog(state, id)),
     openBoard: () => openPanel(boardPanel),
+    openRace: () => openPanel(racePanelSpec),
     openMachine: (id) => {
       if (machineStatus(state, id, now()) === 'ready') collect(state, id, now())
       else openPanel(machinePanel(state, id))
@@ -369,6 +382,7 @@ async function start(): Promise<void> {
     if (!ridingAnimal() && horseView.hitTest(followCam.camera, x, y)) return interaction.tapHorse()
     const machine = machinesView.hitTest(followCam.camera, x, y)
     if (machine) return interaction.tapMachine(machine)
+    if (raceBooth.hitTest(followCam.camera, x, y)) return interaction.tapRace()
     const spot = orchardView.hitTest(followCam.camera, x, y)
     if (spot >= 0) return interaction.tapTree(spot)
     const hit = pickGround(followCam.camera, x, y)
@@ -732,6 +746,9 @@ async function readVisitLink(): Promise<GameState | null> {
     return null
   }
 }
+
+/** Thắng đua chó từ chừng này vàng thì báo lên kênh Làng. */
+const RACE_ANNOUNCE_GOLD = 400
 
 /** Câu cá cùng bạn (cùng nông trại): XP thêm mỗi con, và vàng thưởng mỗi 5 con. */
 const TEAM_FISH_XP = 5

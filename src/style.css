@@ -1265,6 +1265,63 @@ button {
   display: none;
 }
 
+/* Trường đua chó. */
+.race-status {
+  margin: 0 0 8px;
+  font: 700 15px var(--display);
+  color: var(--wood);
+  text-align: center;
+}
+
+.race-track {
+  width: 100%;
+  border-radius: 12px;
+  border: 3px solid var(--wood);
+}
+
+.race-dogs {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 8px;
+}
+
+.race-dog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 3px solid var(--paper-3);
+  border-radius: 12px;
+  background: #fffaf0;
+  font: 700 15px var(--font);
+  cursor: pointer;
+}
+
+.race-dog.is-on {
+  border-color: var(--green-dark);
+  background: var(--green-top);
+}
+
+.race-dog__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.race-dog__odds {
+  margin-left: auto;
+  font-family: var(--display);
+  color: var(--wood);
+}
+
+.race-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

@@ -605,5 +605,21 @@
   "rename.title": "Name your farmer",
   "rename.hint": "Lots of farmers are called Mia! Pick your own name so friends can spot you (tap 🎲 for ideas).",
   "rename.save": "Save name",
-  "rename.done": "Hello, {name}!"
+  "rename.done": "Hello, {name}!",
+  "race.title": "Dog races",
+  "race.phase.betting": "Race #{n} · Betting open, {time} left",
+  "race.phase.running": "Race #{n} · They're off! 🏃",
+  "race.phase.results": "Race #{n} · Results · next race in {time}",
+  "race.yourBet": "You bet {amount} gold on {dog} (×{odds})",
+  "race.bet": "Bet {amount}g on {dog} (win {win}g)",
+  "race.waitNext": "Betting is closed, wait for the next race!",
+  "race.winner": "🏆 Dog {n} – {dog} wins! (×{odds})",
+  "race.bets": "Everyone's bets",
+  "race.hint": "A race every 5 minutes: 4 minutes of betting, 20 seconds of racing. Everyone sees the same race. In-game gold only.",
+  "race.closed": "Betting for this race is closed",
+  "race.already": "You already bet on this race",
+  "race.betPlaced": "🐕 Bet {amount} gold on {dog} (×{odds})",
+  "race.won": "🏆 {dog} wins! You won {gold} gold",
+  "race.lost": "{dog} won. You lost {amount} gold, better luck next time!",
+  "chat.event.raceWin": "🐕🏆 {name} just won {gold} gold at the dog races!"
 }

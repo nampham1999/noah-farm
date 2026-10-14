@@ -605,5 +605,21 @@
   "rename.title": "Đặt tên nông dân",
   "rename.hint": "Đang có nhiều bác nông dân cùng tên Mia quá! Đặt tên riêng để bạn bè nhận ra bạn nhé (bấm 🎲 để gợi ý).",
   "rename.save": "Lưu tên",
-  "rename.done": "Xin chào, {name}!"
+  "rename.done": "Xin chào, {name}!",
+  "race.title": "Trường đua chó",
+  "race.phase.betting": "Cuộc đua #{n} · Mở cược, còn {time}",
+  "race.phase.running": "Cuộc đua #{n} · Đang đua! 🏃",
+  "race.phase.results": "Cuộc đua #{n} · Kết quả · Cuộc sau sau {time}",
+  "race.yourBet": "Bạn đã cược {amount} vàng vào {dog} (×{odds})",
+  "race.bet": "Cược {amount}g vào {dog} (thắng {win}g)",
+  "race.waitNext": "Đã đóng cược, chờ cuộc đua sau nhé!",
+  "race.winner": "🏆 Chó số {n} – {dog} về nhất! (×{odds})",
+  "race.bets": "Mọi người đang cược",
+  "race.hint": "Cứ 5 phút một cuộc đua: 4 phút đặt cược, 20 giây đua. Ai mở cũng thấy cùng một cuộc đua. Chỉ dùng vàng trong game.",
+  "race.closed": "Đã đóng cược cuộc đua này",
+  "race.already": "Bạn đã cược cuộc đua này rồi",
+  "race.betPlaced": "🐕 Đã cược {amount} vàng vào {dog} (×{odds})",
+  "race.won": "🏆 {dog} về nhất! Bạn thắng {gold} vàng",
+  "race.lost": "{dog} về nhất. Mất {amount} vàng, lần sau may hơn nhé!",
+  "chat.event.raceWin": "🐕🏆 {name} vừa thắng {gold} vàng ở trường đua chó!"
 }
