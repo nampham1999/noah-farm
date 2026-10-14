@@ -61,6 +61,8 @@ import { renderPortrait } from './render/portrait.ts'
 import { attachNotifications } from './systems/notifications.ts'
 import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.ts'
 import { askUseCloud } from './ui/online.ts'
+import { announce, startChat } from './online/chat.ts'
+import { attachChatButton } from './ui/chat.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
@@ -189,6 +191,15 @@ async function start(): Promise<void> {
     if (isNew) void autosaver.saveNow()
     // Chơi cùng bạn bè: lưu đám mây, mã bạn bè, hộp thư (mất mạng thì bỏ qua).
     void startOnline(state, store, autosaver, savedAt, askUseCloud)
+    // Chat: kênh Làng và tin riêng; khởi động lại khi danh sách bạn đổi.
+    bus.on('onlineChanged', () => {
+      if (online.status === 'on') startChat(state)
+    })
+    attachChatButton(ui, state)
+    bus.on('levelUp', (level) => {
+      if (level >= 2) void announce(state, 'chat.event.level', { level })
+    })
+    bus.on('houseUpgraded', (level) => void announce(state, 'chat.event.house', { level }))
   }
 
   const shopPanel = createShopPanel(state)

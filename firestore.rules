@@ -44,6 +44,36 @@ service cloud.firestore {
         && code.matches('[a-z0-9]{4,12}');
     }
 
+    // Kênh Làng: ai đã đăng nhập cũng đọc và nói được; tin có tên mình, tối đa 200 ký tự,
+    // giờ do máy chủ đặt; chỉ xoá được tin của mình.
+    match /world/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 600
+        && request.resource.data.kind in ['msg', 'event']
+        && request.resource.data.at == request.time;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // Chat riêng: mã cuộc trò chuyện là hai uid nối bằng "_"; chỉ hai người đó đọc ghi được.
+    match /dms/{pair} {
+      function inPair() {
+        return signedIn() && request.auth.uid in pair.split('_');
+      }
+      allow read, write: if inPair();
+      match /messages/{id} {
+        allow read: if inPair();
+        allow create: if inPair()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 200
+          && request.resource.data.at == request.time;
+        allow delete: if inPair() && resource.data.uid == request.auth.uid;
+      }
+    }
+
     // Bản lưu: chủ ghi; người đã đăng nhập đọc được (để ghé thăm nông trại bạn).
     match /saves/{uid} {
       allow read: if signedIn();

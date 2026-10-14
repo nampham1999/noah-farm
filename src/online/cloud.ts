@@ -39,6 +39,22 @@ export interface InboxItem {
   qty?: number
 }
 
+/** Một tin nhắn (kênh Làng hoặc chat riêng). kind 'event' là tin hệ thống (lên cấp, người mới...). */
+export interface ChatMessage {
+  id: string
+  uid: string
+  name: string
+  text: string
+  /** Mili giây; tin vừa gửi chưa có giờ máy chủ thì là giờ máy. */
+  at: number
+  kind: 'msg' | 'event'
+}
+
+/** Mã cuộc trò chuyện riêng của hai người: hai uid xếp theo thứ tự, nối bằng "_". */
+export function pairId(a: string, b: string): string {
+  return [a, b].sort().join('_')
+}
+
 export interface Account {
   uid: string
   anonymous: boolean
@@ -67,7 +83,7 @@ function wrap(e: unknown): CloudError {
 }
 
 type Auth = typeof import('firebase/auth')
-type Store = typeof import('firebase/firestore/lite')
+type Store = typeof import('firebase/firestore')
 
 /** Ngày thật dạng 20261013, dùng làm mã "mỗi ngày một lần". */
 export function dayKey(d = new Date()): string {
@@ -78,9 +94,9 @@ export class Cloud {
   private readonly authLib: Auth
   private readonly fs: Store
   private readonly auth: import('firebase/auth').Auth
-  private readonly db: import('firebase/firestore/lite').Firestore
+  private readonly db: import('firebase/firestore').Firestore
 
-  private constructor(authLib: Auth, fs: Store, auth: import('firebase/auth').Auth, db: import('firebase/firestore/lite').Firestore) {
+  private constructor(authLib: Auth, fs: Store, auth: import('firebase/auth').Auth, db: import('firebase/firestore').Firestore) {
     this.authLib = authLib
     this.fs = fs
     this.auth = auth
@@ -90,7 +106,7 @@ export class Cloud {
   /** Tải Firebase, đăng nhập (ẩn danh nếu chưa có tài khoản). */
   static async connect(): Promise<Cloud> {
     try {
-      const [{ initializeApp }, authLib, fs] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore/lite')])
+      const [{ initializeApp }, authLib, fs] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore')])
       const app = initializeApp(FIREBASE_CONFIG)
       const auth = authLib.getAuth(app)
       await auth.authStateReady()
@@ -260,5 +276,69 @@ export class Cloud {
     } catch (e) {
       throw wrap(e)
     }
+  }
+
+  // ---- Chat ----
+
+  private toMessage(d: import('firebase/firestore').QueryDocumentSnapshot): ChatMessage {
+    const data = d.data({ serverTimestamps: 'estimate' })
+    const at = data.at as { toMillis?: () => number } | null
+    return { id: d.id, uid: data.uid, name: data.name, text: data.text, at: at?.toMillis?.() ?? Date.now(), kind: data.kind ?? 'msg' }
+  }
+
+  /** Nghe kênh Làng (50 tin gần nhất, cũ trước mới sau). Trả về hàm huỷ nghe. */
+  watchWorld(onChange: (list: ChatMessage[]) => void): () => void {
+    const { collection, limit, onSnapshot, orderBy, query } = this.fs
+    const q = query(collection(this.db, 'world'), orderBy('at', 'desc'), limit(50))
+    return onSnapshot(q, (snap) => onChange(snap.docs.map((d) => this.toMessage(d)).reverse()), (e) => console.warn('World chat', e))
+  }
+
+  async postWorld(name: string, text: string, kind: ChatMessage['kind'] = 'msg'): Promise<void> {
+    const { addDoc, collection, serverTimestamp } = this.fs
+    try {
+      await addDoc(collection(this.db, 'world'), { uid: this.account.uid, name, text, kind, at: serverTimestamp() })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Nghe cuộc trò chuyện riêng với một người bạn (100 tin gần nhất). */
+  watchDm(friendUid: string, onChange: (list: ChatMessage[]) => void): () => void {
+    const { collection, limit, onSnapshot, orderBy, query } = this.fs
+    const q = query(collection(this.db, 'dms', pairId(this.account.uid, friendUid), 'messages'), orderBy('at', 'desc'), limit(100))
+    return onSnapshot(q, (snap) => onChange(snap.docs.map((d) => this.toMessage(d)).reverse()), (e) => console.warn('DM', e))
+  }
+
+  async sendDm(friendUid: string, name: string, text: string): Promise<void> {
+    const { addDoc, collection, doc, serverTimestamp, setDoc } = this.fs
+    const me = this.account.uid
+    const pair = pairId(me, friendUid)
+    try {
+      await addDoc(collection(this.db, 'dms', pair, 'messages'), { uid: me, name, text, kind: 'msg', at: serverTimestamp() })
+      // Đầu mục cuộc trò chuyện: tin cuối, để bên kia biết có tin chưa đọc.
+      await setDoc(doc(this.db, 'dms', pair), { lastAt: serverTimestamp(), lastFrom: me, lastText: text.slice(0, 80) })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Nghe đầu mục các cuộc trò chuyện với bạn bè (tin cuối, ai gửi) để đếm tin chưa đọc. */
+  watchDmHeads(friendUids: string[], onChange: (heads: Map<string, { lastAt: number; lastFrom: string; lastText: string }>) => void): () => void {
+    const { doc, onSnapshot } = this.fs
+    const heads = new Map<string, { lastAt: number; lastFrom: string; lastText: string }>()
+    const stops = friendUids.map((f) =>
+      onSnapshot(
+        doc(this.db, 'dms', pairId(this.account.uid, f)),
+        (snap) => {
+          if (snap.exists()) {
+            const d = snap.data({ serverTimestamps: 'estimate' })
+            heads.set(f, { lastAt: (d.lastAt as { toMillis(): number }).toMillis(), lastFrom: d.lastFrom, lastText: d.lastText })
+          }
+          onChange(heads)
+        },
+        (e) => console.warn('DM head', e),
+      ),
+    )
+    return () => stops.forEach((stop) => stop())
   }
 }

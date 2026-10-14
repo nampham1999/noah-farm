@@ -56,6 +56,8 @@ export interface GameEvents {
   houseUpgraded: number
   /** Trạng thái online (kết nối, bạn bè) vừa đổi. */
   onlineChanged: undefined
+  /** Có tin chat mới hoặc số tin chưa đọc đổi. */
+  chatChanged: undefined
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang
