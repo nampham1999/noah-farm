@@ -15,6 +15,10 @@ export interface World {
   scene: THREE.Scene
   /** Gọi mỗi khung hình: bóng đổ theo nhân vật, ánh sáng theo giờ, cảnh theo mùa, gió, mặt nước. */
   update(time: number, player: THREE.Vector3, clock: ClockState, indoors: boolean): void
+  /** Khoảng cách camera tới nhân vật (m), để đẩy sương mù ra xa khi zoom ra. */
+  setViewDistance(dist: number): void
+  /** Bật/tắt bóng đổ theo bậc chất lượng tự chỉnh. */
+  setShadows(on: boolean): void
   /** Đổi mô hình nhà theo cấp (1..5). */
   setHouseLevel(level: number): void
   /** Tiết kiệm pin: tắt bóng đổ, ẩn cỏ và hoa dại. */
@@ -32,6 +36,8 @@ const GRASS: Record<Season, { a: string; b: string; outside: number }> = {
 const DIRT_EDGE = 0xc79a5e
 const PATH = 0xe3bd82
 const SHADOW_SPAN = 18
+/** Khoảng cách camera ở zoom 1 trên màn ngang (sương mù đặt theo mức này). */
+const BASE_VIEW_DISTANCE = 14.85
 
 const flat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 1 })
 
@@ -80,6 +86,11 @@ export function createWorld(container: HTMLElement, models: Models): World {
   let flashAt = -10
 
   let season: Season | null = null
+  // Bóng đổ: tắt khi tiết kiệm pin, hoặc khi máy yếu (bậc chất lượng thấp).
+  let lowPower = false
+  // Camera lùi xa (zoom ra, màn dọc) thì sương mù lùi theo, để nông trại không bị mờ.
+  let fogScale = 1
+  let autoShadows = true
   const sky = new THREE.Color()
   const sunDir = new THREE.Vector3()
 
@@ -90,8 +101,16 @@ export function createWorld(container: HTMLElement, models: Models): World {
       buildings.setHouseLevel(level)
     },
     setLowPower(on) {
-      sun.castShadow = !on
+      lowPower = on
+      sun.castShadow = autoShadows && !lowPower
       decor.setLowPower(on)
+    },
+    setViewDistance(dist) {
+      fogScale = Math.max(1, dist / BASE_VIEW_DISTANCE)
+    },
+    setShadows(on) {
+      autoShadows = on
+      sun.castShadow = autoShadows && !lowPower
     },
     update(time, player, clock, indoors) {
       if (clock.season !== season) {
@@ -119,7 +138,7 @@ export function createWorld(container: HTMLElement, models: Models): World {
       // Ánh sáng theo giờ: mặt trời đi từ đông sang tây, đêm chuyển sang ánh trăng xanh.
       // Trong nhà: nền gỗ tối, ánh sáng ấm, không sương mù.
       const light = indoors ? INDOOR_LIGHT : lightAt(clock.minuteOfDay)
-      ;(scene.fog as THREE.Fog).far = indoors ? 1000 : 75
+      ;(scene.fog as THREE.Fog).far = indoors ? 1000 : 75 * fogScale
       sky.copy(light.sky)
       ;(scene.background as THREE.Color).copy(sky)
       ;(scene.fog as THREE.Fog).color.copy(sky)
@@ -135,10 +154,10 @@ export function createWorld(container: HTMLElement, models: Models): World {
         sky.lerp(cb.setHex(RAIN_SKY).multiplyScalar(Math.min(1, 0.35 + light.sunI / 2.6)), 0.6 * g)
         ;(scene.background as THREE.Color).copy(sky)
         ;(scene.fog as THREE.Fog).color.copy(sky)
-        ;(scene.fog as THREE.Fog).near = 38 - 16 * gloom
-        ;(scene.fog as THREE.Fog).far = 75 - 22 * gloom
+        ;(scene.fog as THREE.Fog).near = (38 - 16 * gloom) * fogScale
+        ;(scene.fog as THREE.Fog).far = (75 - 22 * gloom) * fogScale
       } else if (!indoors) {
-        ;(scene.fog as THREE.Fog).near = 38
+        ;(scene.fog as THREE.Fog).near = 38 * fogScale
       }
       if (flash > 0) {
         hemi.intensity += 3 * flash

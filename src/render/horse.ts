@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import type { GameState } from '../core/state.ts'
 import { HITCH, horsePose } from '../systems/riding.ts'
 import type { Models } from './assets.ts'
+import { riggedModel } from './instancing.ts'
 
 export interface HorseView {
   /** Độ cao yên ngựa (m), để nhân vật ngồi đúng chỗ. */
@@ -16,7 +17,7 @@ const HORSE_HEIGHT = 1.75
 /** Ngựa: phi nước kiệu theo tốc độ, vẫy đuôi; cột buộc ngựa cạnh chuồng. */
 export function createHorseView(scene: THREE.Scene, models: Models): HorseView {
   const root = new THREE.Group()
-  const horse = models.horse.scene.clone()
+  const horse = riggedModel(models.horse.scene)
   const box = new THREE.Box3().setFromObject(horse)
   const scale = HORSE_HEIGHT / Math.max(0.01, box.max.y - box.min.y)
   horse.scale.setScalar(scale)

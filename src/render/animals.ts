@@ -4,7 +4,7 @@ import { COOP } from '../core/world.ts'
 import { item } from '../data/index.ts'
 import { animalDef, animalPose, isHungry, isReady } from '../systems/animals.ts'
 import type { Models } from './assets.ts'
-import { staticModel } from './instancing.ts'
+import { staticModel, riggedModel } from './instancing.ts'
 
 export interface AnimalsView {
   update(state: GameState, t: number, time: number, dt: number, riddenId: string | null): void
@@ -54,7 +54,7 @@ export function createAnimalsView(scene: THREE.Scene, models: Models): AnimalsVi
         let rig = rigs.get(a.id)
         if (!rig) {
           const root = new THREE.Group()
-          const body = modelFor[a.type].scene.clone()
+          const body = riggedModel(modelFor[a.type].scene)
           body.scale.setScalar(animalDef(a).scale)
           root.add(body)
           const legs: THREE.Object3D[] = []

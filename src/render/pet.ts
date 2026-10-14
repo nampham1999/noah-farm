@@ -3,6 +3,7 @@ import type { GameState } from '../core/state.ts'
 import { petIsPettedToday, petPose } from '../systems/pet.ts'
 import { emojiTexture } from './animals.ts'
 import type { Models } from './assets.ts'
+import { riggedModel } from './instancing.ts'
 
 export interface PetView {
   update(state: GameState, time: number): void
@@ -14,7 +15,7 @@ const DOG_SCALE = 1.1
 /** Chó: bước chân, vẫy đuôi, đứng lâu thì ngồi; bong bóng 🎁 khi có quà, ❤️ lúc vừa vuốt ve. */
 export function createPetView(scene: THREE.Scene, models: Models): PetView {
   const root = new THREE.Group()
-  const dog = models.dog.scene.clone()
+  const dog = riggedModel(models.dog.scene)
   dog.scale.setScalar(DOG_SCALE)
   root.add(dog)
   const legs: THREE.Object3D[] = []

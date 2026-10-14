@@ -124,7 +124,8 @@ async function start(): Promise<void> {
   const world = createWorld(app, models)
   const canvas = world.renderer.domElement
   const followCam = new FollowCamera(window.innerWidth / window.innerHeight)
-  const quality = new AdaptiveQuality(world.renderer)
+  // Tự chỉnh chất lượng theo FPS: độ phân giải rồi bóng đổ (xem render/quality.ts).
+  const quality = new AdaptiveQuality(world.renderer, (level) => world.setShadows(level.shadows))
   const farmView = createFarmView(world.scene, models.crops)
   initTools(models.tools)
   // Nhân vật người chơi: tự tạo (bộ dựng chibi) hoặc mẫu gốc của bản cũ.
@@ -380,6 +381,77 @@ async function start(): Promise<void> {
         fishing,
         sound,
         /** Số lần gọi vẽ, tam giác, bộ nhớ GPU của khung hình gần nhất. */
+        /** Trung bình ms CPU mỗi khung hình kể từ lần gọi trước. */
+        perf() {
+          const n = Math.max(1, perf.frames)
+          const out = { update: +(perf.update / n).toFixed(2), render: +(perf.render / n).toFixed(2), hud: +(perf.hud / n).toFixed(2), frames: perf.frames }
+          Object.assign(perf, { update: 0, render: 0, hud: 0, frames: 0 })
+          return out
+        },
+        /** Vật thể đang hiện tốn nhiều tam giác / lần vẽ nhất (nhóm theo tên gốc). */
+        sceneStats() {
+          const groups = new Map<string, { calls: number; tris: number }>()
+          world.scene.traverseVisible((o) => {
+            const m = o as THREE.Mesh
+            if (!m.isMesh && !(o as THREE.Points).isPoints && !(o as THREE.Line).isLine) return
+            const geo = m.geometry as THREE.BufferGeometry
+            const idx = geo.index ? geo.index.count : geo.attributes.position?.count ?? 0
+            const inst = (o as THREE.InstancedMesh).isInstancedMesh ? (o as THREE.InstancedMesh).count : 1
+            const mats = Array.isArray(m.material) ? m.material.length : 1
+            let root: THREE.Object3D = o
+            while (root.parent && root.parent !== world.scene) root = root.parent
+            let first = ''
+            root.traverse((c) => {
+              if (!first && c.name) first = c.name
+            })
+            const key = (root.name || root.type + ':' + (first || geo.name || o.name || 'mesh')).replace(/_\d+$/, '')
+            const g = groups.get(key) ?? { calls: 0, tris: 0 }
+            g.calls += mats
+            g.tris += (idx / 3) * inst
+            groups.set(key, g)
+          })
+          return [...groups.entries()].sort((a, b) => b[1].calls - a[1].calls).slice(0, 25).map(([k, v]) => `${k}: ${v.calls} calls, ${Math.round(v.tris / 1000)}k tris`)
+        },
+        /** Từng nhóm gốc tốn nhiều lần vẽ: tên các mesh con và số tam giác (để tìm chỗ cần gộp). */
+        sceneDetail() {
+          const rows: string[] = []
+          for (const root of world.scene.children) {
+            if (!root.visible) continue
+            let calls = 0
+            let tris = 0
+            const names = new Map<string, number>()
+            root.traverseVisible((o) => {
+              const m = o as THREE.Mesh
+              if (!m.isMesh) return
+              const geo = m.geometry as THREE.BufferGeometry
+              const inst = (o as THREE.InstancedMesh).isInstancedMesh ? (o as THREE.InstancedMesh).count : 1
+              calls += Array.isArray(m.material) ? m.material.length : 1
+              tris += ((geo.index ? geo.index.count : geo.attributes.position.count) / 3) * inst
+              const n = (o.name || geo.name || 'anon').replace(/_\d+$/, '') + (inst > 1 ? `x${inst}` : '')
+              names.set(n, (names.get(n) ?? 0) + 1)
+            })
+            if (calls >= 4 || tris > 8000) rows.push(`${calls} calls ${Math.round(tris / 1000)}k | ${root.type}:${root.name} | ${[...names.entries()].slice(0, 6).map(([k, v]) => `${k}${v > 1 ? '×' + v : ''}`).join(', ')}`)
+          }
+          return rows.sort((a, b) => parseInt(b) - parseInt(a)).join('\n')
+        },
+        /** Tam giác của vật đổ bóng (vẽ thêm một lượt vào bản đồ bóng), theo tên mesh. */
+        shadowStats() {
+          const m = new Map<string, number>()
+          let total = 0
+          world.scene.traverseVisible((o) => {
+            const mesh = o as THREE.Mesh
+            if (!mesh.isMesh || !mesh.castShadow) return
+            const geo = mesh.geometry as THREE.BufferGeometry
+            const inst = (o as THREE.InstancedMesh).isInstancedMesh ? (o as THREE.InstancedMesh).count : 1
+            const tris = ((geo.index ? geo.index.count : geo.attributes.position.count) / 3) * inst
+            let root: THREE.Object3D = o
+            while (root.parent && root.parent !== world.scene) root = root.parent
+            const key = `${root.type}${root.name ? ':' + root.name : ''}/${o.type}${inst > 1 ? ' x' + inst : ''}`
+            m.set(key, (m.get(key) ?? 0) + tris)
+            total += tris
+          })
+          return [`total ${Math.round(total / 1000)}k`, ...[...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([k, v]) => `${Math.round(v / 1000)}k ${k}`)].join('\n')
+        },
         renderInfo() {
           const i = world.renderer.info
           return { calls: i.render.calls, triangles: i.render.triangles, geometries: i.memory.geometries, textures: i.memory.textures, fps: Math.round(quality.fps), ratio: quality.pixelRatio }
@@ -442,7 +514,10 @@ async function start(): Promise<void> {
   // Người chơi mới: mở bảng Tạo nhân vật ngay khi vào game.
   if (!visiting && isNew && !devMode) setTimeout(() => bus.emit('action', 'character'), 800)
 
+  // Đo thời gian CPU mỗi khung hình (cập nhật / vẽ / HUD), xem qua window.cozy.perf khi ?debug.
+  const perf = { update: 0, render: 0, hud: 0, frames: 0 }
   world.renderer.setAnimationLoop((time) => {
+    const t0 = performance.now()
     // Tiết kiệm pin: bỏ bớt khung hình để còn khoảng 30 FPS.
     if (state.settings.quality === 'low' && time - lastFrame < 1000 / 31) return
     lastFrame = time
@@ -521,13 +596,21 @@ async function start(): Promise<void> {
     }
 
     followCam.update(dt, playerPos, input.zoomScale)
+    world.setViewDistance(followCam.distance)
     state.settings.zoom = followCam.zoom
     interaction.setHover(hoveredPlot())
     world.update(clock.getElapsed(), playerPos, state.clock, state.player.indoors)
+    const t1 = performance.now()
     world.renderer.render(world.scene, followCam.camera)
+    const t2 = performance.now()
 
     quality.tick(dt)
     hud.update(quality.fps, quality.pixelRatio)
+    const t3 = performance.now()
+    perf.update += t1 - t0
+    perf.render += t2 - t1
+    perf.hud += t3 - t2
+    perf.frames++
     input.endFrame()
   })
 }

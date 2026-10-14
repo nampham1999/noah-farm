@@ -1,9 +1,11 @@
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { GameState } from '../core/state.ts'
 import { PEN } from '../core/world.ts'
 import { fox } from '../systems/fox.ts'
 import { emojiTexture } from './animals.ts'
 import type { Models } from './assets.ts'
+import { riggedModel } from './instancing.ts'
 
 export interface FoxView {
   update(state: GameState, time: number, dt: number): void
@@ -13,7 +15,7 @@ export interface FoxView {
 /** Cáo lẻn vào ban đêm (có dấu ❗), và hàng rào tròn quanh bãi thả khi đã mua. */
 export function createFoxView(scene: THREE.Scene, models: Models): FoxView {
   const root = new THREE.Group()
-  const body = models.fox.scene.clone()
+  const body = riggedModel(models.fox.scene)
   body.scale.setScalar(1.1)
   root.add(body)
   const legs: THREE.Object3D[] = []
@@ -31,7 +33,12 @@ export function createFoxView(scene: THREE.Scene, models: Models): FoxView {
   scene.add(root)
 
   // Hàng rào quanh bãi thả: cọc và hai thanh ngang, chừa lối vào phía tây.
-  const fence = new THREE.Group()
+  // Gộp mọi cọc và thanh thành một khối (một lần vẽ thay vì vài chục).
+  const fenceParts: THREE.BufferGeometry[] = []
+  const fence = { add: (m: THREE.Mesh) => {
+    m.updateMatrix()
+    fenceParts.push(m.geometry.clone().applyMatrix4(m.matrix))
+  } }
   const wood = new THREE.MeshStandardMaterial({ color: 0x9a6a3a, roughness: 1 })
   const r = PEN.r + 0.6
   const n = 22
@@ -55,17 +62,16 @@ export function createFoxView(scene: THREE.Scene, models: Models): FoxView {
       fence.add(rail)
     }
   }
-  fence.traverse((o) => {
-    if (o instanceof THREE.Mesh) o.castShadow = true
-  })
-  fence.visible = false
-  scene.add(fence)
+  const fenceMesh = new THREE.Mesh(mergeGeometries(fenceParts), wood)
+  fenceMesh.castShadow = true
+  fenceMesh.visible = false
+  scene.add(fenceMesh)
 
   let phase = 0
   const v = new THREE.Vector3()
   return {
     update(state, time, dt) {
-      fence.visible = state.coopFence
+      fenceMesh.visible = state.coopFence
       root.visible = fox.phase !== 'none' && !state.player.indoors
       if (!root.visible) return
       root.position.set(fox.x, 0, fox.z)

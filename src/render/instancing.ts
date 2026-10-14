@@ -62,6 +62,84 @@ export function staticModel(source: THREE.Object3D, shadows = true): THREE.Objec
   return mesh
 }
 
+/** Bộ phận cử động được của con vật (chân, đuôi, cổ): giữ riêng để xoay; phần còn lại gộp làm thân. */
+const MOVING_PART = /^[A-Za-z]+_(Leg_[A-Z]+|Tail|Neck)$/
+
+const rigCache = new WeakMap<THREE.Object3D, THREE.Object3D>()
+
+/**
+ * Mô hình con vật gộp màu, ít lần vẽ: thân gộp một khối, mỗi bộ phận cử động
+ * (chân, đuôi, cổ) gộp một khối riêng đặt trong nhóm xoay cùng tên với node gốc,
+ * nên code hoạt ảnh vẫn tìm theo tên (vd. Dog_Leg_BL) như trước. Không gộp được
+ * (vật liệu có texture...) thì trả về bản sao nguyên. Gọi nhiều lần trả về bản sao.
+ */
+export function riggedModel(source: THREE.Object3D): THREE.Object3D {
+  let tpl = rigCache.get(source)
+  if (!tpl) {
+    tpl = buildRig(source) ?? source
+    rigCache.set(source, tpl)
+  }
+  return tpl.clone()
+}
+
+function buildRig(source: THREE.Object3D): THREE.Object3D | null {
+  source.updateMatrixWorld(true)
+  const rootInverse = source.matrixWorld.clone().invert()
+  const parts: THREE.Object3D[] = []
+  source.traverse((o) => {
+    if (o !== source && MOVING_PART.test(o.name) && !parts.some((p) => isInside(o, p))) parts.push(o)
+  })
+  const bake = (meshes: THREE.Mesh[], toLocal: THREE.Matrix4): THREE.BufferGeometry | null => {
+    const geos: THREE.BufferGeometry[] = []
+    for (const o of meshes) {
+      const m = o.material
+      if (Array.isArray(m) || !(m instanceof THREE.MeshStandardMaterial) || m.map || m.transparent || o instanceof THREE.SkinnedMesh) return null
+      const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()
+      for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name)
+      g.applyMatrix4(toLocal.clone().multiply(o.matrixWorld))
+      const colors = new Float32Array(g.attributes.position.count * 3)
+      for (let i = 0; i < g.attributes.position.count; i++) m.color.toArray(colors, i * 3)
+      g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      geos.push(g)
+    }
+    return geos.length ? mergeGeometries(geos) : null
+  }
+  const meshesOf = (root: THREE.Object3D, skip: THREE.Object3D[]) => {
+    const list: THREE.Mesh[] = []
+    root.traverse((o) => {
+      if (o instanceof THREE.Mesh && !skip.some((p) => isInside(o, p))) list.push(o)
+    })
+    return list
+  }
+
+  const rig = new THREE.Group()
+  const body = bake(meshesOf(source, parts), rootInverse)
+  if (!body) return null
+  rig.add(shadowMesh(body))
+  for (const part of parts) {
+    const pivot = new THREE.Group()
+    pivot.name = part.name
+    rootInverse.clone().multiply(part.matrixWorld).decompose(pivot.position, pivot.quaternion, pivot.scale)
+    const geo = bake(meshesOf(part, []), part.matrixWorld.clone().invert())
+    if (!geo) return null
+    pivot.add(shadowMesh(geo))
+    rig.add(pivot)
+  }
+  return rig
+}
+
+function shadowMesh(geo: THREE.BufferGeometry): THREE.Mesh {
+  const mesh = new THREE.Mesh(geo, BAKED_MATERIAL)
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  return mesh
+}
+
+function isInside(o: THREE.Object3D, ancestor: THREE.Object3D): boolean {
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (p === ancestor) return true
+  return false
+}
+
 /**
  * Vẽ nhiều bản sao của một mô hình glTF bằng InstancedMesh, nên 100 cái cây vẫn chỉ tốn
  * vài lần gọi vẽ (GDD mục 5.3). Mô hình màu phẳng được gộp thành một khối duy nhất.

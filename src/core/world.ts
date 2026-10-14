@@ -268,6 +268,10 @@ export const PROPS: Prop[] = [
   { model: 'wheelbarrow', x: -11.4, z: 7.4, rotY: -0.6, r: 0.6 },
 ]
 
+/** Số cây rừng và bề rộng vành đai rừng quanh rào (m). */
+const FOREST_TREES = 100
+const FOREST_BAND = 15
+
 /** Cây trang trí, sinh ngẫu nhiên có hạt giống cố định để lần nào cũng giống nhau. */
 export const TREES: Tree[] = generateTrees()
 
@@ -308,10 +312,12 @@ export const OBSTACLES: Circle[] = [
 function generateTrees(): Tree[] {
   const rand = mulberry32(20261013)
   const trees: Tree[] = []
-  // Rừng bên ngoài hàng rào.
-  while (trees.length < 160) {
-    const x = (rand() * 2 - 1) * (GROUND_HALF - 4)
-    const z = (rand() * 2 - 1) * (GROUND_HALF - 4)
+  // Rừng bên ngoài hàng rào: một vành đai sát rào (camera chỉ thấy vài chục mét quanh
+  // nhân vật, cây xa hơn chỉ tốn công vẽ).
+  const band = FARM_HALF + FOREST_BAND
+  while (trees.length < FOREST_TREES) {
+    const x = (rand() * 2 - 1) * band
+    const z = (rand() * 2 - 1) * band
     if (Math.abs(x) < FARM_HALF + 2 && Math.abs(z) < FARM_HALF + 2) continue
     trees.push({ x, z, r: 0, scale: 0.8 + rand() * 0.8, variant: rand(), rotY: rand() * Math.PI * 2 })
   }
