@@ -1,5 +1,6 @@
 import { bus } from '../core/events.ts'
 import * as THREE from 'three'
+import { mulberry32 } from '../core/random.ts'
 import type { ClockState, Season } from '../core/state.ts'
 import {
   BUSHES, FARM_HALF, FIELD_FENCE, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
@@ -282,7 +283,14 @@ function createSnow(): { points: THREE.Points; update(time: number, player: THRE
 
 /** Cỏ kẻ ô hai tông như bản cũ: mỗi ô 1 m, viền đất quanh hàng rào; màu đổi theo mùa. */
 function addGround(scene: THREE.Scene): { setSeason(season: Season): void } {
-  const outsideMat = flat(GRASS.spring.outside)
+  // Cỏ tự nhiên: một ô texture lặp liền mạch (mảng loang, ngọn cỏ), nhân với màu theo đỉnh
+  // biến thiên chậm trên cả sân để không thấy họa tiết lặp lại.
+  const grass = createGrassTexture()
+  grass.texture.repeat.set((FARM_HALF * 2) / GRASS_TILE, (FARM_HALF * 2) / GRASS_TILE)
+  const outsideTex = grass.texture.clone()
+  outsideTex.repeat.set((GROUND_HALF * 2) / GRASS_TILE, (GROUND_HALF * 2) / GRASS_TILE)
+
+  const outsideMat = new THREE.MeshStandardMaterial({ map: outsideTex, roughness: 1, color: 0xd8e6cc })
   const outside = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_HALF * 2, GROUND_HALF * 2), outsideMat)
   outside.rotation.x = -Math.PI / 2
   outside.receiveShadow = true
@@ -303,20 +311,9 @@ function addGround(scene: THREE.Scene): { setSeason(season: Season): void } {
     return strip
   })
 
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = 2
-  const ctx = canvas.getContext('2d')!
-  const checker = new THREE.CanvasTexture(canvas)
-  checker.magFilter = THREE.NearestFilter
-  checker.minFilter = THREE.NearestFilter
-  checker.wrapS = checker.wrapT = THREE.RepeatWrapping
-  checker.repeat.set(FARM_HALF, FARM_HALF)
-  checker.colorSpace = THREE.SRGBColorSpace
-
-  const farm = new THREE.Mesh(
-    new THREE.PlaneGeometry(FARM_HALF * 2, FARM_HALF * 2),
-    new THREE.MeshStandardMaterial({ map: checker, roughness: 1 }),
-  )
+  const geo = new THREE.PlaneGeometry(FARM_HALF * 2, FARM_HALF * 2, 48, 48)
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(macroTint(geo), 3))
+  const farm = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: grass.texture, vertexColors: true, roughness: 1 }))
   farm.rotation.x = -Math.PI / 2
   farm.position.y = 0.01
   farm.receiveShadow = true
@@ -325,15 +322,105 @@ function addGround(scene: THREE.Scene): { setSeason(season: Season): void } {
   return {
     setSeason(season) {
       const g = GRASS[season]
-      ctx.fillStyle = g.a
-      ctx.fillRect(0, 0, 2, 2)
-      ctx.fillStyle = g.b
-      ctx.fillRect(0, 0, 1, 1)
-      ctx.fillRect(1, 1, 1, 1)
-      checker.needsUpdate = true
-      outsideMat.color.setHex(g.outside)
+      grass.paint(g.a, g.b, season === 'winter')
+      outsideTex.needsUpdate = true
+      outsideMat.color.setHex(g.outside).lerp(new THREE.Color(0xffffff), 0.35)
     },
   }
+}
+
+/** Một ô texture cỏ phủ chừng này mét. */
+const GRASS_TILE = 6
+
+/** Texture cỏ vẽ bằng canvas, lặp liền mạch; paint() vẽ lại theo màu mùa. */
+function createGrassTexture(): { texture: THREE.CanvasTexture; paint(base: string, alt: string, snowy: boolean): void } {
+  const size = 512
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 4
+
+  // Vẽ một hình ở (x, y) và cả các bản bù mép, để ô texture lặp không lộ đường nối.
+  const wrapped = (x: number, y: number, r: number, draw: (x: number, y: number) => void) => {
+    for (const dx of [-size, 0, size]) {
+      for (const dy of [-size, 0, size]) {
+        const px = x + dx
+        const py = y + dy
+        if (px + r < 0 || px - r > size || py + r < 0 || py - r > size) continue
+        draw(px, py)
+      }
+    }
+  }
+
+  return {
+    texture,
+    paint(base, alt, snowy) {
+      const rand = mulberry32(1234)
+      // Tuyết: mảng loang nhạt, chỉ lấm tấm vài ngọn cỏ.
+      const blades = snowy ? 900 : 5200
+      const contrast = snowy ? 0.5 : 1
+      const light = new THREE.Color(base).offsetHSL(0.01, 0.02, 0.07).getStyle()
+      const dark = new THREE.Color(alt).offsetHSL(-0.01, 0.04, -0.09).getStyle()
+      ctx.fillStyle = base
+      ctx.fillRect(0, 0, size, size)
+      // Mảng loang mềm, lớn nhỏ xen kẽ.
+      for (let i = 0; i < 70; i++) {
+        const x = rand() * size
+        const y = rand() * size
+        const r = 30 + rand() * 90
+        const color = rand() < 0.5 ? dark : light
+        wrapped(x, y, r, (px, py) => {
+          const g = ctx.createRadialGradient(px, py, 0, px, py, r)
+          g.addColorStop(0, color)
+          g.addColorStop(1, 'rgba(0,0,0,0)')
+          ctx.globalAlpha = (0.18 + rand() * 0.14) * contrast
+          ctx.fillStyle = g
+          ctx.fillRect(px - r, py - r, r * 2, r * 2)
+        })
+      }
+      // Ngọn cỏ ngắn: nét mảnh hơi nghiêng, sáng tối xen kẽ.
+      ctx.lineCap = 'round'
+      for (let i = 0; i < blades; i++) {
+        const x = rand() * size
+        const y = rand() * size
+        const len = 3 + rand() * 6
+        const ang = -Math.PI / 2 + (rand() - 0.5) * 0.9
+        const r = rand()
+        ctx.strokeStyle = r < 0.45 ? dark : r < 0.9 ? light : alt
+        ctx.globalAlpha = (0.35 + rand() * 0.35) * contrast
+        ctx.lineWidth = 1 + rand() * 1.2
+        wrapped(x, y, len, (px, py) => {
+          ctx.beginPath()
+          ctx.moveTo(px, py)
+          ctx.lineTo(px + Math.cos(ang) * len, py + Math.sin(ang) * len)
+          ctx.stroke()
+        })
+      }
+      ctx.globalAlpha = 1
+      texture.needsUpdate = true
+    },
+  }
+}
+
+/** Màu theo đỉnh biến thiên chậm (hai lớp sóng) để sân cỏ chỗ đậm chỗ nhạt tự nhiên. */
+function macroTint(geo: THREE.PlaneGeometry): number[] {
+  const pos = geo.attributes.position
+  const out: number[] = []
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i)
+    const y = pos.getY(i)
+    const n =
+      Math.sin(x * 0.21 + 1.3) * Math.cos(y * 0.17 - 0.7) * 0.5 +
+      Math.sin(x * 0.07 - y * 0.09 + 2.1) * 0.35 +
+      Math.sin((x + y) * 0.43) * 0.15
+    const v = 0.92 + n * 0.09
+    // Chỗ sáng hơi ngả vàng, chỗ tối hơi xanh lục đậm.
+    out.push(v * (1 + n * 0.03), v, v * (1 - n * 0.04))
+  }
+  return out
 }
 
 /** Đường đất bo tròn hai đầu, nối các đoạn trong PATHS. */
