@@ -1259,6 +1259,12 @@ button {
   margin-top: 8px;
 }
 
+.is-decorating .chat-fab,
+.is-decorating .emote-fab,
+.is-decorating .emote-pop {
+  display: none;
+}
+
 /* Menu. */
 .menu-section + .menu-section {
   margin-top: 14px;

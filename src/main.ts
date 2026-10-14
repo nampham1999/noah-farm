@@ -9,7 +9,7 @@ import { NPCS } from './systems/orders.ts'
 import { applyWeather, setWeather, WEATHERS } from './systems/weather.ts'
 import { collect, machineStatus, updateMachines } from './systems/machines.ts'
 import { createMachinesView } from './render/machines.ts'
-import { setRoomSize } from './core/world.ts'
+import { ROOM, setRoomSize } from './core/world.ts'
 import { createPetView } from './render/pet.ts'
 import { createGreenhouseView } from './render/greenhouse.ts'
 import { petNewDay, updatePet } from './systems/pet.ts'
@@ -658,6 +658,10 @@ async function start(): Promise<void> {
       if (cell) decorUi.hoverCell(cell.cx, cell.cz)
     }
 
+    // Trang trí trong nhà: camera lùi ra thấy trọn căn phòng; nút chat/biểu cảm ẩn cho khỏi che khay đồ.
+    const decorating = state.player.indoors && decorUi.active
+    followCam.frame = decorating ? { x: ROOM.x, z: ROOM.z, w: ROOM.w, d: ROOM.d } : null
+    if (decorating !== document.body.classList.contains('is-decorating')) document.body.classList.toggle('is-decorating', decorating)
     followCam.update(dt, playerPos, input.zoomScale)
     world.setViewDistance(followCam.distance)
     state.settings.zoom = followCam.zoom

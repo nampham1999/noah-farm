@@ -30,6 +30,11 @@ export class FollowCamera {
   distance = OFFSET.length()
   /** Bật thì zoom sát nhân vật và đẩy nhân vật sang trái (màn ngang) hoặc lên trên (màn dọc), chừa chỗ cho cửa sổ. */
   closeup = false
+  /** Khung cần thấy trọn (vd. cả căn phòng khi trang trí): camera nhìn vào tâm và lùi đủ xa; null thì theo nhân vật. */
+  frame: { x: number; z: number; w: number; d: number } | null = null
+
+  private frameT = 0
+  private readonly frameCenter = new THREE.Vector3()
 
   private closeupT = 0
   private readonly shift = new THREE.Vector3()
@@ -62,7 +67,17 @@ export class FollowCamera {
     // Chuyển mượt vào và ra khỏi cận cảnh.
     this.closeupT += ((this.closeup ? 1 : 0) - this.closeupT) * (1 - Math.exp(-8 * dt))
     const c = this.closeupT
-    const dist = THREE.MathUtils.lerp(this.shownZoom * this.pullback, this.camera.aspect >= 1 ? CLOSEUP_ZOOM.landscape : CLOSEUP_ZOOM.portrait, c)
+    let dist = THREE.MathUtils.lerp(this.shownZoom * this.pullback, this.camera.aspect >= 1 ? CLOSEUP_ZOOM.landscape : CLOSEUP_ZOOM.portrait, c)
+    // Khung cần thấy trọn: lùi vừa đủ để cả chiều ngang lẫn chiều sâu nằm gọn trong màn hình.
+    this.frameT += ((this.frame ? 1 : 0) - this.frameT) * (1 - Math.exp(-6 * dt))
+    if (this.frame) this.frameCenter.set(this.frame.x, 0, this.frame.z)
+    if (this.frameT > 0.001) {
+      const f = this.frame
+      const tanV = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))
+      const fit = f ? Math.max((f.w + 2) / (2 * tanV * this.camera.aspect), ((f.d + 2) * Math.SQRT1_2) / (2 * tanV)) / OFFSET.length() : dist
+      dist = THREE.MathUtils.lerp(dist, Math.max(dist, fit), this.frameT)
+      this.target.lerp(this.frameCenter, this.frameT)
+    }
     const d = OFFSET.length() * dist
     if (this.camera.aspect >= 1) this.shift.set(0.29 * d * c, 0, 0)
     else this.shift.set(0, 0, 0.47 * d * c)
