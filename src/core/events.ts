@@ -58,6 +58,10 @@ export interface GameEvents {
   onlineChanged: undefined
   /** Có tin chat mới hoặc số tin chưa đọc đổi. */
   chatChanged: undefined
+  /** Có người vào/ra phòng hoặc đổi vị trí (gặp nhau trực tiếp). */
+  presenceChanged: undefined
+  /** Một người trong phòng vừa gửi biểu cảm (uid; '' là chính mình). */
+  presenceEmote: string
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang

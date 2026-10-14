@@ -54,6 +54,10 @@ import { fishing, isFishing, stop as stopFishing, strike, updateFishing } from '
 import { createFishingUi } from './ui/fishing.ts'
 import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { createHorseView } from './render/horse.ts'
+import { createRemoteView } from './render/remote.ts'
+import { joinRoom, sendPose } from './online/presence.ts'
+import { attachEmoteButton } from './ui/emotes.ts'
+import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
 import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
@@ -129,7 +133,12 @@ async function start(): Promise<void> {
   const farmView = createFarmView(world.scene, models.crops)
   initTools(models.tools)
   // Nhân vật người chơi: tự tạo (bộ dựng chibi) hoặc mẫu gốc của bản cũ.
-  const makePlayerModel = () => (state.player.look ? createCharacter(state.player.look) : createFarmer(models.farmer))
+  // Đang thăm bạn: nhân vật vẫn là của mình (ngoại hình trong bản lưu của mình).
+  const playerLook = () => (visiting ? myIdentity().look : state.player.look)
+  const makePlayerModel = () => {
+    const look = playerLook()
+    return look ? createCharacter(look) : createFarmer(models.farmer)
+  }
   let farmer = makePlayerModel()
   world.scene.add(farmer.root)
   bus.on('lookChanged', () => {
@@ -162,6 +171,16 @@ async function start(): Promise<void> {
   const petView = createPetView(world.scene, models)
   const greenhouseView = createGreenhouseView(world.scene, models)
   const horseView = createHorseView(world.scene, models)
+  // Gặp nhau trực tiếp: người chơi khác cùng nông trại, biểu cảm.
+  const remoteView = createRemoteView(world.scene, models.farmer)
+  attachEmoteButton(ui, (e) => remoteView.showOwnEmote(e, farmer.root))
+  const joinMyRoom = () => {
+    if (online.status !== 'on' || !online.cloud) return
+    const me = visiting ? myIdentity() : { name: state.player.name, look: state.player.look }
+    void joinRoom(visitFriend?.uid ?? online.cloud.account.uid, me)
+  }
+  bus.on('onlineChanged', joinMyRoom)
+  joinMyRoom()
   const orchardView = createOrchardView(world.scene, models)
   const festivalView = createFestivalView(world.scene)
   const foxView = createFoxView(world.scene, models)
@@ -582,6 +601,8 @@ async function start(): Promise<void> {
     petView.update(state, clock.getElapsed())
     greenhouseView.update(state)
     horseView.update(state, clock.getElapsed(), dt)
+    sendPose(state.player.pos[0], state.player.pos[2], state.player.rotY, Math.min(1, speed / WALK_SPEED), state.player.indoors)
+    remoteView.update(dt, state.player.indoors)
     orchardView.update(state, t, clock.getElapsed())
     festivalView.update(state, clock.getElapsed())
     foxView.update(state, clock.getElapsed(), dt)
@@ -724,16 +745,20 @@ function showVisitBanner(ui: HTMLElement, state: GameState): void {
   ui.append(banner)
 }
 
-/** Tên của mình (lúc đang thăm, trạng thái đang mở là của bạn): đọc từ bản lưu trên máy. */
-function myName(): string {
+/** Tên và ngoại hình của mình (lúc đang thăm, trạng thái đang mở là của bạn): đọc từ bản lưu trên máy. */
+function myIdentity(): { name: string; look: Look | null } {
   try {
     const raw = localStorage.getItem('cozyfarm.save.v1')
-    const m = raw && /"name":"([^"]{1,20})"/.exec(raw)
-    if (m) return m[1]
+    const player = raw ? (JSON.parse(raw) as { player?: { name?: string; look?: unknown } }).player : undefined
+    if (player) return { name: (player.name ?? 'Noah').slice(0, 20), look: normalizeLook(player.look) }
   } catch {
     // Không đọc được thì dùng tên chung.
   }
-  return 'Noah'
+  return { name: 'Noah', look: null }
+}
+
+function myName(): string {
+  return myIdentity().name
 }
 
 /** Đọc bản lưu; dữ liệu hỏng thì hỏi người chơi trước, không tự xoá (GDD mục 6.5). */

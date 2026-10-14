@@ -13,6 +13,8 @@ import type { Look } from '../core/look.ts'
  */
 
 export const FIREBASE_CONFIG = {
+  /** Realtime Database (vị trí người chơi khi gặp nhau); để trống thì tắt tính năng gặp nhau. */
+  databaseURL: '',
   apiKey: 'AIzaSyBpppO6xa2Uc00Jv194RD36sWudtUmFkgk',
   authDomain: 'nsoft-dfe66.firebaseapp.com',
   projectId: 'nsoft-dfe66',
@@ -119,8 +121,11 @@ export class Cloud {
   private readonly fs: Store
   private readonly auth: import('firebase/auth').Auth
   private readonly db: import('firebase/firestore').Firestore
+  /** App Firebase dùng chung (cho Realtime Database). */
+  readonly app: import('firebase/app').FirebaseApp
 
-  private constructor(authLib: Auth, fs: Store, auth: import('firebase/auth').Auth, db: import('firebase/firestore').Firestore) {
+  private constructor(app: import('firebase/app').FirebaseApp, authLib: Auth, fs: Store, auth: import('firebase/auth').Auth, db: import('firebase/firestore').Firestore) {
+    this.app = app
     this.authLib = authLib
     this.fs = fs
     this.auth = auth
@@ -135,7 +140,7 @@ export class Cloud {
       const auth = authLib.getAuth(app)
       await auth.authStateReady()
       if (!auth.currentUser) await authLib.signInAnonymously(auth)
-      return new Cloud(authLib, fs, auth, fs.getFirestore(app))
+      return new Cloud(app, authLib, fs, auth, fs.getFirestore(app))
     } catch (e) {
       throw wrap(e)
     }

@@ -568,5 +568,13 @@
   "online.deleteConfirm": "Tap again to delete (your farm on this device stays)",
   "online.deleted": "🗑️ Your online data was deleted",
   "online.disabled": "Online play is off on this device (your online data was deleted).",
-  "online.enable": "Turn online play back on"
+  "online.enable": "Turn online play back on",
+  "emote.p1": "Hi there!",
+  "emote.p2": "Follow me!",
+  "emote.p3": "Thank you!",
+  "emote.p4": "Go fishing?",
+  "emote.p5": "So pretty!",
+  "emote.p6": "Bye bye!",
+  "presence.joined": "👋 {name} arrived at the farm",
+  "presence.left": "{name} left the farm"
 }

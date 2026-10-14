@@ -568,5 +568,13 @@
   "online.deleteConfirm": "Bấm lần nữa để xoá (nông trại trên máy vẫn giữ)",
   "online.deleted": "🗑️ Đã xoá dữ liệu online của bạn",
   "online.disabled": "Đã tắt chơi online trên máy này (dữ liệu online đã xoá).",
-  "online.enable": "Bật lại chơi online"
+  "online.enable": "Bật lại chơi online",
+  "emote.p1": "Chào bạn!",
+  "emote.p2": "Theo mình nè!",
+  "emote.p3": "Cảm ơn nha!",
+  "emote.p4": "Đi câu cá không?",
+  "emote.p5": "Đẹp quá!",
+  "emote.p6": "Tạm biệt!",
+  "presence.joined": "👋 {name} vừa tới nông trại",
+  "presence.left": "{name} đã rời nông trại"
 }
