@@ -19,7 +19,7 @@ import { createInitialState, type GameState } from './core/state.ts'
 import { now, TIME_SPEED } from './core/time.ts'
 import { plotAt, roomCellAt } from './core/world.ts'
 import { balance } from './data/index.ts'
-import { setLang, t } from './i18n/index.ts'
+import { setLang, t, tKey } from './i18n/index.ts'
 import { Input } from './input/input.ts'
 import { attachKeyboard } from './input/keyboard.ts'
 import { attachPointer } from './input/pointer.ts'
@@ -60,6 +60,10 @@ import { attachEmoteButton } from './ui/emotes.ts'
 import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
 import { createRaceBooth } from './render/raceBooth.ts'
+import { createLabels } from './render/labels.ts'
+import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
+import { GREENHOUSE_PRICE } from './systems/land.ts'
+import { HITCH } from './systems/riding.ts'
 import { racePanel } from './ui/race.ts'
 import { settleBet } from './systems/race.ts'
 import { createFestivalView } from './render/festival.ts'
@@ -191,6 +195,25 @@ async function start(): Promise<void> {
   joinMyRoom()
   const orchardView = createOrchardView(world.scene, models)
   const raceBooth = createRaceBooth(world.scene)
+  // Bảng tên nổi trên các chỗ có chức năng, để người chơi biết chỗ nào làm gì.
+  const labels = createLabels(world.scene, [
+    { x: STALL.x, y: 3.9, z: STALL.z, text: () => `🛒 ${t('label.shop')}` },
+    { x: ORDER_BOARD.x, y: 2.7, z: ORDER_BOARD.z, text: () => `📋 ${t('label.orders')}` },
+    { x: HOUSE_DOOR.x, y: 3.6, z: HOUSE_DOOR.z - 0.6, text: () => `🏡 ${t('label.house')}` },
+    { x: COOP.x, y: 3.4, z: COOP.z, text: () => state.coopLevel ? `🐔 ${t('label.coop')}` : `🐔 ${t('label.buildCoop', { price: animalData.coopLevels[0].price })}` },
+    { x: DOCK.x0 + 0.6, y: 1.9, z: DOCK.z, text: () => `🎣 ${t('label.fishing')}` },
+    { x: FIELD_GATE_OUT.x, y: 2, z: FIELD_GATE_OUT.z, text: () => `🌱 ${t('label.field')}` },
+    { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
+    { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => state.greenhouse ? `🪴 ${t('shop.greenhouse')}` : `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g` },
+    { x: HITCH.x, y: 2.3, z: HITCH.z, text: () => `🐴 ${t('horse.shopName')}`, visible: () => state.horse && !ridingAnimal() },
+    ...MACHINES.map((m) => ({
+      x: m.x, y: 2.1, z: m.z,
+      text: () => (state.machines.some((x) => x.id === m.id) ? `${m.icon} ${tKey(`machine.${m.id}`)}` : `${m.icon} ${tKey(`machine.${m.id}`)} · ${m.price}g`),
+    })),
+    ...ORCHARD.spots.map((o, i) => ({
+      x: o.x, y: 1.5, z: o.z, text: () => `🌳 ${t('label.orchard')}`, visible: () => !state.orchard.some((tr) => tr.spot === i),
+    })),
+  ])
   const festivalView = createFestivalView(world.scene)
   const foxView = createFoxView(world.scene, models)
   const fishingView = createFishingView(world.scene)
@@ -653,6 +676,7 @@ async function start(): Promise<void> {
     remoteView.update(dt, state.player.indoors)
     orchardView.update(state, t, clock.getElapsed())
     festivalView.update(state, clock.getElapsed())
+    labels.update(playerPos, state.player.indoors, dt)
     foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.

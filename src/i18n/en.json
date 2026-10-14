@@ -626,5 +626,13 @@
   "race.comment.start": "📣 And they're off!",
   "race.comment.lead": "📣 {dog} takes the lead!",
   "race.comment.finish": "📣 {dog} crosses the line first!",
-  "race.refund": "🐕 The race schedule changed: {amount} gold bet refunded"
+  "race.refund": "🐕 The race schedule changed: {amount} gold bet refunded",
+  "label.shop": "Shop",
+  "label.orders": "Orders",
+  "label.house": "Home",
+  "label.coop": "Coop",
+  "label.buildCoop": "Build coop · {price}g",
+  "label.fishing": "Fishing",
+  "label.field": "Field",
+  "label.orchard": "Plant a tree"
 }

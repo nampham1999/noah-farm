@@ -626,5 +626,13 @@
   "race.comment.start": "📣 Xuất phát! Các chú chó lao lên!",
   "race.comment.lead": "📣 {dog} vượt lên dẫn đầu!",
   "race.comment.finish": "📣 {dog} về đích đầu tiên!",
-  "race.refund": "🐕 Lịch đua đã đổi: hoàn lại {amount} vàng tiền cược"
+  "race.refund": "🐕 Lịch đua đã đổi: hoàn lại {amount} vàng tiền cược",
+  "label.shop": "Quầy hàng",
+  "label.orders": "Đơn hàng",
+  "label.house": "Nhà",
+  "label.coop": "Chuồng",
+  "label.buildCoop": "Xây chuồng · {price}g",
+  "label.fishing": "Câu cá",
+  "label.field": "Ruộng",
+  "label.orchard": "Trồng cây"
 }
