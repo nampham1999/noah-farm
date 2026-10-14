@@ -66,7 +66,8 @@ function draw(): void {
   const scroll = el.querySelector('.panel__body')?.scrollTop ?? 0
   // Khung gỗ có dải ruy băng ghi tiêu đề và nút đóng tròn đỏ, như bản cũ.
   const box = document.createElement('div')
-  box.className = 'panel framed'
+  // Vẽ lại (không phải lần mở đầu) thì không chạy lại hiệu ứng bật lên, tránh khung bị giật.
+  box.className = el.firstElementChild ? 'panel framed is-redraw' : 'panel framed'
 
   const ribbon = document.createElement('div')
   ribbon.className = 'ribbon'
