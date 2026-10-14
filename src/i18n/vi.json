@@ -591,5 +591,15 @@
   "trade.done": "🔄 Đổi xong! Nhận {qty} {item} từ {name}",
   "trade.accepted": "🔄 {name} đồng ý đổi! Bạn nhận {qty} {item}",
   "trade.declined": "{name} từ chối đổi; trả lại {qty} {item}",
-  "trade.notEnough": "Không đủ đồ để đổi"
+  "trade.notEnough": "Không đủ đồ để đổi",
+  "contest.title": "Thách đấu",
+  "contest.pick": "Thách {name} thi 5 phút:",
+  "contest.kind.fish": "🎣 Ai câu nhiều cá hơn",
+  "contest.kind.harvest": "🌾 Ai thu hoạch nhiều hơn",
+  "contest.incoming": "{name} thách bạn thi 5 phút!",
+  "contest.sent": "🏁 Đã gửi lời thách cho {name}",
+  "contest.win": "🏆 Bạn thắng {name} ({mine}–{theirs})! Nhận {gold} vàng",
+  "contest.tie": "🤝 Hoà với {name} ({mine}–{theirs}), nhận {gold} vàng",
+  "contest.lose": "{name} thắng ({theirs}–{mine}). Lần sau nhé! Nhận {gold} vàng an ủi",
+  "contest.teamFish": "🎣 Câu cùng bạn được {n} con! Thưởng {gold} vàng"
 }

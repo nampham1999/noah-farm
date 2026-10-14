@@ -591,5 +591,15 @@
   "trade.done": "🔄 Traded! Got {qty} {item} from {name}",
   "trade.accepted": "🔄 {name} accepted! You got {qty} {item}",
   "trade.declined": "{name} declined; {qty} {item} returned",
-  "trade.notEnough": "Not enough items to trade"
+  "trade.notEnough": "Not enough items to trade",
+  "contest.title": "Challenge",
+  "contest.pick": "Challenge {name} to 5 minutes of:",
+  "contest.kind.fish": "🎣 Most fish caught",
+  "contest.kind.harvest": "🌾 Most crops harvested",
+  "contest.incoming": "{name} challenges you to 5 minutes!",
+  "contest.sent": "🏁 Challenge sent to {name}",
+  "contest.win": "🏆 You beat {name} ({mine}–{theirs})! +{gold} gold",
+  "contest.tie": "🤝 Tie with {name} ({mine}–{theirs}), +{gold} gold",
+  "contest.lose": "{name} won ({theirs}–{mine}). Next time! +{gold} gold",
+  "contest.teamFish": "🎣 {n} fish caught together! +{gold} gold"
 }

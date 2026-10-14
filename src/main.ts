@@ -55,7 +55,7 @@ import { createFishingUi } from './ui/fishing.ts'
 import { canRide, dismount, HORSE_ID, rideSpeed, ridingAnimal, toggleRide, updateRiding } from './systems/riding.ts'
 import { createHorseView } from './render/horse.ts'
 import { createRemoteView } from './render/remote.ts'
-import { joinRoom, sendPose } from './online/presence.ts'
+import { joinRoom, presence, sendEmote, sendPose } from './online/presence.ts'
 import { attachEmoteButton } from './ui/emotes.ts'
 import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
@@ -67,6 +67,8 @@ import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.t
 import { askUseCloud, guestbookPanel } from './ui/online.ts'
 import { announce, startChat } from './online/chat.ts'
 import { refreshTrades } from './online/trade.ts'
+import { onContestProgress, watchContests } from './online/contest.ts'
+import { attachContestBar } from './ui/contest.ts'
 import { attachChatButton } from './ui/chat.ts'
 import { showWelcome } from './ui/welcome.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
@@ -76,7 +78,7 @@ import { updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
 import { applyOfflineProgress } from './systems/offline.ts'
-import { eat, speedMultiplier } from './systems/progress.ts'
+import { eat, speedMultiplier, gainXp } from './systems/progress.ts'
 import { AutoSaver } from './save/autosave.ts'
 import { BrowserSaveStore, type SaveStore } from './save/SaveStore.ts'
 import { formatDuration } from './ui/files.ts'
@@ -226,9 +228,25 @@ async function start(): Promise<void> {
       if (!tradesChecked) {
         tradesChecked = true
         void refreshTrades(state)
+        void watchContests(state)
       }
     })
     attachChatButton(ui, state)
+    attachContestBar(ui)
+    // Thi đấu: cộng điểm; câu cá khi có bạn cùng nông trại thì thêm XP, đủ 5 con thưởng vàng.
+    let teamFish = 0
+    bus.on('progress', (ev) => {
+      onContestProgress(ev)
+      const together = [...presence.players.values()].some((p) => !p.in)
+      if (ev.type !== 'fish' || !together || state.player.indoors) return
+      sendEmote('🎣')
+      remoteView.showOwnEmote('🎣', farmer.root)
+      gainXp(state, TEAM_FISH_XP)
+      if (++teamFish % TEAM_FISH_EVERY === 0) {
+        state.player.gold += TEAM_FISH_GOLD
+        bus.emit('notify', { key: 'contest.teamFish', params: { n: teamFish, gold: TEAM_FISH_GOLD }, good: true })
+      }
+    })
     bus.on('levelUp', (level) => {
       if (level >= 2) void announce(state, 'chat.event.level', { level })
     })
@@ -702,6 +720,11 @@ async function readVisitLink(): Promise<GameState | null> {
     return null
   }
 }
+
+/** Câu cá cùng bạn (cùng nông trại): XP thêm mỗi con, và vàng thưởng mỗi 5 con. */
+const TEAM_FISH_XP = 5
+const TEAM_FISH_EVERY = 5
+const TEAM_FISH_GOLD = 100
 
 /** Link mời ?ref=…: người mới bắt đầu từ link được tặng vàng một lần (GDD mục 8.2). */
 const INVITE_GOLD = 500

@@ -62,6 +62,8 @@ export interface GameEvents {
   presenceChanged: undefined
   /** Một người trong phòng vừa gửi biểu cảm (uid; '' là chính mình). */
   presenceEmote: string
+  /** Thách đấu đổi trạng thái hoặc điểm. */
+  contestChanged: undefined
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang

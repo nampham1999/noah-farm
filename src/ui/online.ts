@@ -10,6 +10,7 @@ import { itemIconHtml } from './icons.ts'
 import { closePanel, openPanel } from './panel.ts'
 import { leaderboardPanel } from './leaderboard.ts'
 import { openTradeComposer, renderTrades } from './trade.ts'
+import { openChallenge, renderChallenges } from './contest.ts'
 
 /** Bản trên mây mới hơn bản trên máy (chơi ở máy khác): hỏi dùng bản nào. */
 export function askUseCloud(save: ParsedSave): Promise<boolean> {
@@ -121,6 +122,7 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
   if (online.friends.length === 0) box.append(note(t('online.noFriends')))
   for (const f of online.friends) box.append(friendRow(state, f, refresh, ui))
 
+  renderChallenges(body, refresh)
   renderTrades(body, state, refresh)
   renderRequests(body, state, refresh)
   renderGuestbook(body, state)
@@ -230,6 +232,7 @@ function friendRow(state: GameState, f: Profile, refresh: () => void, ui: { gift
     button(`🏡 ${t('online.visit')}`, 'btn small primary', () => {
       location.href = `${location.pathname}#friend=${encodeURIComponent(f.uid)}`
     }),
+    button('🏁', 'btn small', () => openChallenge(state, f)),
     button('🔄', 'btn small', () => openTradeComposer(state, f, refresh)),
     button('🎁', 'btn small gold', () => {
       ui.gifting = ui.gifting === f.uid ? null : f.uid
