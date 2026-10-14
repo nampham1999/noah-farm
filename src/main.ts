@@ -14,7 +14,7 @@ import { createPetView } from './render/pet.ts'
 import { createGreenhouseView } from './render/greenhouse.ts'
 import { petNewDay, updatePet } from './systems/pet.ts'
 import { machinePanel } from './ui/machines.ts'
-import { bus, type GameAction } from './core/events.ts'
+import { bus, type GameAction, type Progress } from './core/events.ts'
 import { createInitialState, type GameState } from './core/state.ts'
 import { now, TIME_SPEED } from './core/time.ts'
 import { plotAt, roomCellAt } from './core/world.ts'
@@ -518,6 +518,8 @@ async function start(): Promise<void> {
         fox,
         online,
         presence,
+        /** Giả lập một việc vừa làm (để test thách đấu, nhiệm vụ). */
+        progress: (ev: Progress) => bus.emit('progress', ev),
         saveNow: () => autosaver.saveNow(),
         /** Dụng cụ đang cầm: kích thước thật trong thế giới (để kiểm tra tỉ lệ, hướng). */
         heldTool: () => {

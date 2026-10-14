@@ -26,7 +26,12 @@ export interface Contest {
   scoreB: number
 }
 
-export const CONTEST_MS = 5 * 60_000
+/** Thời lượng trận (5 phút); khi ?debug có thể rút ngắn bằng &contestMs=… để test. */
+export const CONTEST_MS = (() => {
+  const q = new URLSearchParams(location.search)
+  const ms = Number(q.get('contestMs'))
+  return q.has('debug') && ms > 0 && ms <= 300_000 ? ms : 5 * 60_000
+})()
 const PRIZE = { win: 300, tie: 150, lose: 50 }
 const CLAIMED_KEY = 'noahfarm.contestsClaimed'
 
