@@ -9,8 +9,8 @@ import type { GameState } from '../core/state.ts'
  * Chỉ cược bằng vàng trong game; tỉ lệ ăn có phần lời cho nhà cái để không "cày" vàng được.
  */
 
-export const RACE_PERIOD_MS = 5 * 60_000
-export const BET_MS = 4 * 60_000
+export const RACE_PERIOD_MS = 3 * 60_000
+export const BET_MS = 140_000
 export const RUN_MS = 20_000
 export const MIN_BET = 50
 export const MAX_BET = 500
@@ -146,7 +146,7 @@ export function placeBet(state: GameState, dog: number, amount: number): boolean
   amount = Math.floor(Math.max(MIN_BET, Math.min(MAX_BET, amount)))
   if (state.player.gold < amount) return fail('notice.noGold')
   state.player.gold -= amount
-  state.race = { id: race.id, dog, amount, odds: race.odds[dog], paid: false }
+  state.race = { id: race.id, dog, amount, odds: race.odds[dog], paid: false, period: RACE_PERIOD_MS }
   bus.emit('notify', { key: 'race.betPlaced', params: { dog: DOGS[dog].name, amount, odds: race.odds[dog] }, good: true })
   bus.emit('saveRequest', undefined)
   return true
@@ -159,6 +159,14 @@ export function placeBet(state: GameState, dog: number, amount: number): boolean
 export function settleBet(state: GameState, now = Date.now()): number | null {
   const bet = state.race
   if (!bet || bet.paid) return null
+  // Vé đặt khi lịch đua còn dài khác (số cuộc đua tính theo chu kỳ cũ): hoàn lại tiền cược.
+  if (bet.period !== RACE_PERIOD_MS) {
+    bet.paid = true
+    state.player.gold += bet.amount
+    bus.emit('notify', { key: 'race.refund', params: { amount: bet.amount }, good: true })
+    bus.emit('saveRequest', undefined)
+    return 0
+  }
   const race = raceById(bet.id, now)
   if (now < race.startAt + BET_MS + RUN_MS) return null
   bet.paid = true

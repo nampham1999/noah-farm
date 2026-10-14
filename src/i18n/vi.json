@@ -615,7 +615,7 @@
   "race.waitNext": "Đã đóng cược, chờ cuộc đua sau nhé!",
   "race.winner": "🏆 Chó số {n} – {dog} về nhất! (×{odds})",
   "race.bets": "Mọi người đang cược",
-  "race.hint": "Cứ 5 phút một cuộc đua: 4 phút đặt cược, 20 giây đua. Ai mở cũng thấy cùng một cuộc đua. Chỉ dùng vàng trong game.",
+  "race.hint": "Cứ 3 phút một cuộc đua: 2 phút 20 giây đặt cược, 20 giây đua. Ai mở cũng thấy cùng một cuộc đua. Chỉ dùng vàng trong game.",
   "race.closed": "Đã đóng cược cuộc đua này",
   "race.already": "Bạn đã cược cuộc đua này rồi",
   "race.betPlaced": "🐕 Đã cược {amount} vàng vào {dog} (×{odds})",
@@ -625,5 +625,6 @@
   "race.go": "Chạy!",
   "race.comment.start": "📣 Xuất phát! Các chú chó lao lên!",
   "race.comment.lead": "📣 {dog} vượt lên dẫn đầu!",
-  "race.comment.finish": "📣 {dog} về đích đầu tiên!"
+  "race.comment.finish": "📣 {dog} về đích đầu tiên!",
+  "race.refund": "🐕 Lịch đua đã đổi: hoàn lại {amount} vàng tiền cược"
 }

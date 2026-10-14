@@ -198,7 +198,7 @@ export interface GameState {
   /** Sổ khách: bạn bè ghé thăm để lại câu chúc (mới nhất trước, tối đa 20). */
   guestbook: { from: string; text: string; at: number }[]
   /** Cược đua chó gần nhất: cuộc đua số id, chó, số vàng, tỉ lệ ăn lúc đặt, đã trả thưởng chưa. */
-  race: { id: number; dog: number; amount: number; odds: number; paid: boolean } | null
+  race: { id: number; dog: number; amount: number; odds: number; paid: boolean; period?: number } | null
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   house: { level: number; furniture: PlacedFurniture[] }
   /**

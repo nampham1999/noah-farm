@@ -162,7 +162,7 @@ function normalize(data: Record<string, unknown>): GameState {
     race: (() => {
       const r = obj(data.race)
       return typeof r.id === 'number' && typeof r.dog === 'number' && typeof r.amount === 'number'
-        ? { id: r.id, dog: Math.max(0, Math.min(4, Math.floor(r.dog))), amount: Math.max(0, r.amount), odds: num(r.odds, 1), paid: r.paid === true }
+        ? { id: r.id, dog: Math.max(0, Math.min(4, Math.floor(r.dog))), amount: Math.max(0, r.amount), odds: num(r.odds, 1), paid: r.paid === true, period: typeof r.period === 'number' ? r.period : undefined }
         : null
     })(),
     guestbook: (Array.isArray(data.guestbook) ? data.guestbook : []).flatMap((raw) => {

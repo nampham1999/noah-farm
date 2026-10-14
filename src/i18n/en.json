@@ -615,7 +615,7 @@
   "race.waitNext": "Betting is closed, wait for the next race!",
   "race.winner": "🏆 Dog {n} – {dog} wins! (×{odds})",
   "race.bets": "Everyone's bets",
-  "race.hint": "A race every 5 minutes: 4 minutes of betting, 20 seconds of racing. Everyone sees the same race. In-game gold only.",
+  "race.hint": "A race every 3 minutes: 2:20 of betting, 20 seconds of racing. Everyone sees the same race. In-game gold only.",
   "race.closed": "Betting for this race is closed",
   "race.already": "You already bet on this race",
   "race.betPlaced": "🐕 Bet {amount} gold on {dog} (×{odds})",
@@ -625,5 +625,6 @@
   "race.go": "Go!",
   "race.comment.start": "📣 And they're off!",
   "race.comment.lead": "📣 {dog} takes the lead!",
-  "race.comment.finish": "📣 {dog} crosses the line first!"
+  "race.comment.finish": "📣 {dog} crosses the line first!",
+  "race.refund": "🐕 The race schedule changed: {amount} gold bet refunded"
 }
