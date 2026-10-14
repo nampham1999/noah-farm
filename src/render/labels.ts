@@ -17,7 +17,7 @@ export interface LabelsView {
 const NEAR = 7
 const FAR = 15
 /** Chiều cao bảng tên (m). */
-const LABEL_H = 0.95
+const LABEL_H = 0.55
 /** Kiểm tra chữ có đổi không (ngôn ngữ, trạng thái mua) mỗi chừng này giây. */
 const TEXT_CHECK_S = 0.5
 
