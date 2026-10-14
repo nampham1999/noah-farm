@@ -7,8 +7,8 @@ import { gainXp, useStamina } from './progress.ts'
 
 /**
  * Đất và cây trồng (GDD mục 3.1).
- * Cây chia `cropStages` giai đoạn đều nhau. Mỗi giai đoạn cần tưới một lần (lúc nào
- * trong giai đoạn cũng được); hết thời gian mà chưa tưới thì cây đứng chờ.
+ * Cây chia `cropStages` giai đoạn đều nhau. Gieo xong tưới một lần là cây tự lớn tới khi chín;
+ * chưa tưới thì cây đứng chờ (trời mưa thì tự được tưới).
  * Thời gian tính theo dấu thời gian nên cây vẫn lớn khi đóng tab.
  */
 
@@ -56,13 +56,13 @@ export function updateCrops(state: GameState, t: number, prevT = t): void {
       }
       continue
     }
+    // Đã tưới thì lớn liền một mạch tới khi chín (treo máy hay đóng game vẫn lớn).
     while (plot.stage < STAGES && plot.wateredAt !== null) {
       const end = plot.stageStartedAt + stageMs(crop)
       if (t < end) break
       plot.stage++
-      // Tưới trễ sau khi hết giờ thì giai đoạn mới tính từ lúc tưới.
+      // Tưới trễ sau khi hết giờ giai đoạn đầu thì giai đoạn mới tính từ lúc tưới.
       plot.stageStartedAt = Math.max(end, plot.wateredAt)
-      plot.wateredAt = null
     }
   }
 }
