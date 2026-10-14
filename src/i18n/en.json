@@ -621,5 +621,9 @@
   "race.betPlaced": "🐕 Bet {amount} gold on {dog} (×{odds})",
   "race.won": "🏆 {dog} wins! You won {gold} gold",
   "race.lost": "{dog} won. You lost {amount} gold, better luck next time!",
-  "chat.event.raceWin": "🐕🏆 {name} just won {gold} gold at the dog races!"
+  "chat.event.raceWin": "🐕🏆 {name} just won {gold} gold at the dog races!",
+  "race.go": "Go!",
+  "race.comment.start": "📣 And they're off!",
+  "race.comment.lead": "📣 {dog} takes the lead!",
+  "race.comment.finish": "📣 {dog} crosses the line first!"
 }

@@ -621,5 +621,9 @@
   "race.betPlaced": "🐕 Đã cược {amount} vàng vào {dog} (×{odds})",
   "race.won": "🏆 {dog} về nhất! Bạn thắng {gold} vàng",
   "race.lost": "{dog} về nhất. Mất {amount} vàng, lần sau may hơn nhé!",
-  "chat.event.raceWin": "🐕🏆 {name} vừa thắng {gold} vàng ở trường đua chó!"
+  "chat.event.raceWin": "🐕🏆 {name} vừa thắng {gold} vàng ở trường đua chó!",
+  "race.go": "Chạy!",
+  "race.comment.start": "📣 Xuất phát! Các chú chó lao lên!",
+  "race.comment.lead": "📣 {dog} vượt lên dẫn đầu!",
+  "race.comment.finish": "📣 {dog} về đích đầu tiên!"
 }

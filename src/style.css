@@ -1279,6 +1279,16 @@ button {
   border: 3px solid var(--wood);
 }
 
+.race-comment {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--hud-dark);
+  color: #fff;
+  font: 700 14px var(--display);
+  text-align: center;
+}
+
 .race-dogs {
   display: grid;
   gap: 6px;

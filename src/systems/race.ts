@@ -62,8 +62,21 @@ export function raceById(id: number, now = Date.now()): Race {
     }
     r -= prob[i]
   }
-  // Về đích: chó thắng sớm nhất, các chó khác chậm hơn một chút (khoảng cách ngẫu nhiên).
-  const finish = DOGS.map((_, i) => (i === winner ? 0.82 : 0.86 + rand() * 0.14))
+  // Về đích: chó thắng sớm nhất; đôi khi chó về nhì sát nút (phân định bằng ảnh), còn lại cách xa dần.
+  const photo = rand() < 0.35
+  // Xáo Fisher-Yates (sort với hàm so sánh ngẫu nhiên cho kết quả khác nhau giữa các trình duyệt).
+  const order = DOGS.map((_, i) => i).filter((i) => i !== winner)
+  for (let k = order.length - 1; k > 0; k--) {
+    const j = Math.floor(rand() * (k + 1))
+    ;[order[k], order[j]] = [order[j], order[k]]
+  }
+  const finish = DOGS.map(() => 0)
+  finish[winner] = 0.84
+  let gap = photo ? 0.004 + rand() * 0.008 : 0.015 + rand() * 0.03
+  for (const i of order) {
+    finish[i] = Math.min(0.99, finish[winner] + gap)
+    gap += 0.01 + rand() * 0.035
+  }
   const startAt = id * RACE_PERIOD_MS
   const t = now - startAt
   const phase: RacePhase = t < BET_MS ? 'betting' : t < BET_MS + RUN_MS ? 'running' : 'results'
@@ -71,12 +84,58 @@ export function raceById(id: number, now = Date.now()): Race {
   return { id, phase, startAt, left, odds, winner, finish }
 }
 
-/** Quãng đường (0..1) của chó i ở thời điểm u (0..1 của RUN_MS): tăng tốc rồi chạy đều, có chút nhấp nhô. */
+const SAMPLES = 160
+const curves = new Map<string, Float32Array>()
+
+/**
+ * Đường chạy của chó i: tốc độ dao động theo vài nhịp (bứt tốc, hụt hơi) có hạt giống riêng,
+ * cộng dồn lại rồi chuẩn hoá để về đích đúng lúc finish[i]. Nhờ vậy dẫn đầu đổi chỗ liên tục
+ * mà kết quả vẫn đúng như đã định, và mọi máy vẽ ra giống hệt nhau.
+ */
+function curve(race: Race, i: number): Float32Array {
+  const key = `${race.id}:${i}`
+  let c = curves.get(key)
+  if (c) return c
+  const rand = mulberry32((race.id * 31 + i * 7919) | 0)
+  const waves = [0, 1, 2].map((k) => ({
+    a: (k === 0 ? 0.3 : 0.18) + rand() * (k === 0 ? 0.25 : 0.15),
+    f: (k === 0 ? 0.6 : 1.6 + k) + rand() * 1.2,
+    p: rand() * Math.PI * 2,
+  }))
+  c = new Float32Array(SAMPLES + 1)
+  let sum = 0
+  for (let k = 1; k <= SAMPLES; k++) {
+    const tau = k / SAMPLES
+    // Xuất phát: tăng tốc trong 10% đầu.
+    const start = Math.min(1, tau / 0.1)
+    let speed = 1
+    for (const w of waves) speed += w.a * Math.sin(2 * Math.PI * w.f * tau + w.p)
+    sum += Math.max(0.15, speed) * start
+    c[k] = sum
+  }
+  for (let k = 0; k <= SAMPLES; k++) c[k] /= sum
+  if (curves.size > 60) curves.clear()
+  curves.set(key, c)
+  return c
+}
+
+/** Quãng đường (0..1) của chó i ở thời điểm u (0..1 của RUN_MS). */
 export function dogProgress(race: Race, i: number, u: number): number {
-  const f = race.finish[i]
-  const k = Math.min(1, u / f)
-  const wobble = Math.sin(u * 30 + i * 1.7) * 0.012 * (1 - k)
-  return Math.min(1, Math.max(0, k * k * (3 - 2 * k) * 0.35 + k * 0.65 + wobble))
+  const tau = Math.min(1, Math.max(0, u / race.finish[i]))
+  const c = curve(race, i)
+  const x = tau * SAMPLES
+  const k = Math.floor(x)
+  return k >= SAMPLES ? 1 : c[k] + (c[k + 1] - c[k]) * (x - k)
+}
+
+/** Thứ tự hiện tại (chỉ số chó, dẫn đầu trước); khi đã về đích thì xếp theo lúc về. */
+export function standings(race: Race, u: number): number[] {
+  return DOGS.map((_, i) => i).sort((a, b) => {
+    const pa = dogProgress(race, a, u)
+    const pb = dogProgress(race, b, u)
+    if (pa >= 1 && pb >= 1) return race.finish[a] - race.finish[b]
+    return pb - pa
+  })
 }
 
 /** Đặt cược cho cuộc đua đang mở; trừ vàng ngay. */

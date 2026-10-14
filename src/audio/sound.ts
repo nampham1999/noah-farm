@@ -6,7 +6,7 @@
 export type SfxName =
   | 'till' | 'plant' | 'water' | 'harvest' | 'coin' | 'levelUp' | 'quest'
   | 'cast' | 'bite' | 'catch' | 'escape' | 'chicken' | 'cow' | 'pig'
-  | 'place' | 'error' | 'click' | 'newDay' | 'thunder' | 'dog' | 'horse'
+  | 'place' | 'error' | 'click' | 'newDay' | 'thunder' | 'dog' | 'horse' | 'whistle' | 'cheer'
 
 class Sound {
   ctx: AudioContext | null = null
@@ -169,6 +169,15 @@ class Sound {
         // Tiếng hí: âm cao rung rồi trượt xuống.
         this.tone(t, 900, 1300, 0.25, 'sawtooth', 0.12, 2200)
         this.tone(t + 0.22, 1250, 600, 0.6, 'sawtooth', 0.12, 1800)
+        break
+      case 'whistle':
+        // Còi xuất phát: tiếng huýt cao rung nhanh.
+        for (let k = 0; k < 6; k++) this.tone(t + k * 0.07, 2300, 2500, 0.07, 'square', 0.06, 4000)
+        break
+      case 'cheer':
+        // Khán giả reo hò: tiếng ồn dải giữa phồng lên rồi tắt dần.
+        this.noiseBurst(t, 1.6, 'bandpass', 1100, 700, 0.5)
+        this.noiseBurst(t + 0.15, 1.2, 'bandpass', 1800, 1200, 0.3)
         break
       case 'thunder':
         // Tiếng nổ ngắn rồi rền trầm kéo dài.
