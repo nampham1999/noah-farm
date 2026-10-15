@@ -37,8 +37,23 @@ function serviceWorker(): Plugin {
   }
 }
 
+/**
+ * Thẻ chia sẻ (og:image, canonical) cần địa chỉ tuyệt đối: lấy tên miền chính của dự án trên Vercel
+ * (hoặc SITE_URL nếu đặt), còn chạy máy nhà thì để trống.
+ */
+function siteUrl(): Plugin {
+  return {
+    name: 'noah-farm-site-url',
+    transformIndexHtml(html) {
+      const host = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      const url = (process.env.SITE_URL ?? (host ? `https://${host}` : '')).replace(/\/$/, '')
+      return html.replaceAll('%SITE_URL%', url)
+    },
+  }
+}
+
 export default defineConfig({
   // Đường dẫn tương đối để chạy được cả ở gốc tên miền lẫn thư mục con (GitHub Pages).
   base: './',
-  plugins: [serviceWorker()],
+  plugins: [siteUrl(), serviceWorker()],
 })
