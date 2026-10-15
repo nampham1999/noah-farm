@@ -681,5 +681,18 @@
   "village.you": "bạn",
   "village.join": "Bạn chưa góp tuần này. Cứ chơi bình thường, làm đúng việc {icon} là tự góp.",
   "village.done": "🏘️ Cả làng đã đạt mục tiêu tuần! +{gold} vàng",
-  "village.button": "Hội làng"
+  "village.button": "Hội làng",
+  "news.title": "Tin làng",
+  "checkin.day": "Ngày {n}",
+  "checkin.claim": "Nhận {gold} vàng",
+  "checkin.done": "Hôm nay đã điểm danh",
+  "checkin.streak": "Chuỗi {n} ngày liên tiếp. Bỏ lỡ một ngày thì chuỗi quay về ngày 1; ngày 7 thưởng lớn nhất.",
+  "checkin.claimed": "🎁 Điểm danh ngày {day}: +{gold} vàng",
+  "news.ripe": "{n} ô cây đã chín, ra vườn thu hoạch!",
+  "news.orders": "{n} đơn hàng đã đủ đồ để giao",
+  "news.festivalToday": "Hôm nay là {name}!",
+  "news.raceBet": "Đua chó đang mở cược, còn {s} giây",
+  "news.raceNext": "Cuộc đua chó kế tiếp sau {s} giây",
+  "news.village": "mục tiêu tuần của làng",
+  "menu.news": "Tin làng"
 }

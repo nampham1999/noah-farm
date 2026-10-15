@@ -10,6 +10,7 @@ export type GameAction =
   | 'journal'
   | 'menu'
   | 'social'
+  | 'news'
   | 'character'
 
 /** Thông báo ngắn cho người chơi; key là khoá i18n, HUD tự dịch. */

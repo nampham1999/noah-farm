@@ -60,6 +60,8 @@ import { attachEmoteButton } from './ui/emotes.ts'
 import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
 import { createMarketStall, createRaceBooth } from './render/raceBooth.ts'
+import { createNewsPanel } from './ui/news.ts'
+import { checkinStatus } from './systems/checkin.ts'
 import { createMonument } from './render/monument.ts'
 import { onVillageProgress, startVillage, village } from './online/village.ts'
 import { villagePanel } from './ui/village.ts'
@@ -352,6 +354,7 @@ async function start(): Promise<void> {
     })
   }
   const socialPanel = createSocialPanel(state)
+  const newsPanel = createNewsPanel(state)
   const characterPanel = createCharacterPanel(state, () => autosaver.requestSoon(), () => (followCam.closeup = false))
   const goInside = () => {
     if (ridingAnimal()) dismount(state)
@@ -412,6 +415,12 @@ async function start(): Promise<void> {
     bus.emit('notify', { key: 'save.ripeWhileAway', params: { n: offline.newlyRipe }, good: true })
   }
   if (backupDue(state)) bus.emit('notify', { key: 'save.remind' })
+  // Chưa điểm danh hôm nay: mở Tin làng sau khi vào game một lúc (bỏ qua khi test).
+  if (!visiting && !devMode && checkinStatus(state).available) {
+    window.setTimeout(() => {
+      if (!isPanelOpen() && !state.player.indoors) openPanel(newsPanel)
+    }, 2500)
+  }
 
   bus.on('newDay', () => {
     animalsNewDay(state, now())
@@ -486,7 +495,7 @@ async function start(): Promise<void> {
     if (isModalOpen()) return
     if (visiting && action !== 'menu' && action !== 'interact') return
     // Khi đang mở cửa sổ, chỉ cho đóng cửa sổ hoặc chuyển qua túi đồ.
-    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal' && action !== 'social' && action !== 'character') return
+    if (isPanelOpen() && action !== 'menu' && action !== 'inventory' && action !== 'journal' && action !== 'social' && action !== 'news' && action !== 'character') return
     if (isFishing() && (action === 'useTool' || action === 'interact')) return strike(state)
     if (isFishing() && action === 'menu') return stopFishing()
     switch (action) {
@@ -504,6 +513,8 @@ async function start(): Promise<void> {
         return togglePanel(journalPanel)
       case 'social':
         return togglePanel(socialPanel)
+      case 'news':
+        return togglePanel(newsPanel)
       case 'character':
         togglePanel(characterPanel)
         followCam.closeup = isPanelOpen()

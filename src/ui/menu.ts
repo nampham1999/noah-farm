@@ -90,6 +90,7 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
       if (!visiting) {
         const nameBox = section(body, t('menu.name'))
         const friends = button(`🤝 ${t('social.title')}`, 'btn', () => bus.emit('action', 'social'))
+        const news = button(`📰 ${t('menu.news')}`, 'btn', () => bus.emit('action', 'news'))
         const nameInput = document.createElement('input')
         nameInput.className = 'menu-input'
         nameInput.maxLength = 20
@@ -100,7 +101,7 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
           autosaver.requestSoon()
         })
         const looks = button(`👤 ${t('look.title')}`, 'btn', () => bus.emit('action', 'character'))
-        nameBox.append(nameInput, looks, friends)
+        nameBox.append(nameInput, looks, friends, news)
       }
 
       // Âm thanh: nhạc nền và hiệu ứng.

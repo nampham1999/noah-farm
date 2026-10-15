@@ -193,6 +193,8 @@ export interface GameState {
   orchard: OrchardTree[]
   /** Thử thách lễ hội hôm nay: stamp là dayStamp của ngày lễ hội. */
   festival: { stamp: number; progress: number; done: boolean } | null
+  /** Điểm danh hằng ngày: day là số thứ tự ngày thật lần nhận gần nhất, streak là chuỗi ngày liên tiếp. */
+  checkin: { day: number; streak: number }
   /** Độ thân thiết với từng dân làng (theo id). */
   friends: Record<string, { points: number; giftDay: number; rewarded: number }>
   /** Sổ khách: bạn bè ghé thăm để lại câu chúc (mới nhất trước, tối đa 20). */
@@ -250,6 +252,7 @@ export function createInitialState(): GameState {
     coopFence: false,
     orchard: [],
     festival: null,
+    checkin: { day: -1, streak: 0 },
     friends: {},
     guestbook: [],
     race: null,

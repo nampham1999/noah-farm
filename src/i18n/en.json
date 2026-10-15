@@ -681,5 +681,18 @@
   "village.you": "you",
   "village.join": "You haven't helped this week. Just play: doing {icon} counts automatically.",
   "village.done": "🏘️ The village reached its weekly goal! +{gold} gold",
-  "village.button": "Village"
+  "village.button": "Village",
+  "news.title": "Village news",
+  "checkin.day": "Day {n}",
+  "checkin.claim": "Claim {gold} gold",
+  "checkin.done": "Checked in today",
+  "checkin.streak": "{n}-day streak. Miss a day and it restarts at day 1; day 7 is the biggest reward.",
+  "checkin.claimed": "🎁 Day {day} check-in: +{gold} gold",
+  "news.ripe": "{n} plots are ripe, go harvest!",
+  "news.orders": "{n} orders ready to deliver",
+  "news.festivalToday": "Today is {name}!",
+  "news.raceBet": "Dog race betting is open, {s}s left",
+  "news.raceNext": "Next dog race in {s}s",
+  "news.village": "village weekly goal",
+  "menu.news": "Village news"
 }
