@@ -107,6 +107,19 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sold', 'buyer', 'buyerName']));
     }
 
+    // Hội làng: tiến độ tuần (chỉ tăng, mỗi người chỉ sửa phần góp của mình) và cấp công trình (mỗi lần lên tối đa 1).
+    match /village/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && (id == 'meta'
+        ? request.resource.data.level == 1
+        : id.matches('w[0-9]+') && request.resource.data.members.keys().hasOnly([request.auth.uid]));
+      allow update: if signedIn() && (id == 'meta'
+        ? request.resource.data.level >= resource.data.level && request.resource.data.level <= resource.data.level + 1
+        : request.resource.data.progress >= resource.data.progress
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progress', 'members'])
+          && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid]));
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();

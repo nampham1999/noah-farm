@@ -55,6 +55,7 @@ export const MODELS = {
   rockA: 'kaykit-hex/rock_single_A.gltf',
   rockC: 'kaykit-hex/rock_single_C.gltf',
   well: 'kaykit-hex/building_well_blue.gltf',
+  windmill: 'kaykit-hex/building_windmill_blue.gltf',
   barrel: 'kaykit-hex/barrel.gltf',
   crate: 'kaykit-hex/crate_A_big.gltf',
   sack: 'kaykit-hex/sack.gltf',

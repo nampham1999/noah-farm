@@ -64,6 +64,7 @@ export interface GameEvents {
   presenceEmote: string
   /** Thách đấu đổi trạng thái hoặc điểm. */
   contestChanged: undefined
+  villageChanged: undefined
   /** Có thay đổi lớn (thu hoạch, mua, bán...): lưu sớm thay vì chờ chu kỳ 30 giây. */
   saveRequest: undefined
   langChanged: Lang

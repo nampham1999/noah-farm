@@ -9,6 +9,7 @@ import { countItem, removeItem } from '../systems/inventory.ts'
 import { itemIconHtml } from './icons.ts'
 import { closePanel, openPanel } from './panel.ts'
 import { leaderboardPanel } from './leaderboard.ts'
+import { villagePanel } from './village.ts'
 import { openTradeComposer, renderTrades } from './trade.ts'
 import { openChallenge, renderChallenges } from './contest.ts'
 import { stallPanel } from './market.ts'
@@ -88,6 +89,7 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
     }))
   }
   accRow.append(button(`🏆 ${t('rank.title')}`, 'btn', () => openPanel(leaderboardPanel(state))))
+  accRow.append(button(`🏘️ ${t('village.button')}`, 'btn', () => openPanel(villagePanel(state))))
   box.append(accRow)
   box.append(note(acc.anonymous ? t('online.anonHint') : t('online.signedIn', { email: acc.email ?? 'Google' })))
 
