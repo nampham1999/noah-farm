@@ -694,5 +694,20 @@
   "news.raceBet": "Đua chó đang mở cược, còn {s} giây",
   "news.raceNext": "Cuộc đua chó kế tiếp sau {s} giây",
   "news.village": "mục tiêu tuần của làng",
-  "menu.news": "Tin làng"
+  "menu.news": "Tin làng",
+  "forage.label": "Rừng hái lượm",
+  "forage.found": "🍄 Nhặt được {item}",
+  "forage.coins": "💰 Lượm được túi vàng trong bụi cây: +{gold} vàng!",
+  "forage.bunny": "🐰 Chú thỏ rừng chỉ chỗ: nhặt thêm {item}!",
+  "item.forage_mushroom": "Nấm rừng",
+  "item.forage_berry": "Dâu rừng",
+  "item.forage_herb": "Thảo mộc",
+  "item.forage_flower": "Hoa dại",
+  "item.forage_chestnut": "Hạt dẻ",
+  "item.forage_pinecone": "Quả thông",
+  "item.forage_honeycomb": "Mật ong rừng",
+  "achievement.a_forage30": "Người đi rừng",
+  "achievement.a_forage30.desc": "Hái lượm {n} món trong rừng",
+  "achievement.a_forage200": "Bậc thầy hái lượm",
+  "achievement.a_forage200.desc": "Hái lượm {n} món trong rừng"
 }

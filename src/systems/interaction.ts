@@ -2,7 +2,7 @@ import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
 import {
-  FARM_HALF, FIELD, FIELD_GATE, RACE_BOOTH, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
+  FARM_HALF, FIELD, FIELD_GATE, FOREST_ZONE, RACE_BOOTH, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
 } from '../core/world.ts'
 import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
@@ -259,7 +259,16 @@ export class Interaction {
     if (this.state.player.indoors) return null
     const inside = insideField(px, pz)
     let next: { x: number; z: number } | null = null
-    if (inside !== insideField(tx, tz)) {
+    // Đích ở phía bên kia hàng rào bắc (rừng hái lượm): đi tới cổng bắc, bước qua, rồi tới đích.
+    if (!inside && pz < -FARM_HALF !== tz < -FARM_HALF) {
+      const fz = FOREST_ZONE
+      const side = pz < -FARM_HALF ? -1 : 1
+      const mine = { x: fz.gateX, z: -FARM_HALF + side * 1.3 }
+      const other = { x: fz.gateX, z: -FARM_HALF - side * 1.3 }
+      const atGate = Math.abs(px - fz.gateX) < 0.7 && Math.abs(pz + FARM_HALF) < 1.6
+      if (atGate) return this.keepVia(other.x, other.z)
+      next = mine
+    } else if (inside !== insideField(tx, tz)) {
       const mine = inside ? FIELD_GATE_IN : FIELD_GATE_OUT
       const other = inside ? FIELD_GATE_OUT : FIELD_GATE_IN
       // Đã tới cổng phía mình thì bước sang phía bên kia.

@@ -197,6 +197,18 @@
       "icon": "⭐"
     },
     {
+      "id": "a_forage30",
+      "stat": "forage",
+      "target": 30,
+      "icon": "🍄"
+    },
+    {
+      "id": "a_forage200",
+      "stat": "forage",
+      "target": 200,
+      "icon": "🧺"
+    },
+    {
       "id": "a_share",
       "stat": "shared",
       "target": 1,

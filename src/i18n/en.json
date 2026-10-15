@@ -694,5 +694,20 @@
   "news.raceBet": "Dog race betting is open, {s}s left",
   "news.raceNext": "Next dog race in {s}s",
   "news.village": "village weekly goal",
-  "menu.news": "Village news"
+  "menu.news": "Village news",
+  "forage.label": "Forest foraging",
+  "forage.found": "🍄 Found {item}",
+  "forage.coins": "💰 Found a coin purse in the bushes: +{gold} gold!",
+  "forage.bunny": "🐰 A wild bunny showed you more: extra {item}!",
+  "item.forage_mushroom": "Wild mushroom",
+  "item.forage_berry": "Wild berries",
+  "item.forage_herb": "Herbs",
+  "item.forage_flower": "Wildflower",
+  "item.forage_chestnut": "Chestnut",
+  "item.forage_pinecone": "Pinecone",
+  "item.forage_honeycomb": "Wild honeycomb",
+  "achievement.a_forage30": "Woodland wanderer",
+  "achievement.a_forage30.desc": "Forage {n} items in the forest",
+  "achievement.a_forage200": "Forage master",
+  "achievement.a_forage200.desc": "Forage {n} items in the forest"
 }

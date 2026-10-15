@@ -506,7 +506,7 @@ function addFence(scene: THREE.Scene, models: Models): void {
   for (let k = 0; k < perSide; k++) {
     const a = -FARM_HALF + (k + 0.5) * step
     // Mô hình tấm rào nằm dọc trục Z; cạnh bắc/nam cần xoay 90 độ.
-    placements.push(placeMatrix(a, -FARM_HALF, Math.PI / 2, 1))
+    if (Math.abs(a - GATE.x) > GATE.halfWidth) placements.push(placeMatrix(a, -FARM_HALF, Math.PI / 2, 1))
     if (Math.abs(a - GATE.x) > GATE.halfWidth) placements.push(placeMatrix(a, FARM_HALF, Math.PI / 2, 1))
     placements.push(placeMatrix(-FARM_HALF, a, 0, 1), placeMatrix(FARM_HALF, a, 0, 1))
   }

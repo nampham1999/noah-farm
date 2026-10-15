@@ -195,6 +195,8 @@ export interface GameState {
   festival: { stamp: number; progress: number; done: boolean } | null
   /** Điểm danh hằng ngày: day là số thứ tự ngày thật lần nhận gần nhất, streak là chuỗi ngày liên tiếp. */
   checkin: { day: number; streak: number }
+  /** Hái lượm trong rừng: stamp là dayStamp của lứa đang có, taken là các điểm đã hái. */
+  forage: { stamp: number; taken: number[] }
   /** Độ thân thiết với từng dân làng (theo id). */
   friends: Record<string, { points: number; giftDay: number; rewarded: number }>
   /** Sổ khách: bạn bè ghé thăm để lại câu chúc (mới nhất trước, tối đa 20). */
@@ -215,7 +217,7 @@ export interface GameState {
   /** lastRefill: ngày game (absDay) gần nhất đã thêm đơn mới; mỗi ngày chỉ thêm một lần. */
   orders: { nextId: number; list: Order[]; firstGiven: boolean; lastRefill: number }
   /** Số liệu cộng dồn cho thành tựu. */
-  stats: { harvest: number; fish: number; goldEarned: number; shared: number }
+  stats: { harvest: number; fish: number; goldEarned: number; shared: number; forage: number }
   settings: Settings
 }
 
@@ -253,13 +255,14 @@ export function createInitialState(): GameState {
     orchard: [],
     festival: null,
     checkin: { day: -1, streak: 0 },
+    forage: { stamp: -1, taken: [] },
     friends: {},
     guestbook: [],
     race: null,
     pests: [],
     journal: { fish: {}, crops: {}, achievements: [] },
     quests: { step: 0, progress: 0, daily: { day: -1, list: [], bonusClaimed: false } },
-    stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0 },
+    stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0, forage: 0 },
     orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
     house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },

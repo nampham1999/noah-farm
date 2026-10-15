@@ -7,6 +7,7 @@ import fishJson from './fish.json'
 import furnitureJson from './furniture.json'
 import machinesJson from './machines.json'
 import treesJson from './trees.json'
+import forageJson from './forage.json'
 
 export interface CropDef {
   id: string
@@ -158,6 +159,21 @@ for (const r of RECIPES) {
   ITEMS.set(`food_${r.id}`, { id: `food_${r.id}`, kind: 'food', icon: r.icon, sellPrice: r.sellPrice, energy: r.energy })
 }
 ITEMS.set(HONEY.id, { id: HONEY.id, kind: 'product', icon: HONEY.icon, sellPrice: HONEY.sellPrice, energy: HONEY.energy })
+
+export interface ForageDef {
+  id: string
+  icon: string
+  sellPrice: number
+  energy: number
+  /** Độ hay gặp: món hiếm có trọng số nhỏ. */
+  weight: number
+  seasons: Season[]
+}
+
+/** Đồ hái lượm trong rừng (forage_x). */
+export const FORAGE = forageJson.items as ForageDef[]
+export const FORAGE_CONFIG = forageJson
+for (const f of FORAGE) ITEMS.set(f.id, { id: f.id, kind: 'product', icon: f.icon, sellPrice: f.sellPrice, energy: f.energy })
 
 export type TreeId = 'apple' | 'orange' | 'cherry'
 

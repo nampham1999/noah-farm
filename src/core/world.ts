@@ -178,11 +178,22 @@ export const PATHS: { from: [number, number]; to: [number, number]; width: numbe
   { from: [FIELD.x1, FIELD_GATE.z], to: [MAIN_ROAD_X, FIELD_GATE.z], width: 2 },
   // Sân trước quầy hàng.
   { from: [STALL.x - 2.5, 16.2], to: [MAIN_ROAD_X, 16.2], width: 2 },
+  // Lối mòn từ đường chính qua cổng bắc vào rừng hái lượm.
+  { from: [MAIN_ROAD_X, -6.8], to: [MAIN_ROAD_X, -FARM_HALF - 13], width: 2 },
   // Lối ra cầu câu cá.
   { from: [MAIN_ROAD_X, DOCK.z], to: [DOCK.x0, DOCK.z], width: 1.6 },
 ]
 /** Chỗ hở trên hàng rào phía nam, nơi đường đất đi ra. */
 export const GATE = { x: MAIN_ROAD_X, halfWidth: 1.6 }
+/**
+ * Khu rừng hái lượm phía bắc, đi vào qua cổng ở hàng rào bắc (cùng trục với đường chính).
+ * Chỉ đi lại được trong hình chữ nhật này; ra vào rừng chỉ qua cổng.
+ */
+export const FOREST_ZONE = { gateX: MAIN_ROAD_X, gateHalf: 1.6, x0: -11, x1: 11, z0: -FARM_HALF - 14, z1: -FARM_HALF }
+
+export function inForest(x: number, z: number): boolean {
+  return z < FOREST_ZONE.z1 && x > FOREST_ZONE.x0 - 1 && x < FOREST_ZONE.x1 + 1 && z > FOREST_ZONE.z0 - 1
+}
 /** Chỗ người chơi mới xuất hiện: trên đường chính, gần lối vào. */
 export const SPAWN = { x: MAIN_ROAD_X, z: 15.8, rotY: Math.PI }
 
@@ -240,6 +251,8 @@ export interface Tree extends Circle {
   /** Chọn loại mô hình cây, 0..1. */
   variant: number
   rotY: number
+  /** Cây có va chạm trong khu rừng hái lượm. */
+  solid?: boolean
 }
 
 export interface Decor {
@@ -311,7 +324,7 @@ export const OBSTACLES: Circle[] = [
   ...[-1, 0, 1].map((k) => ({ x: STALL.x + k * (STALL_HALF_WIDTH - 1.1), z: STALL.z, r: 1.2 })),
   ...BUSHES.map((b) => ({ x: b.x, z: b.z, r: 0.5 * b.scale })),
   ...ROCKS.map((b) => ({ x: b.x, z: b.z, r: 0.45 * b.scale })),
-  ...TREES.filter((tr) => Math.abs(tr.x) < FARM_HALF && Math.abs(tr.z) < FARM_HALF).map((tr) => ({
+  ...TREES.filter((tr) => (Math.abs(tr.x) < FARM_HALF && Math.abs(tr.z) < FARM_HALF) || (tr.solid && inForest(tr.x, tr.z))).map((tr) => ({
     x: tr.x,
     z: tr.z,
     r: 0.5 * tr.scale,
@@ -328,7 +341,26 @@ function generateTrees(): Tree[] {
     const x = (rand() * 2 - 1) * band
     const z = (rand() * 2 - 1) * band
     if (Math.abs(x) < FARM_HALF + 2 && Math.abs(z) < FARM_HALF + 2) continue
+    // Khu rừng hái lượm để trống, cây ở đó được đặt riêng bên dưới.
+    if (inForest(x, z)) continue
     trees.push({ x, z, r: 0, scale: 0.8 + rand() * 0.8, variant: rand(), rotY: rand() * Math.PI * 2 })
+  }
+  // Khu rừng hái lượm: viền cây dày quanh ba cạnh, vài cây lẻ giữa rừng (có va chạm).
+  const fz = FOREST_ZONE
+  const edge = (x: number, z: number) => trees.push({ x, z, r: 0, scale: 1 + rand() * 0.7, variant: rand(), rotY: rand() * Math.PI * 2 })
+  for (let x = fz.x0 - 1; x <= fz.x1 + 1; x += 1.7) edge(x + rand(), fz.z0 - 0.8 - rand())
+  for (let z = fz.z0; z < fz.z1 - 0.5; z += 1.7) {
+    edge(fz.x0 - 0.9 - rand(), z + rand())
+    edge(fz.x1 + 0.9 + rand(), z + rand())
+  }
+  // Hai bên cổng bắc thêm cây cho giống lối vào rừng.
+  for (let placed = 0; placed < 12; ) {
+    const x = fz.x0 + 1.5 + rand() * (fz.x1 - fz.x0 - 3)
+    const z = fz.z0 + 1.5 + rand() * (fz.z1 - fz.z0 - 4)
+    // Chừa lối đi thẳng từ cổng.
+    if (Math.abs(x - fz.gateX) < 2.4) continue
+    trees.push({ x, z, r: 0, scale: 0.9 + rand() * 0.5, variant: rand(), rotY: rand() * Math.PI * 2, solid: true })
+    placed++
   }
   // Vài cây trong nông trại, tránh nhà, hồ, khu ô đất và chỗ nhân vật xuất hiện.
   let placed = 0

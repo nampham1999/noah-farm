@@ -62,13 +62,15 @@ import { createOrchardView } from './render/orchard.ts'
 import { createMarketStall, createRaceBooth } from './render/raceBooth.ts'
 import { createNewsPanel } from './ui/news.ts'
 import { checkinStatus } from './systems/checkin.ts'
+import { createForageView } from './render/forage.ts'
+import { collectNearby } from './systems/forage.ts'
 import { createMonument } from './render/monument.ts'
 import { onVillageProgress, startVillage, village } from './online/village.ts'
 import { villagePanel } from './ui/village.ts'
 import { stallPanel } from './ui/market.ts'
 import { collectSales } from './online/market.ts'
 import { createLabels } from './render/labels.ts'
-import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
+import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, FOREST_ZONE, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
 import { GREENHOUSE_PRICE } from './systems/land.ts'
 import { HITCH } from './systems/riding.ts'
 import { racePanel } from './ui/race.ts'
@@ -238,6 +240,7 @@ async function start(): Promise<void> {
   }
   const monument = createMonument(world.scene, models)
   const pestsView = createPestsView(world.scene)
+  const forageView = createForageView(world.scene)
   // Bảng tên nổi trên các chỗ có chức năng, để người chơi biết chỗ nào làm gì.
   const labels = createLabels(world.scene, [
     { x: STALL.x, y: 3.9, z: STALL.z, text: () => `🛒 ${t('label.shop')}` },
@@ -248,6 +251,7 @@ async function start(): Promise<void> {
     { x: FIELD_GATE_OUT.x, y: 2, z: FIELD_GATE_OUT.z, text: () => `🌱 ${t('label.field')}` },
     { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
     { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
+    { x: FOREST_ZONE.gateX, y: 2.6, z: FOREST_ZONE.z1 - 0.2, text: () => `🍄 ${t('forage.label')}`, visible: () => !visiting },
     { x: MONUMENT.x, y: 4, z: MONUMENT.z, text: () => `🏘️ ${t('village.title')}`, visible: () => !visiting },
     { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => state.greenhouse ? `🪴 ${t('shop.greenhouse')}` : `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g` },
     { x: HITCH.x, y: 2.3, z: HITCH.z, text: () => `🐴 ${t('horse.shopName')}`, visible: () => state.horse && !ridingAnimal() },
@@ -749,6 +753,8 @@ async function start(): Promise<void> {
     labels.update(playerPos, state.player.indoors, dt)
     monument.update(village.level, clock.getElapsed())
     pestsView.update(state, clock.getElapsed())
+    forageView.update(state, clock.getElapsed(), !visiting && !state.player.indoors && state.player.pos[2] < -10)
+    if (!visiting && !state.player.indoors) collectNearby(state, state.player.pos[0], state.player.pos[2])
     foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.

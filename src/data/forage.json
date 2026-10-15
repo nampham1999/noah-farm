@@ -1,0 +1,14 @@
+{
+  "spawnCount": 10,
+  "pickRadius": 0.85,
+  "xp": 3,
+  "items": [
+    { "id": "forage_mushroom", "icon": "🍄", "sellPrice": 28, "energy": 8, "weight": 3, "seasons": ["spring", "summer", "autumn"] },
+    { "id": "forage_berry", "icon": "🫐", "sellPrice": 22, "energy": 6, "weight": 3, "seasons": ["spring", "summer", "autumn"] },
+    { "id": "forage_herb", "icon": "🌿", "sellPrice": 18, "energy": 5, "weight": 3, "seasons": ["spring", "summer", "autumn", "winter"] },
+    { "id": "forage_flower", "icon": "🌼", "sellPrice": 16, "energy": 3, "weight": 2, "seasons": ["spring", "summer"] },
+    { "id": "forage_chestnut", "icon": "🌰", "sellPrice": 34, "energy": 10, "weight": 3, "seasons": ["autumn", "winter"] },
+    { "id": "forage_pinecone", "icon": "🌲", "sellPrice": 24, "energy": 4, "weight": 3, "seasons": ["autumn", "winter"] },
+    { "id": "forage_honeycomb", "icon": "🍯", "sellPrice": 130, "energy": 25, "weight": 0.4, "seasons": ["spring", "summer", "autumn", "winter"] }
+  ]
+}
