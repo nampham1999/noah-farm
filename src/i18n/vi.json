@@ -709,5 +709,11 @@
   "achievement.a_forage30": "Người đi rừng",
   "achievement.a_forage30.desc": "Hái lượm {n} món trong rừng",
   "achievement.a_forage200": "Bậc thầy hái lượm",
-  "achievement.a_forage200.desc": "Hái lượm {n} món trong rừng"
+  "achievement.a_forage200.desc": "Hái lượm {n} món trong rừng",
+  "food.herb_salad": "Salad thảo mộc",
+  "food.mushroom_stew": "Nấm hầm",
+  "food.roast_chestnut": "Hạt dẻ nướng",
+  "food.berry_tart": "Bánh tart dâu rừng",
+  "food.fruit_pie": "Bánh trái cây",
+  "food.forest_feast": "Mâm cỗ rừng"
 }

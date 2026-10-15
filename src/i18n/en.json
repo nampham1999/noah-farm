@@ -709,5 +709,11 @@
   "achievement.a_forage30": "Woodland wanderer",
   "achievement.a_forage30.desc": "Forage {n} items in the forest",
   "achievement.a_forage200": "Forage master",
-  "achievement.a_forage200.desc": "Forage {n} items in the forest"
+  "achievement.a_forage200.desc": "Forage {n} items in the forest",
+  "food.herb_salad": "Herb salad",
+  "food.mushroom_stew": "Mushroom stew",
+  "food.roast_chestnut": "Roast chestnuts",
+  "food.berry_tart": "Wild berry tart",
+  "food.fruit_pie": "Fruit pie",
+  "food.forest_feast": "Forest feast"
 }

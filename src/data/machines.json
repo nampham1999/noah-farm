@@ -1,18 +1,252 @@
 {
   "machines": [
-    { "id": "preserves", "price": 300, "level": 2, "icon": "🫙", "x": -14.4, "z": -7.2, "minutes": 6 },
-    { "id": "stove", "price": 500, "level": 3, "icon": "🍳", "x": -11.6, "z": -7.2, "minutes": 3 },
-    { "id": "beehive", "price": 800, "level": 4, "icon": "🐝", "x": -15.4, "z": -14.2, "minutes": 12 }
+    {
+      "id": "preserves",
+      "price": 300,
+      "level": 2,
+      "icon": "🫙",
+      "x": -14.4,
+      "z": -7.2,
+      "minutes": 6
+    },
+    {
+      "id": "stove",
+      "price": 500,
+      "level": 3,
+      "icon": "🍳",
+      "x": -11.6,
+      "z": -7.2,
+      "minutes": 3
+    },
+    {
+      "id": "beehive",
+      "price": 800,
+      "level": 4,
+      "icon": "🐝",
+      "x": -15.4,
+      "z": -14.2,
+      "minutes": 12
+    }
   ],
-  "jarFruits": ["strawberry", "watermelon", "tomato"],
-  "honey": { "id": "honey", "sellPrice": 150, "energy": 30, "icon": "🍯" },
+  "jarFruits": [
+    "strawberry",
+    "watermelon",
+    "tomato"
+  ],
+  "honey": {
+    "id": "honey",
+    "sellPrice": 150,
+    "energy": 30,
+    "icon": "🍯"
+  },
   "recipes": [
-    { "id": "omelette", "icon": "🍳", "inputs": [{ "id": "egg", "qty": 2 }], "sellPrice": 55, "energy": 35 },
-    { "id": "grilled_fish", "icon": "🐟", "inputs": [{ "kind": "fish", "qty": 1 }], "sellPrice": 80, "energy": 40 },
-    { "id": "veggie_soup", "icon": "🥣", "inputs": [{ "kind": "crop", "qty": 3 }], "sellPrice": 120, "energy": 45 },
-    { "id": "corn_bread", "icon": "🌽", "inputs": [{ "id": "crop_corn", "qty": 2 }, { "id": "egg", "qty": 1 }], "sellPrice": 210, "energy": 50 },
-    { "id": "pumpkin_soup", "icon": "🎃", "inputs": [{ "id": "crop_pumpkin", "qty": 1 }, { "id": "milk", "qty": 1 }], "sellPrice": 260, "energy": 60 },
-    { "id": "strawberry_cake", "icon": "🍰", "inputs": [{ "id": "crop_strawberry", "qty": 2 }, { "id": "egg", "qty": 1 }, { "id": "milk", "qty": 1 }], "sellPrice": 360, "energy": 80 },
-    { "id": "honey_cake", "icon": "🥞", "inputs": [{ "id": "honey", "qty": 1 }, { "id": "egg", "qty": 1 }, { "id": "milk", "qty": 1 }], "sellPrice": 320, "energy": 70 }
+    {
+      "id": "omelette",
+      "icon": "🍳",
+      "inputs": [
+        {
+          "id": "egg",
+          "qty": 2
+        }
+      ],
+      "sellPrice": 55,
+      "energy": 35
+    },
+    {
+      "id": "grilled_fish",
+      "icon": "🐟",
+      "inputs": [
+        {
+          "kind": "fish",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 80,
+      "energy": 40
+    },
+    {
+      "id": "veggie_soup",
+      "icon": "🥣",
+      "inputs": [
+        {
+          "kind": "crop",
+          "qty": 3
+        }
+      ],
+      "sellPrice": 120,
+      "energy": 45
+    },
+    {
+      "id": "corn_bread",
+      "icon": "🌽",
+      "inputs": [
+        {
+          "id": "crop_corn",
+          "qty": 2
+        },
+        {
+          "id": "egg",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 210,
+      "energy": 50
+    },
+    {
+      "id": "pumpkin_soup",
+      "icon": "🎃",
+      "inputs": [
+        {
+          "id": "crop_pumpkin",
+          "qty": 1
+        },
+        {
+          "id": "milk",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 260,
+      "energy": 60
+    },
+    {
+      "id": "strawberry_cake",
+      "icon": "🍰",
+      "inputs": [
+        {
+          "id": "crop_strawberry",
+          "qty": 2
+        },
+        {
+          "id": "egg",
+          "qty": 1
+        },
+        {
+          "id": "milk",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 360,
+      "energy": 80
+    },
+    {
+      "id": "honey_cake",
+      "icon": "🥞",
+      "inputs": [
+        {
+          "id": "honey",
+          "qty": 1
+        },
+        {
+          "id": "egg",
+          "qty": 1
+        },
+        {
+          "id": "milk",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 320,
+      "energy": 70
+    },
+    {
+      "id": "herb_salad",
+      "icon": "🥗",
+      "inputs": [
+        {
+          "id": "forage_herb",
+          "qty": 2
+        },
+        {
+          "id": "forage_flower",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 70,
+      "energy": 30
+    },
+    {
+      "id": "mushroom_stew",
+      "icon": "🍲",
+      "inputs": [
+        {
+          "id": "forage_mushroom",
+          "qty": 2
+        },
+        {
+          "id": "forage_herb",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 115,
+      "energy": 45
+    },
+    {
+      "id": "roast_chestnut",
+      "icon": "🌰",
+      "inputs": [
+        {
+          "id": "forage_chestnut",
+          "qty": 3
+        }
+      ],
+      "sellPrice": 140,
+      "energy": 40
+    },
+    {
+      "id": "berry_tart",
+      "icon": "🧁",
+      "inputs": [
+        {
+          "id": "forage_berry",
+          "qty": 3
+        },
+        {
+          "id": "egg",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 165,
+      "energy": 50
+    },
+    {
+      "id": "fruit_pie",
+      "icon": "🥧",
+      "inputs": [
+        {
+          "kind": "fruit",
+          "qty": 2
+        },
+        {
+          "id": "egg",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 230,
+      "energy": 55
+    },
+    {
+      "id": "forest_feast",
+      "icon": "🍱",
+      "inputs": [
+        {
+          "id": "forage_mushroom",
+          "qty": 1
+        },
+        {
+          "id": "forage_berry",
+          "qty": 1
+        },
+        {
+          "id": "forage_chestnut",
+          "qty": 1
+        },
+        {
+          "id": "egg",
+          "qty": 1
+        }
+      ],
+      "sellPrice": 340,
+      "energy": 75
+    }
   ]
 }

@@ -1,7 +1,7 @@
 import { bus } from '../core/events.ts'
 import type { GameState, Order } from '../core/state.ts'
 import { mulberry32 } from '../core/random.ts'
-import { ANIMAL_BY_ID, CROPS, FISH, item } from '../data/index.ts'
+import { ANIMAL_BY_ID, CROPS, FISH, item, RECIPES, type RecipeDef } from '../data/index.ts'
 import npcData from '../data/npcs.json'
 import { absDay } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
@@ -72,27 +72,60 @@ function wanted(state: GameState): string[] {
   return [...crops, ...products, ...fish]
 }
 
+/**
+ * Món nấu dân làng có thể xin: chỉ khi đã có bếp, và chỉ món mà người chơi nấu được (có nguyên liệu
+ * đúng mùa / vật nuôi / cây ăn quả / đã từng hái lượm), để đơn không bao giờ bất khả thi.
+ */
+function dishes(state: GameState): string[] {
+  if (!state.machines.some((m) => m.id === 'stove')) return []
+  const crops = CROPS.filter((c) => c.seasons.includes(state.clock.season) && c.level <= state.player.level).map((c) => `crop_${c.id}`)
+  const products = new Set(state.animals.map((a) => ANIMAL_BY_ID.get(a.type)!.product))
+  const canGet = (inp: RecipeDef['inputs'][number]): boolean => {
+    if (inp.kind === 'fish') return FISH.some((f) => state.journal.fish[f.id])
+    if (inp.kind === 'crop') return crops.length > 0
+    if (inp.kind === 'fruit') return state.orchard.length > 0
+    const id = inp.id ?? ''
+    if (id.startsWith('crop_')) return crops.includes(id)
+    if (id.startsWith('forage_')) return state.stats.forage > 0
+    if (id === 'honey') return state.machines.some((m) => m.id === 'beehive')
+    return products.has(id)
+  }
+  return RECIPES.filter((r) => r.inputs.every(canGet)).map((r) => `food_${r.id}`)
+}
+
+/** Xác suất một dòng của đơn mới là món nấu (khi có bếp và có món nấu được). */
+const DISH_CHANCE = 0.35
+
 function randomOrder(state: GameState, rand: () => number): Order | null {
-  const pool = wanted(state)
+  const base = wanted(state)
+  const dishPool = dishes(state)
+  const pool = [...base, ...dishPool]
   if (pool.length === 0) return null
   const busy = new Set(state.orders.list.map((x) => x.npc))
   const free = NPCS.filter((n) => !busy.has(n.id))
   const npc = (free.length ? free : NPCS)[Math.floor(rand() * (free.length || NPCS.length))].id
   const pick = (from: string[]) => from[Math.floor(rand() * from.length)]
+  // Một dòng của đơn: có món nấu thì thỉnh thoảng xin món nấu thay vì nguyên liệu thô.
+  const pickLine = (not?: string): string => {
+    const fromDish = dishPool.length > 0 && (base.length === 0 || rand() < DISH_CHANCE)
+    const list = (fromDish ? dishPool : base).filter((x) => x !== not)
+    return list.length ? pick(list) : pick(pool.filter((x) => x !== not))
+  }
 
   // Số lượng theo cấp và số ô đang có, để đơn làm được trong vài ngày.
   const cap = Math.max(CFG.minQty, Math.floor(state.plots.length * CFG.ownedShare))
   const qtyFor = (id: string) => {
-    const base = item(id).kind === 'crop' ? 3 + 2 * state.player.level : 1 + state.player.level / 3
-    return Math.max(1, Math.min(cap, Math.round(base * (0.7 + rand() * 0.6))))
+    const kind = item(id).kind
+    const n = kind === 'crop' ? 3 + 2 * state.player.level : kind === 'food' ? 1 + state.player.level / 8 : 1 + state.player.level / 3
+    return Math.max(1, Math.min(cap, Math.round(n * (0.7 + rand() * 0.6))))
   }
   let lines: { itemId: string; qty: number }[]
   if (pool.length >= 2 && rand() < 0.3) {
-    const a = pick(pool)
-    const b = pick(pool.filter((x) => x !== a))
+    const a = pickLine()
+    const b = pickLine(a)
     lines = [{ itemId: a, qty: Math.max(1, Math.round(qtyFor(a) * 0.6)) }, { itemId: b, qty: Math.max(1, Math.round(qtyFor(b) * 0.4)) }]
   } else {
-    const a = pick(pool)
+    const a = pickLine()
     lines = [{ itemId: a, qty: qtyFor(a) }]
   }
 
