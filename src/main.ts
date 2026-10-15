@@ -59,9 +59,11 @@ import { joinRoom, presence, sendEmote, sendPose, updateIdentity } from './onlin
 import { attachEmoteButton } from './ui/emotes.ts'
 import { normalizeLook, type Look } from './core/look.ts'
 import { createOrchardView } from './render/orchard.ts'
-import { createRaceBooth } from './render/raceBooth.ts'
+import { createMarketStall, createRaceBooth } from './render/raceBooth.ts'
+import { stallPanel } from './ui/market.ts'
+import { collectSales } from './online/market.ts'
 import { createLabels } from './render/labels.ts'
-import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
+import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, MARKET_STALL, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
 import { GREENHOUSE_PRICE } from './systems/land.ts'
 import { HITCH } from './systems/riding.ts'
 import { racePanel } from './ui/race.ts'
@@ -222,6 +224,13 @@ async function start(): Promise<void> {
   joinMyRoom()
   const orchardView = createOrchardView(world.scene, models)
   const raceBooth = createRaceBooth(world.scene)
+  const marketStall = createMarketStall(world.scene, MARKET_STALL)
+  // Sạp chợ phiên: ở nhà mình thì quản lý sạp mình; đang thăm bạn online thì mua ở sạp bạn.
+  const openStall = () => {
+    if (visiting && !visitFriend) return
+    const owner = visitFriend ? { uid: visitFriend.uid, name: state.player.name } : null
+    openPanel(stallPanel(state, owner, () => (visiting ? { name: myName(), gold: myGold() } : { name: state.player.name, gold: state.player.gold }), visiting))
+  }
   const pestsView = createPestsView(world.scene)
   // Bảng tên nổi trên các chỗ có chức năng, để người chơi biết chỗ nào làm gì.
   const labels = createLabels(world.scene, [
@@ -232,6 +241,7 @@ async function start(): Promise<void> {
     { x: DOCK.x0 + 0.6, y: 1.9, z: DOCK.z, text: () => `🎣 ${t('label.fishing')}` },
     { x: FIELD_GATE_OUT.x, y: 2, z: FIELD_GATE_OUT.z, text: () => `🌱 ${t('label.field')}` },
     { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
+    { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
     { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => state.greenhouse ? `🪴 ${t('shop.greenhouse')}` : `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g` },
     { x: HITCH.x, y: 2.3, z: HITCH.z, text: () => `🐴 ${t('horse.shopName')}`, visible: () => state.horse && !ridingAnimal() },
     ...MACHINES.map((m) => ({
@@ -286,6 +296,8 @@ async function start(): Promise<void> {
         tradesChecked = true
         void refreshTrades(state)
         void watchContests(state)
+        void collectSales(state)
+        window.setInterval(() => void collectSales(state), 120_000)
       }
     })
     attachChatButton(ui, state)
@@ -411,6 +423,7 @@ async function start(): Promise<void> {
     if (visiting) {
       const hit = pickGround(followCam.camera, x, y)
       if (!hit) return
+      if (visitFriend && marketStall.hitTest(followCam.camera, x, y)) return openStall()
       // Nông trại bạn (online): chạm ô có sâu thì bắt giúp, ô cây chín thì hái trộm.
       if (visitFriend && !state.player.indoors && !hit.onHouse) {
         const cell = plotAt(hit.x, hit.z)
@@ -442,6 +455,7 @@ async function start(): Promise<void> {
     const machine = machinesView.hitTest(followCam.camera, x, y)
     if (machine) return interaction.tapMachine(machine)
     if (raceBooth.hitTest(followCam.camera, x, y)) return interaction.tapRace()
+    if (marketStall.hitTest(followCam.camera, x, y)) return openStall()
     const spot = orchardView.hitTest(followCam.camera, x, y)
     if (spot >= 0) return interaction.tapTree(spot)
     const hit = pickGround(followCam.camera, x, y)
@@ -876,6 +890,15 @@ function myIdentity(): { name: string; look: Look | null } {
     // Không đọc được thì dùng tên chung.
   }
   return { name: 'Noah', look: null }
+}
+
+function myGold(): number {
+  try {
+    const raw = localStorage.getItem('cozyfarm.save.v1')
+    return raw ? Number((JSON.parse(raw) as { player?: { gold?: number } }).player?.gold ?? 0) : 0
+  } catch {
+    return 0
+  }
 }
 
 function myName(): string {

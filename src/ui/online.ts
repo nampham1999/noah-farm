@@ -11,6 +11,7 @@ import { closePanel, openPanel } from './panel.ts'
 import { leaderboardPanel } from './leaderboard.ts'
 import { openTradeComposer, renderTrades } from './trade.ts'
 import { openChallenge, renderChallenges } from './contest.ts'
+import { stallPanel } from './market.ts'
 
 /** Bản trên mây mới hơn bản trên máy (chơi ở máy khác): hỏi dùng bản nào. */
 export function askUseCloud(save: ParsedSave): Promise<boolean> {
@@ -232,6 +233,7 @@ function friendRow(state: GameState, f: Profile, refresh: () => void, ui: { gift
     button(`🏡 ${t('online.visit')}`, 'btn small primary', () => {
       location.href = `${location.pathname}#friend=${encodeURIComponent(f.uid)}`
     }),
+    button('🏪', 'btn small', () => openPanel(stallPanel(state, { uid: f.uid, name: f.name }, () => ({ name: state.player.name, gold: state.player.gold }), false))),
     button('🏁', 'btn small', () => openChallenge(state, f)),
     button('🔄', 'btn small', () => openTradeComposer(state, f, refresh)),
     button('🎁', 'btn small gold', () => {

@@ -133,6 +133,8 @@ export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.6 }
 export const VILLAGE = { x: 10.8, z: 14.6, r: 2.2 }
 /** Quầy trường đua chó, góc đông nam cạnh làng. */
 export const RACE_BOOTH = { x: 15.2, z: 11.8, r: 0.6 }
+/** Sạp chợ phiên của người chơi, cạnh đường chính gần cổng. */
+export const MARKET_STALL = { x: 7.9, z: 16.8, r: 0.9 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
 export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
 
@@ -291,6 +293,7 @@ export const OBSTACLES: Circle[] = [
   HOUSE,
   GREENHOUSE,
   RACE_BOOTH,
+  MARKET_STALL,
   // Gốc cây ăn quả ở các ô vườn.
   ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 0.45 })),
   // Chái phía tây của nhà cấp 4, 5.
@@ -351,6 +354,7 @@ function isReserved(x: number, z: number, margin: number): boolean {
     ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 1.4 })),
     { x: GREENHOUSE.x, z: GREENHOUSE.z, r: GREENHOUSE.r + 0.6 },
     { x: RACE_BOOTH.x, z: RACE_BOOTH.z, r: 1.6 },
+    { x: MARKET_STALL.x, z: MARKET_STALL.z, r: 1.8 },
     { x: GH_BED.x, z: GH_BED.z, r: 3.4 },
     ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 1.8 })),
     { x: STALL.x, z: STALL.z, r: STALL_HALF_WIDTH + 0.5 },

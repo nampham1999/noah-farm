@@ -643,5 +643,22 @@
   "steal.caught": "🐶 Their dog chased you off! {gold} gold fine",
   "steal.stolen": "😤 {name} sneaked 1 {item} from your field!",
   "steal.dogChased": "🐶 Your dog chased {name} away! You got {gold} gold",
-  "online.visitReward": "🎒 Back home! Got {gold} gold and {items} from your visit"
+  "online.visitReward": "🎒 Back home! Got {gold} gold and {items} from your visit",
+  "market.label": "Market stall",
+  "market.mine": "Your stall",
+  "market.of": "{name}'s stall",
+  "market.ownerHint": "Put up to 6 items on sale at your own prices. Friends can buy any time; you collect the gold when you play.",
+  "market.buyHint": "Buy what your friend is selling. Gold goes straight to them.",
+  "market.add": "Sell item",
+  "market.empty": "Empty",
+  "market.buy": "Buy",
+  "market.unlist": "Take back",
+  "market.soldTo": "Sold to {name}",
+  "market.qty": "Quantity",
+  "market.price": "Price (gold)",
+  "market.list": "Sell {qty} {item} for {price}g",
+  "market.listed": "🏪 Listed {qty} {item} for {price}g",
+  "market.sold": "🏪 {name} bought {qty} {item} at your stall: +{price} gold",
+  "market.bought": "🛍️ Bought {qty} {item} ({price}g)",
+  "market.gone": "Someone just bought that!"
 }

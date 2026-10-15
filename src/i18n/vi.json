@@ -643,5 +643,22 @@
   "steal.caught": "🐶 Bị chó nhà bạn đuổi! Mất {gold} vàng tiền phạt",
   "steal.stolen": "😤 {name} vừa hái trộm 1 {item} của bạn!",
   "steal.dogChased": "🐶 Chó nhà bạn đuổi {name} chạy mất dép! Nhận {gold} vàng tiền phạt",
-  "online.visitReward": "🎒 Về nhà rồi! Nhận {gold} vàng và {items} từ chuyến đi thăm"
+  "online.visitReward": "🎒 Về nhà rồi! Nhận {gold} vàng và {items} từ chuyến đi thăm",
+  "market.label": "Sạp hàng",
+  "market.mine": "Sạp của bạn",
+  "market.of": "Sạp của {name}",
+  "market.ownerHint": "Bày tối đa 6 món với giá tự đặt. Bạn bè ghé mua lúc nào cũng được; tiền tự về khi bạn vào game.",
+  "market.buyHint": "Mua đồ bạn bày bán. Tiền trả thẳng cho chủ sạp.",
+  "market.add": "Bày món",
+  "market.empty": "Trống",
+  "market.buy": "Mua",
+  "market.unlist": "Cất",
+  "market.soldTo": "Đã bán cho {name}",
+  "market.qty": "Số lượng",
+  "market.price": "Giá (vàng)",
+  "market.list": "Bày {qty} {item} giá {price}g",
+  "market.listed": "🏪 Đã bày {qty} {item} giá {price}g",
+  "market.sold": "🏪 {name} mua {qty} {item} ở sạp của bạn: +{price} vàng",
+  "market.bought": "🛍️ Đã mua {qty} {item} ({price}g)",
+  "market.gone": "Món này vừa có người mua mất rồi!"
 }

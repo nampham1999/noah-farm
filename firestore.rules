@@ -97,6 +97,16 @@ service cloud.firestore {
         && request.resource.data.amount is int && request.resource.data.amount <= 500;
     }
 
+    // Chợ phiên: chủ sạp bày/cất/thu tiền; người khác chỉ được mua (còn → đã bán, ghi tên mình).
+    match /stalls/{uid}/listings/{slot} {
+      allow read: if signedIn();
+      allow create, delete: if isMe(uid);
+      allow update: if isMe(uid)
+        || (signedIn() && resource.data.sold == false && request.resource.data.sold == true
+            && request.resource.data.buyer == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sold', 'buyer', 'buyerName']));
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();
