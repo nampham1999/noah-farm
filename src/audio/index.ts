@@ -15,7 +15,7 @@ const PROGRESS_SFX: Partial<Record<string, SfxName>> = {
 const NOTICE_SFX: Partial<Record<string, SfxName>> = {
   'quest.done': 'quest', 'quest.dailyDone': 'quest', 'quest.allDaily': 'levelUp', 'quest.tutorialDone': 'levelUp',
   'achievement.unlocked': 'levelUp', 'clock.newDay': 'newDay', 'fish.escaped': 'escape', 'fish.missed': 'escape',
-  'animal.bought': 'coin', 'animal.coopBuilt': 'coin', 'animal.coopUpgraded': 'coin', 'house.bought': 'coin', 'house.upgraded': 'levelUp', 'greenhouse.built': 'levelUp', 'festival.done': 'levelUp', 'friend.heartUp': 'quest', 'friend.letter': 'levelUp', 'contest.win': 'levelUp', 'contest.teamFish': 'quest', 'land.bought': 'coin',
+  'animal.bought': 'coin', 'animal.coopBuilt': 'coin', 'animal.coopUpgraded': 'coin', 'house.bought': 'coin', 'house.upgraded': 'levelUp', 'greenhouse.built': 'levelUp', 'festival.done': 'levelUp', 'friend.heartUp': 'quest', 'friend.letter': 'levelUp', 'contest.win': 'levelUp', 'contest.teamFish': 'quest', 'steal.stolen': 'escape', 'pest.appeared': 'error', 'land.bought': 'coin',
   'notice.noGold': 'error', 'notice.bagFull': 'error', 'notice.locked': 'error', 'decor.cantPlace': 'error',
   'animal.needHay': 'error', 'notice.noSeeds': 'error', 'fish.tooEarly': 'error',
 }

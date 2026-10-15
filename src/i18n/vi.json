@@ -634,5 +634,14 @@
   "label.buildCoop": "Xây chuồng · {price}g",
   "label.fishing": "Câu cá",
   "label.field": "Ruộng",
-  "label.orchard": "Trồng cây"
+  "label.orchard": "Trồng cây",
+  "pest.appeared": "🐛 Có sâu bò vào ruộng! Cây bị sâu sẽ ngừng lớn. Chạm vào ô có sâu để bắt.",
+  "pest.removed": "🐛 Đã bắt sâu!",
+  "pest.helped": "🐛 Đã bắt sâu giúp bạn! Về nhà nhận {gold} vàng",
+  "pest.friendHelped": "🐛 {name} đã ghé bắt sâu giúp ruộng của bạn!",
+  "steal.done": "🥕 Hái trộm được 1 {item}! Về nhà sẽ có trong túi 😏",
+  "steal.caught": "🐶 Bị chó nhà bạn đuổi! Mất {gold} vàng tiền phạt",
+  "steal.stolen": "😤 {name} vừa hái trộm 1 {item} của bạn!",
+  "steal.dogChased": "🐶 Chó nhà bạn đuổi {name} chạy mất dép! Nhận {gold} vàng tiền phạt",
+  "online.visitReward": "🎒 Về nhà rồi! Nhận {gold} vàng và {items} từ chuyến đi thăm"
 }

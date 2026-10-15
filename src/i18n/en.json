@@ -634,5 +634,14 @@
   "label.buildCoop": "Build coop · {price}g",
   "label.fishing": "Fishing",
   "label.field": "Field",
-  "label.orchard": "Plant a tree"
+  "label.orchard": "Plant a tree",
+  "pest.appeared": "🐛 Bugs got into the field! A crop with bugs stops growing. Tap it to remove them.",
+  "pest.removed": "🐛 Bugs removed!",
+  "pest.helped": "🐛 You removed your friend's bugs! Get {gold} gold back home",
+  "pest.friendHelped": "🐛 {name} came by and removed the bugs from your field!",
+  "steal.done": "🥕 You sneaked 1 {item}! It'll be in your bag back home 😏",
+  "steal.caught": "🐶 Their dog chased you off! {gold} gold fine",
+  "steal.stolen": "😤 {name} sneaked 1 {item} from your field!",
+  "steal.dogChased": "🐶 Your dog chased {name} away! You got {gold} gold",
+  "online.visitReward": "🎒 Back home! Got {gold} gold and {items} from your visit"
 }

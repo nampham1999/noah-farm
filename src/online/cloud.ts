@@ -47,7 +47,7 @@ export interface InboxItem {
   from: string
   fromName: string
   /** gift: quà hằng ngày; help: tưới giúp; note: sổ khách; give: gửi đồ cho lời nhờ giúp. */
-  kind: 'gift' | 'help' | 'note' | 'give'
+  kind: 'gift' | 'help' | 'note' | 'give' | 'steal' | 'pest'
   item?: string
   qty?: number
   /** Sổ khách: khoá câu chúc (vd. guest.p1) để chủ nhà đọc đúng ngôn ngữ của mình. */

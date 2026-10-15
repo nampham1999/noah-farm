@@ -1,6 +1,6 @@
 import './style.css'
 import * as THREE from 'three'
-import type { Season, Weather } from './core/state.ts'
+import type { PlotState, Season, Weather } from './core/state.ts'
 import { addItem, countItem } from './systems/inventory.ts'
 import { blockPlots, greenhousePlots } from './core/state.ts'
 import { ANIMAL_BY_ID, animalData, CROPS, DAY_MS, FRUIT_TREES, MACHINES, ORCHARD, type AnimalType } from './data/index.ts'
@@ -70,7 +70,9 @@ import { createFestivalView } from './render/festival.ts'
 import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
 import { attachNotifications } from './systems/notifications.ts'
-import { loadFriendFarm, online, sendHelp, startOnline } from './online/online.ts'
+import { helpPest, loadFriendFarm, online, sendHelp, setVisitName, startOnline, stealCrop } from './online/online.ts'
+import { pestsNewDay } from './systems/pests.ts'
+import { createPestsView } from './render/pests.ts'
 import { askUseCloud, guestbookPanel } from './ui/online.ts'
 import { announce, startChat } from './online/chat.ts'
 import { refreshTrades } from './online/trade.ts'
@@ -83,7 +85,7 @@ import { OLD_DEFAULT_NAME } from './core/names.ts'
 import { fox, scareFox, updateFox } from './systems/fox.ts'
 import { festivalNewDay, onFestivalProgress } from './systems/festival.ts'
 import { onFriendProgress } from './systems/friendship.ts'
-import { updateCrops } from './systems/farming.ts'
+import { isRipe, updateCrops } from './systems/farming.ts'
 import { Interaction } from './systems/interaction.ts'
 import { cameraRelative, movePlayer, WALK_SPEED } from './systems/movement.ts'
 import { applyOfflineProgress } from './systems/offline.ts'
@@ -137,6 +139,31 @@ async function start(): Promise<void> {
   const offline = applyOfflineProgress(state, savedAt, now())
   if (!visiting) applyTestParams(state)
 
+  if (visiting) setVisitName(myName())
+  /** Đang thăm bạn: bắt sâu giúp / hái trộm ô vừa chạm; trả về true nếu đã xử lý. */
+  const visitPlotAction = (plot: PlotState): boolean => {
+    const friend = visitFriend
+    if (!friend) return false
+    const key = `${plot.x},${plot.z}`
+    if (state.pests.includes(key)) {
+      void helpPest(friend.uid, key).then((ok) => {
+        if (ok) state.pests.splice(state.pests.indexOf(key), 1)
+      })
+      return true
+    }
+    if (plot.crop && isRipe(plot)) {
+      const cropItem = `crop_${plot.crop}`
+      void stealCrop(state, friend.uid, key, cropItem).then((r) => {
+        if (r === 'stolen') {
+          plot.crop = null
+          plot.stage = 0
+          plot.wateredAt = null
+        }
+      })
+      return true
+    }
+    return false
+  }
   const world = createWorld(app, models)
   const canvas = world.renderer.domElement
   const followCam = new FollowCamera(window.innerWidth / window.innerHeight)
@@ -195,6 +222,7 @@ async function start(): Promise<void> {
   joinMyRoom()
   const orchardView = createOrchardView(world.scene, models)
   const raceBooth = createRaceBooth(world.scene)
+  const pestsView = createPestsView(world.scene)
   // Bảng tên nổi trên các chỗ có chức năng, để người chơi biết chỗ nào làm gì.
   const labels = createLabels(world.scene, [
     { x: STALL.x, y: 3.9, z: STALL.z, text: () => `🛒 ${t('label.shop')}` },
@@ -369,6 +397,7 @@ async function start(): Promise<void> {
   bus.on('newDay', () => {
     animalsNewDay(state, now())
     petNewDay(state)
+    if (!visiting) pestsNewDay(state)
     festivalNewDay(state)
     ensureDaily(state)
     if (!visiting) refillOrders(state)
@@ -381,7 +410,14 @@ async function start(): Promise<void> {
     // Đang thăm: chỉ đi lại và vào xem nhà.
     if (visiting) {
       const hit = pickGround(followCam.camera, x, y)
-      if (hit) interaction.tapWorld(hit.x, hit.z, false, hit.onHouse && !state.player.indoors)
+      if (!hit) return
+      // Nông trại bạn (online): chạm ô có sâu thì bắt giúp, ô cây chín thì hái trộm.
+      if (visitFriend && !state.player.indoors && !hit.onHouse) {
+        const cell = plotAt(hit.x, hit.z)
+        const plot = cell && state.plots.find((p) => p.x === cell.x && p.z === cell.z)
+        if (plot && visitPlotAction(plot)) return
+      }
+      interaction.tapWorld(hit.x, hit.z, false, hit.onHouse && !state.player.indoors)
       return
     }
     // Đang câu: chạm là giật cần (sớm quá thì thu cần).
@@ -677,6 +713,7 @@ async function start(): Promise<void> {
     orchardView.update(state, t, clock.getElapsed())
     festivalView.update(state, clock.getElapsed())
     labels.update(playerPos, state.player.indoors, dt)
+    pestsView.update(state, clock.getElapsed())
     foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.

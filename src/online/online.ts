@@ -7,7 +7,8 @@ import { parseSave, serialize, type ParsedSave } from '../save/format.ts'
 import type { SaveStore } from '../save/SaveStore.ts'
 import { needsWater } from '../systems/farming.ts'
 import { addItem, canFit, countItem, removeItem } from '../systems/inventory.ts'
-import { item } from '../data/index.ts'
+import { balance, item, ITEMS } from '../data/index.ts'
+import { itemName } from '../i18n/index.ts'
 import { gainXp } from '../systems/progress.ts'
 import { Cloud, CloudError, type CloudErrorCode, type HelpRequest, type Profile } from './cloud.ts'
 
@@ -54,6 +55,12 @@ export const GUEST_LINES = 8
 /** Thưởng cho người gửi đồ giúp: giá bán của món + chừng này vàng mỗi món, và XP. */
 const GIVE_BONUS = 10
 const GIVE_XP = 4
+/** Hái trộm: nhà có chó thì khả năng bị đuổi, và tiền phạt (về tay chủ nhà). */
+const STEAL_DOG_CHANCE = 0.5
+const STEAL_FINE = 30
+/** Bắt sâu giúp bạn: thưởng cho người bắt. */
+const PEST_GOLD = 30
+const PEST_XP = 5
 
 export const online = {
   status: 'off' as OnlineStatus,
@@ -202,6 +209,24 @@ async function readInbox(state: GameState): Promise<void> {
       state.guestbook.unshift({ from: it.fromName, text: it.text, at: Date.now() })
       state.guestbook.length = Math.min(state.guestbook.length, GUESTBOOK_MAX)
       bus.emit('notify', { key: 'guest.got', params: { name: it.fromName, text: it.text }, good: true })
+    } else if (it.kind === 'steal') {
+      if (it.text === 'caught') {
+        state.player.gold += STEAL_FINE
+        bus.emit('notify', { key: 'steal.dogChased', params: { name: it.fromName, gold: STEAL_FINE }, good: true })
+      } else {
+        // Cây đó còn chín thì mất thật; không còn (đã thu hoạch) thì chỉ báo.
+        const plot = state.plots.find((p) => `${p.x},${p.z}` === it.text)
+        if (plot?.crop && plot.stage >= balance.cropStages && `crop_${plot.crop}` === it.item) {
+          plot.crop = null
+          plot.stage = 0
+          plot.wateredAt = null
+        }
+        bus.emit('notify', { key: 'steal.stolen', params: { name: it.fromName, item: it.item ?? '' } })
+      }
+    } else if (it.kind === 'pest' && it.text) {
+      const i = state.pests.indexOf(it.text)
+      if (i >= 0) state.pests.splice(i, 1)
+      bus.emit('notify', { key: 'pest.friendHelped', params: { name: it.fromName }, good: true })
     } else if (it.kind === 'help') {
       const t = now()
       const thirsty = state.plots.filter(needsWater).slice(0, HELP_PLOTS)
@@ -236,28 +261,61 @@ export async function sendHelp(fromName: string, friendUid: string, friendName: 
     notifyError(e)
     return false
   }
-  try {
-    const n = Number(localStorage.getItem(PENDING_KEY) ?? 0)
-    localStorage.setItem(PENDING_KEY, String(n + 1))
-  } catch {
-    // Không lưu được thưởng chờ thì thôi, việc tưới giúp vẫn đã gửi.
-  }
+  addPending({ gold: HELP_GOLD, xp: HELP_XP })
   bus.emit('notify', { key: 'online.helpSent', params: { name: friendName, gold: HELP_GOLD }, good: true })
   return true
 }
 
-function claimHelpReward(state: GameState): void {
-  let n = 0
+/**
+ * Phần thưởng chờ nhận: kiếm được lúc đang thăm nông trại bạn (trạng thái đang mở là của bạn),
+ * cộng vào nông trại của mình lần sau về nhà. Vàng có thể âm (tiền phạt bị chó đuổi).
+ */
+interface Pending {
+  gold: number
+  xp: number
+  items: Record<string, number>
+}
+const PENDING_ALL_KEY = 'noahfarm.pending'
+
+export function addPending(add: { gold?: number; xp?: number; item?: string; qty?: number }): void {
   try {
-    n = Number(localStorage.getItem(PENDING_KEY) ?? 0)
+    const p: Pending = JSON.parse(localStorage.getItem(PENDING_ALL_KEY) ?? '{"gold":0,"xp":0,"items":{}}')
+    p.gold += add.gold ?? 0
+    p.xp += add.xp ?? 0
+    if (add.item) p.items[add.item] = (p.items[add.item] ?? 0) + (add.qty ?? 1)
+    localStorage.setItem(PENDING_ALL_KEY, JSON.stringify(p))
+  } catch {
+    // Không lưu được thì thôi.
+  }
+}
+
+function claimHelpReward(state: GameState): void {
+  let p: Pending = { gold: 0, xp: 0, items: {} }
+  try {
+    // Bản cũ chỉ đếm số lượt tưới giúp.
+    const old = Number(localStorage.getItem(PENDING_KEY) ?? 0)
+    if (old > 0) {
+      p.gold += old * HELP_GOLD
+      p.xp += old * HELP_XP
+    }
     localStorage.removeItem(PENDING_KEY)
+    const raw = localStorage.getItem(PENDING_ALL_KEY)
+    if (raw) {
+      const saved = JSON.parse(raw) as Pending
+      p = { gold: p.gold + saved.gold, xp: p.xp + saved.xp, items: saved.items ?? {} }
+    }
+    localStorage.removeItem(PENDING_ALL_KEY)
   } catch {
     return
   }
-  if (!(n > 0)) return
-  state.player.gold += n * HELP_GOLD
-  gainXp(state, n * HELP_XP)
-  setTimeout(() => bus.emit('notify', { key: 'online.helpReward', params: { gold: n * HELP_GOLD }, good: true }), 2000)
+  const items = Object.entries(p.items).filter(([id, n]) => n > 0 && ITEMS.has(id))
+  if (!p.gold && !p.xp && !items.length) return
+  state.player.gold = Math.max(0, state.player.gold + p.gold)
+  if (p.xp > 0) gainXp(state, p.xp)
+  for (const [id, n] of items) if (canFit(state.inventory, id, n)) addItem(state.inventory, id, n)
+  const what = items.map(([id, n]) => `${n} ${itemName(id)}`).join(', ')
+  setTimeout(() => bus.emit('notify', { key: 'online.visitReward', params: { gold: p.gold, items: what || '—' }, good: true }), 2000)
+  bus.emit('saveRequest', undefined)
 }
 
 export function notifyError(e: unknown): void {
@@ -349,5 +407,51 @@ export async function cancelRequest(): Promise<void> {
   } catch (e) {
     notifyError(e)
   }
+}
+
+/** Thăm bạn: hái trộm một cây chín (mỗi bạn mỗi ngày một lần). Nhà có chó thì có thể bị đuổi, mất tiền phạt. */
+export async function stealCrop(visited: GameState, friendUid: string, plotKey: string, cropItem: string): Promise<'stolen' | 'caught' | 'failed'> {
+  const cloud = online.cloud
+  if (!cloud) return 'failed'
+  const caught = visited.pet !== null && Math.random() < STEAL_DOG_CHANCE
+  try {
+    await cloud.send(friendUid, 'steal', myVisitName(), caught ? { text: 'caught' } : { item: cropItem, text: plotKey })
+  } catch (e) {
+    notifyError(e)
+    return 'failed'
+  }
+  if (caught) {
+    addPending({ gold: -STEAL_FINE })
+    bus.emit('sfx', 'dog')
+    bus.emit('notify', { key: 'steal.caught', params: { gold: STEAL_FINE } })
+    return 'caught'
+  }
+  addPending({ item: cropItem, qty: 1 })
+  bus.emit('notify', { key: 'steal.done', params: { item: cropItem }, good: true })
+  return 'stolen'
+}
+
+/** Thăm bạn: bắt sâu giúp (mỗi bạn mỗi ngày một lần); mình được thưởng khi về nhà. */
+export async function helpPest(friendUid: string, plotKey: string): Promise<boolean> {
+  const cloud = online.cloud
+  if (!cloud) return false
+  try {
+    await cloud.send(friendUid, 'pest', myVisitName(), { text: plotKey })
+  } catch (e) {
+    notifyError(e)
+    return false
+  }
+  addPending({ gold: PEST_GOLD, xp: PEST_XP })
+  bus.emit('notify', { key: 'pest.helped', params: { gold: PEST_GOLD }, good: true })
+  return true
+}
+
+/** Tên của mình khi đang thăm (đọc từ bản lưu trên máy). */
+let visitName = 'Noah'
+export function setVisitName(name: string): void {
+  visitName = name
+}
+function myVisitName(): string {
+  return visitName
 }
 

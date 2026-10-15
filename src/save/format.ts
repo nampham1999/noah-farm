@@ -159,6 +159,7 @@ function normalize(data: Record<string, unknown>): GameState {
     pet: normalizePet(data.pet),
     greenhouse,
     horse: data.horse === true,
+    pests: (Array.isArray(data.pests) ? data.pests : []).filter((k): k is string => typeof k === 'string' && /^-?\d+,-?\d+$/.test(k)).slice(0, 5),
     race: (() => {
       const r = obj(data.race)
       return typeof r.id === 'number' && typeof r.dog === 'number' && typeof r.amount === 'number'

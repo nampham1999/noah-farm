@@ -33,7 +33,7 @@ service cloud.firestore {
         allow create: if signedIn()
           && request.resource.data.from == request.auth.uid
           && request.resource.data.read == false
-          && id.matches(request.auth.uid + '_((gift|help|note)_[0-9]{8}|give_[0-9]+)')
+          && id.matches(request.auth.uid + '_((gift|help|note|steal|pest)_[0-9]{8}|give_[0-9]+)')
           && exists(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid));
       }
     }

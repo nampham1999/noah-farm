@@ -49,7 +49,8 @@ export function updateCrops(state: GameState, t: number, prevT = t): void {
   for (const plot of state.plots) {
     const crop = cropOf(plot)
     if (!crop) continue
-    if (!crop.seasons.includes(state.clock.season) && !inGreenhouse(plot.x, plot.z)) {
+    // Trái mùa (ngoài nhà kính) hoặc bị sâu thì đứng yên: dời mốc thời gian theo.
+    if ((!crop.seasons.includes(state.clock.season) && !inGreenhouse(plot.x, plot.z)) || state.pests.includes(`${plot.x},${plot.z}`)) {
       if (plot.stage < STAGES && t > prevT) {
         plot.stageStartedAt += t - prevT
         if (plot.wateredAt !== null) plot.wateredAt += t - prevT
@@ -109,6 +110,13 @@ export function actionFor(plot: PlotState): PlotAction | null {
 
 /** Làm việc phù hợp với ô đất. Trả về true nếu có thay đổi. */
 export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean {
+  const pestKey = `${plot.x},${plot.z}`
+  if (state.pests.includes(pestKey)) {
+    state.pests.splice(state.pests.indexOf(pestKey), 1)
+    bus.emit('notify', { key: 'pest.removed', good: true })
+    bus.emit('sfx', 'harvest')
+    return true
+  }
   const action = actionFor(plot)
   const inv = state.inventory
 
