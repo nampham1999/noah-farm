@@ -118,6 +118,8 @@ export function dayKey(d = new Date()): string {
 }
 
 const REDIRECT_KEY = 'noahfarm.googleRedirect'
+/** Vừa đăng nhập sang một tài khoản Google đã có từ trước: lần khởi động kế tiếp phải lấy bản lưu của tài khoản đó. */
+export const SWITCHED_KEY = 'noahfarm.switchedAccount'
 
 export class Cloud {
   private readonly authLib: Auth
@@ -150,7 +152,10 @@ export class Cloud {
         } catch (e) {
           // Tài khoản Google này đã có người chơi ở máy khác: đăng nhập thẳng vào tài khoản đó.
           const cred = authLib.GoogleAuthProvider.credentialFromError(e as import('firebase/auth').AuthError)
-          if (cred) await authLib.signInWithCredential(auth, cred)
+          if (cred) {
+            await authLib.signInWithCredential(auth, cred)
+            localStorage.setItem(SWITCHED_KEY, '1')
+          }
           else console.warn('Redirect sign-in failed', e)
         }
       }
@@ -194,6 +199,7 @@ export class Cloud {
       if (code === 'auth/credential-already-in-use' || code === 'auth/provider-already-linked') {
         try {
           await signInWithPopup(this.auth, provider)
+          localStorage.setItem(SWITCHED_KEY, '1')
           return 'switched'
         } catch (e2) {
           throw wrap(e2)

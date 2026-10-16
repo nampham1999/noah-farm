@@ -10,7 +10,7 @@ import { addItem, canFit, countItem, removeItem } from '../systems/inventory.ts'
 import { balance, item, ITEMS } from '../data/index.ts'
 import { itemName } from '../i18n/index.ts'
 import { gainXp } from '../systems/progress.ts'
-import { Cloud, CloudError, type CloudErrorCode, type HelpRequest, type Profile } from './cloud.ts'
+import { Cloud, CloudError, SWITCHED_KEY, type CloudErrorCode, type HelpRequest, type Profile } from './cloud.ts'
 
 /**
  * Chơi cùng bạn bè qua Firebase: lưu đám mây, mã bạn bè, thăm nông trại bạn (bản mới nhất),
@@ -127,6 +127,20 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
     await syncProfile(state)
     // Bản trên mây mới hơn (chơi ở máy khác): hỏi có dùng không.
     const remote = await cloud.downloadSave()
+    // Vừa đăng nhập vào tài khoản Google đã có: dùng luôn bản lưu của tài khoản đó (không hỏi), giữ bản cũ trên máy để khôi phục.
+    const switched = localStorage.getItem(SWITCHED_KEY) !== null
+    localStorage.removeItem(SWITCHED_KEY)
+    if (switched && remote) {
+      try {
+        localStorage.setItem('noahfarm.preSwitchSave', store.exportText(state, Date.now()))
+      } catch {
+        /* hết chỗ lưu: bỏ qua bản dự phòng */
+      }
+      autosaver.suspend()
+      await store.replace(await gunzipBase64Url(remote.data))
+      location.reload()
+      return
+    }
     if (remote && remote.savedAt > Math.max(localSavedAt, autosaver.lastSavedAt) + NEWER_MS) {
       const parsed = await decodeSave(remote.data)
       if (await askUseCloud(parsed)) {
