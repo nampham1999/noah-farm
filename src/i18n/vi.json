@@ -825,5 +825,9 @@
   "mb.sent": "đã xếp",
   "mb.arranging": "đang xếp…",
   "save.deviceHintAnon": "Lưu ý: mã/tệp sao lưu chỉ chép dữ liệu game sang máy khác, mỗi máy vẫn là một tài khoản online riêng nên tiến trình sẽ không tự đồng bộ giữa các máy. Muốn dùng một tài khoản trên nhiều máy, hãy đăng nhập Google (Bạn bè → Đăng nhập Google) ở mọi máy.",
-  "save.deviceHintGoogle": "Bạn đã đăng nhập Google: đăng nhập cùng tài khoản trên máy khác là tự có bản mới nhất, không cần mã sao lưu."
+  "save.deviceHintGoogle": "Bạn đã đăng nhập Google: đăng nhập cùng tài khoản trên máy khác là tự có bản mới nhất, không cần mã sao lưu.",
+  "online.google.domain": "Đăng nhập Google bị chặn: tên miền {host} chưa được cho phép. Người quản trị cần vào Firebase → Authentication → Settings → Authorized domains và thêm {host}.",
+  "online.google.setup": "Đăng nhập Google chưa được bật. Người quản trị cần vào Firebase → Authentication → Sign-in method và bật Google.",
+  "online.google.popup": "Cửa sổ đăng nhập Google bị chặn hoặc bị đóng. Hãy cho phép cửa sổ bật lên (popup) cho trang này rồi thử lại, hoặc mở game bằng trình duyệt thường thay vì ứng dụng đã cài.",
+  "online.google.other": "Đăng nhập Google chưa được. Thử lại, hoặc mở game bằng trình duyệt thường."
 }

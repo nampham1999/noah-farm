@@ -1,7 +1,7 @@
 import { bus } from '../core/events.ts'
 import type { GameState } from '../core/state.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
-import { ONLINE_WINDOW_MS, type Profile } from '../online/cloud.ts'
+import { CloudError, ONLINE_WINDOW_MS, type Profile } from '../online/cloud.ts'
 import { cancelRequest, connect, onlineDisabled, setOnlineDisabled, giveToRequest, GUEST_LINES, notifyError, online, refreshFriends, sendGift, sendNote } from '../online/online.ts'
 import type { ParsedSave } from '../save/format.ts'
 import { giftable } from '../systems/friendship.ts'
@@ -81,16 +81,27 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
   }))
   if (acc.anonymous) {
     accRow.append(button(`🔑 ${t('online.google')}`, 'btn gold', () => {
+      authError = null
       void cloud.signInGoogle().then(
         // Đổi sang tài khoản đã chơi ở máy khác: tải lại để lấy bản lưu trên mây.
         (r) => (r === 'switched' ? location.reload() : refresh()),
-        (e: unknown) => notifyError(e),
+        (e: unknown) => {
+          // Thông báo nổi nằm dưới cửa sổ này nên không thấy được: hiện lỗi ngay trong cửa sổ.
+          authError = authErrorText(e)
+          notifyError(e)
+          refresh()
+        },
       )
     }))
   }
   accRow.append(button(`🏆 ${t('rank.title')}`, 'btn', () => openPanel(leaderboardPanel(state))))
   accRow.append(button(`🏘️ ${t('village.button')}`, 'btn', () => openPanel(villagePanel(state))))
   box.append(accRow)
+  if (authError) {
+    const err = note(authError)
+    err.style.color = '#b3321f'
+    box.append(err)
+  }
   box.append(note(acc.anonymous ? t('online.anonHint') : t('online.signedIn', { email: acc.email ?? 'Google' })))
 
   // Kết bạn bằng mã.
@@ -292,4 +303,14 @@ function button(label: string, className: string, onClick: () => void): HTMLButt
   b.textContent = label
   b.addEventListener('click', onClick)
   return b
+}
+
+let authError: string | null = null
+
+/** Lý do đăng nhập Google lỗi, kèm cách sửa (và mã lỗi gốc để dễ tra). */
+function authErrorText(e: unknown): string {
+  const code = e instanceof CloudError ? e.code : 'other'
+  const raw = ((e as { cause?: { code?: string } })?.cause?.code ?? '').replace('auth/', '')
+  const key = code === 'domain' ? 'online.google.domain' : code === 'setup' ? 'online.google.setup' : code === 'popup' ? 'online.google.popup' : 'online.google.other'
+  return `${t(key, { host: location.hostname })}${raw ? ` (${raw})` : ''}`
 }

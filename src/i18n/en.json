@@ -825,5 +825,9 @@
   "mb.sent": "ready",
   "mb.arranging": "arranging…",
   "save.deviceHintAnon": "Note: backup codes/files only copy game data. Each device is still its own online account, so progress won't sync between devices. To use one account on several devices, sign in with Google (Friends → Google sign-in) on each.",
-  "save.deviceHintGoogle": "You're signed in with Google: signing in with the same account on another device gives you the latest save, no backup code needed."
+  "save.deviceHintGoogle": "You're signed in with Google: signing in with the same account on another device gives you the latest save, no backup code needed.",
+  "online.google.domain": "Google sign-in blocked: the domain {host} isn't allowed yet. The admin must add {host} in Firebase → Authentication → Settings → Authorized domains.",
+  "online.google.setup": "Google sign-in isn't enabled. The admin must enable Google in Firebase → Authentication → Sign-in method.",
+  "online.google.popup": "The Google sign-in window was blocked or closed. Allow pop-ups for this site and try again, or open the game in a normal browser instead of the installed app.",
+  "online.google.other": "Google sign-in failed. Try again, or open the game in a normal browser."
 }

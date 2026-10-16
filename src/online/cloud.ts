@@ -87,7 +87,7 @@ export interface Account {
   email: string | null
 }
 
-export type CloudErrorCode = 'offline' | 'notFound' | 'already' | 'denied' | 'setup' | 'popup' | 'other'
+export type CloudErrorCode = 'offline' | 'notFound' | 'already' | 'denied' | 'setup' | 'domain' | 'popup' | 'other'
 
 export class CloudError extends Error {
   readonly code: CloudErrorCode
@@ -103,7 +103,8 @@ function wrap(e: unknown): CloudError {
   const code = (e as { code?: string })?.code ?? ''
   if (code.includes('permission-denied')) return new CloudError('denied', e)
   if (code.includes('unavailable') || code.includes('network')) return new CloudError('offline', e)
-  if (code.includes('configuration-not-found') || code.includes('operation-not-allowed') || code.includes('unauthorized-domain')) return new CloudError('setup', e)
+  if (code.includes('unauthorized-domain')) return new CloudError('domain', e)
+  if (code.includes('configuration-not-found') || code.includes('operation-not-allowed')) return new CloudError('setup', e)
   if (code.includes('popup')) return new CloudError('popup', e)
   return new CloudError('other', e)
 }
