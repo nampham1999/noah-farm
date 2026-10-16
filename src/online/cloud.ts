@@ -16,7 +16,12 @@ export const FIREBASE_CONFIG = {
   /** Realtime Database (vị trí người chơi khi gặp nhau); để trống thì tắt tính năng gặp nhau. */
   databaseURL: 'https://nsoft-dfe66-default-rtdb.asia-southeast1.firebasedatabase.app',
   apiKey: 'AIzaSyBpppO6xa2Uc00Jv194RD36sWudtUmFkgk',
-  authDomain: 'nsoft-dfe66.firebaseapp.com',
+  /**
+   * Trên trang đã deploy dùng chính tên miền của trang (vercel.json chuyển /__/auth sang Firebase): cửa sổ đăng nhập
+   * Google cùng nguồn gốc với game nên không bị trình duyệt chặn lưu trữ bên thứ ba (Safari, Chrome mới, điện thoại).
+   * Chạy máy nhà (localhost) hoặc http thì dùng tên miền gốc của Firebase.
+   */
+  authDomain: location.protocol === 'https:' && !location.hostname.endsWith('firebaseapp.com') ? location.host : 'nsoft-dfe66.firebaseapp.com',
   projectId: 'nsoft-dfe66',
   storageBucket: 'nsoft-dfe66.firebasestorage.app',
   messagingSenderId: '807175980682',
