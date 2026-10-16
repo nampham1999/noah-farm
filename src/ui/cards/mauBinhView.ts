@@ -2,8 +2,8 @@ import { autoArrange, evalHand, isValidOrder, specialOf, type Arrangement } from
 import type { Card } from '../../cards/cards.ts'
 import { sortCards } from '../../cards/cards.ts'
 import { t, tKey } from '../../i18n/index.ts'
-import { banner, cardEl } from './cardEl.ts'
-import type { ViewCtx } from './table.ts'
+import { animate, banner, cardEl } from './cardEl.ts'
+import type { ViewCtx, ViewParts } from './table.ts'
 
 const SIZES = [3, 5, 5]
 
@@ -15,113 +15,122 @@ let local: Local = { round: -1, chi: [[], [], []] }
 
 const catName = (cards: Card[]): string => tKey(`mb.cat.${evalHand(cards).cat}`)
 
-/** Màn Mậu binh: xếp 13 lá thành 3 chi, rồi xem kết quả so từng chi. */
-export function renderMauBinh(root: HTMLElement, ctx: ViewCtx): void {
-  const pub = ctx.session.pub
-  if (!pub) return
-  const round = ctx.session.meta.round
+const btn = (cls: string, text: string, onClick: () => void, disabled = false): HTMLButtonElement => {
+  const b = document.createElement('button')
+  b.className = `btn ${cls}`.trim()
+  b.textContent = text
+  b.disabled = disabled
+  b.addEventListener('click', onClick)
+  return b
+}
+
+/** Mậu binh: xếp 13 lá thành 3 chi trên một "bàn xếp bài", rồi xem kết quả so từng chi. */
+export function renderMauBinh(ctx: ViewCtx): ViewParts {
+  const s = ctx.session
+  const pub = s.pub!
+  const round = s.meta.round
   if (local.round !== round) local = { round, chi: [[], [], []] }
+  const submittedList = pub.submitted as string[]
+  const seat = (uid: string) => ({
+    tag: pub.phase === 'result' ? undefined : submittedList.includes(uid) ? `✅ ${t('mb.sent')}` : t('mb.arranging'),
+    tagKind: submittedList.includes(uid) ? ('ok' as const) : undefined,
+  })
 
-  if (pub.phase === 'result') return renderResult(root, ctx)
+  if (pub.phase === 'result') return { center: resultRows(ctx), flat: true, actions: [], seat }
 
-  const submitted = (pub.submitted as string[]).includes(ctx.me)
-  const hand = sortCards(ctx.session.hand)
-  root.append(banner(submitted ? t('mb.waiting', { n: (pub.order as string[]).length - (pub.submitted as string[]).length }) : t('mb.arrange'), !submitted))
-  if (!hand.length) return
+  const submitted = submittedList.includes(ctx.me)
+  const hand = sortCards(s.hand)
+  const center: HTMLElement[] = []
+  const extra: HTMLElement[] = []
 
   const special = specialOf(hand)
   if (special && !submitted) {
     const box = document.createElement('div')
     box.className = 'ct__special'
     box.textContent = `🎉 ${tKey(`mb.special.${special}`)}`
-    const go = document.createElement('button')
-    go.className = 'btn primary'
-    go.textContent = t('mb.declare')
-    go.disabled = ctx.pending
-    go.addEventListener('click', () => ctx.send({ type: 'submit', chi: autoArrange(hand) }))
-    box.append(go)
-    root.append(box)
+    box.append(btn('primary', t('mb.declare'), () => ctx.send({ type: 'submit', chi: autoArrange(hand) }), ctx.pending))
+    center.push(box)
   }
 
-  // Bài chưa xếp = bài trên tay trừ bài đã đặt vào chi.
-  const placed = new Set(local.chi.flat())
-  const pool = hand.filter((c) => !placed.has(c))
-
+  // Ba chi: chi 1 (3 lá) trên cùng, chi 3 (mạnh nhất) dưới cùng, như các app mậu binh quen thuộc.
   const rows = document.createElement('div')
   rows.className = 'mb__rows'
   local.chi.forEach((cards, i) => {
     const row = document.createElement('div')
-    row.className = 'mb__row'
+    row.className = 'mb__row' + (cards.length === SIZES[i] ? ' is-full' : '')
     const label = document.createElement('span')
     label.className = 'mb__label'
     label.textContent = `${t('mb.chi', { n: i + 1 })}${cards.length === SIZES[i] ? ` · ${catName(cards)}` : ` (${cards.length}/${SIZES[i]})`}`
     const slots = document.createElement('div')
     slots.className = 'mb__slots'
-    for (const c of cards) slots.append(cardEl(c, {
-      onClick: submitted ? undefined : () => {
-        local.chi[i] = local.chi[i].filter((x) => x !== c)
-        ctx.refresh()
-      },
-    }))
-    for (let k = cards.length; k < SIZES[i]; k++) slots.append(cardEl(null, { mini: false }))
+    for (const c of cards) {
+      slots.append(cardEl(c, {
+        onClick: submitted ? undefined : () => {
+          local.chi[i] = local.chi[i].filter((x) => x !== c)
+          ctx.refresh()
+        },
+      }))
+    }
+    for (let k = cards.length; k < SIZES[i]; k++) slots.append(cardEl(null, { empty: true }))
     row.append(label, slots)
     rows.append(row)
   })
-  root.append(rows)
+  center.push(rows)
 
-  if (submitted) return
-
+  // Bài chưa xếp: chạm một lá là vào chi còn chỗ (chi 3 trước, rồi chi 2, chi 1).
+  const placed = new Set(local.chi.flat())
+  const pool = hand.filter((c) => !placed.has(c))
   const poolEl = document.createElement('div')
   poolEl.className = 'mb__pool'
-  for (const c of pool) {
-    poolEl.append(cardEl(c, {
-      onClick: () => {
-        // Xếp vào chi còn chỗ, bắt đầu từ chi 3 (mạnh nhất) rồi chi 2, chi 1.
-        const open = [2, 1, 0].find((i) => local.chi[i].length < SIZES[i])
+  pool.forEach((c, i) => {
+    const el = cardEl(c, {
+      onClick: submitted ? undefined : () => {
+        const open = [2, 1, 0].find((k) => local.chi[k].length < SIZES[k])
         if (open !== undefined) local.chi[open].push(c)
         ctx.refresh()
       },
-    }))
-  }
-  root.append(poolEl)
+    })
+    animate(el, 'is-deal', `deal:${s.tid}:${round}`, 700, i, 50)
+    poolEl.append(el)
+  })
 
   const full = pool.length === 0
-  if (full && !isValidOrder(local.chi as Arrangement)) {
+  if (full && !submitted && !isValidOrder(local.chi as Arrangement)) {
     const warn = document.createElement('p')
     warn.className = 'ct__warn'
     warn.textContent = `⚠️ ${t('mb.lung')}`
-    root.append(warn)
+    extra.push(warn)
   }
-  const bar = document.createElement('div')
-  bar.className = 'ct__actions'
-  const auto = document.createElement('button')
-  auto.className = 'btn'
-  auto.textContent = `✨ ${t('mb.auto')}`
-  auto.addEventListener('click', () => {
-    local.chi = autoArrange(hand).map((c) => c.slice())
-    ctx.refresh()
-  })
-  const clear = document.createElement('button')
-  clear.className = 'btn'
-  clear.textContent = `↺ ${t('mb.reset')}`
-  clear.addEventListener('click', () => {
-    local.chi = [[], [], []]
-    ctx.refresh()
-  })
-  const done = document.createElement('button')
-  done.className = 'btn primary'
-  done.disabled = !full || ctx.pending
-  done.textContent = `✅ ${t('mb.done')}`
-  done.addEventListener('click', () => ctx.send({ type: 'submit', chi: local.chi }))
-  bar.append(auto, clear, done)
-  root.append(bar)
+  const actions = submitted
+    ? []
+    : [
+        btn('', `✨ ${t('mb.auto')}`, () => {
+          local.chi = autoArrange(hand).map((c) => c.slice())
+          ctx.refresh()
+        }),
+        btn('', `↺ ${t('mb.reset')}`, () => {
+          local.chi = [[], [], []]
+          ctx.refresh()
+        }),
+        btn('primary big', `✅ ${t('mb.done')}`, () => ctx.send({ type: 'submit', chi: local.chi }), !full || ctx.pending),
+      ]
+  return {
+    center,
+    flat: true,
+    banner: banner(submitted ? t('mb.waiting', { n: (pub.order as string[]).length - submittedList.length }) : t('mb.arrange'), !submitted),
+    extra,
+    hand: submitted ? undefined : poolEl,
+    actions,
+    seat,
+  }
 }
 
-function renderResult(root: HTMLElement, ctx: ViewCtx): void {
-  const pub = ctx.session.pub!
-  const reveal = pub.reveal as Record<string, { chi: Card[][]; special: string | null; lung: boolean }>
-  const results = ctx.session.meta.results ?? {}
-  for (const seat of ctx.session.seats.filter((s) => reveal[s.uid])) {
+function resultRows(ctx: ViewCtx): HTMLElement[] {
+  const s = ctx.session
+  const reveal = s.pub!.reveal as Record<string, { chi: Card[][]; special: string | null; lung: boolean }>
+  const results = s.meta.results ?? {}
+  const out: HTMLElement[] = []
+  for (const seat of s.seats.filter((x) => reveal[x.uid])) {
     const r = reveal[seat.uid]
     const gold = results[seat.uid] ?? 0
     const box = document.createElement('div')
@@ -140,11 +149,16 @@ function renderResult(root: HTMLElement, ctx: ViewCtx): void {
       label.textContent = catName(cards)
       const slots = document.createElement('div')
       slots.className = 'mb__slots'
-      for (const c of cards) slots.append(cardEl(c, { mini: true }))
+      cards.forEach((c, k) => {
+        const el = cardEl(c, { mini: true })
+        // Lật bài lần lượt từng chi.
+        animate(el, 'is-deal', `mbr:${s.tid}:${s.meta.round}:${seat.uid}:${i}`, 500, k + i * 5, 70)
+        slots.append(el)
+      })
       row.append(label, slots)
       box.append(row)
-      void i
     })
-    root.append(box)
+    out.push(box)
   }
+  return out
 }

@@ -232,7 +232,7 @@ export const mauBinh: Engine = {
     const hands: Record<string, Card[]> = {}
     seats.forEach((s, i) => (hands[s.uid] = deck.slice(i * 13, i * 13 + 13)))
     return {
-      pub: { game: 'mauBinh', phase: 'arrange', deadline: now + ARRANGE_MS, order: seats.map((s) => s.uid), submitted: [] },
+      pub: { game: 'mauBinh', phase: 'arrange', ms: ARRANGE_MS, deadline: now + ARRANGE_MS, order: seats.map((s) => s.uid), submitted: [] },
       hands,
       secret: { arr: {} },
     }

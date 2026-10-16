@@ -130,6 +130,7 @@ export const phom: Engine = {
       pub: {
         game: 'phom',
         phase: 'play',
+        ms: TURN_MS,
         order,
         turn: order[0],
         stage: 'discard',

@@ -37,6 +37,8 @@ export interface Session {
   hand: Card[]
   isHost: boolean
   engine: Engine
+  /** Biểu cảm vừa nhận (uid → biểu tượng và lúc nhận) để hiện bong bóng trên ghế. */
+  emotes: Record<string, { e: string; n: number; at: number }>
 }
 
 export const cardTable = {
@@ -178,10 +180,11 @@ async function attach(tid: string): Promise<void> {
   if (!first.exists()) throw new Error('gone')
   const meta0 = { id: tid, ...first.data() } as TableMeta
   const engine = ENGINES[meta0.game]!
-  const session: Session = { tid, meta: meta0, seats: [], pub: null, hand: [], isHost: meta0.host === uid, engine }
+  const session: Session = { tid, meta: meta0, seats: [], pub: null, hand: [], isHost: meta0.host === uid, engine, emotes: {} }
   cardTable.session = session
   // Bài về trước thông tin bàn thì chờ có số ván khớp mới nhận.
   let handRaw: { cards?: Card[]; round?: number } | undefined
+  let firstEmotes = true
   const applyHand = () => {
     session.hand = handRaw?.round === session.meta.round && handRaw.cards ? handRaw.cards : []
   }
@@ -204,6 +207,18 @@ async function attach(tid: string): Promise<void> {
       if (!session.isHost && session.seats.length && !session.seats.some((s) => s.uid === uid) && session.meta.status === 'lobby') closed()
       changed()
     }),
+    fs.onSnapshot(fs.collection(d, 'tables', tid, 'emotes'), (snap) => {
+      for (const ch of snap.docChanges()) {
+        if (ch.type === 'removed') continue
+        const data = ch.doc.data() as { e: string; n: number }
+        const prev = session.emotes[ch.doc.id]
+        // Lần nghe đầu chỉ ghi nhớ (không hiện lại biểu cảm cũ); sau đó số n đổi nghĩa là biểu cảm mới.
+        const fresh = !firstEmotes && prev?.n !== data.n
+        session.emotes[ch.doc.id] = { e: data.e, n: data.n, at: fresh ? Date.now() : (prev?.at ?? 0) }
+      }
+      firstEmotes = false
+      changed()
+    }, (e) => console.warn('Emotes', e)),
     fs.onSnapshot(fs.doc(d, 'tables', tid, 'hands', uid), (snap) => {
       handRaw = snap.data() as { cards?: Card[]; round?: number } | undefined
       applyHand()
@@ -410,5 +425,19 @@ async function publish(): Promise<void> {
     await batch.commit()
   } catch (e) {
     notifyError(e)
+  }
+}
+
+let emoteCount = 0
+
+/** Gửi một biểu cảm lên bàn (hiện bong bóng trên ghế của mình ở mọi máy). */
+export async function sendEmote(e: string): Promise<void> {
+  const s = cardTable.session
+  if (!s || !online.cloud) return
+  const fs = await lib()
+  try {
+    await fs.setDoc(fs.doc(db(fs), 'tables', s.tid, 'emotes', me()), { e, n: ++emoteCount + Date.now() })
+  } catch (err) {
+    console.warn('Emote', err)
   }
 }

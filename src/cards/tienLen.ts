@@ -139,6 +139,7 @@ export const tienLen: Engine = {
       pub: {
         game: 'tienLen',
         phase: 'play',
+        ms: TURN_MS,
         order: seats.map((s) => s.uid),
         turn: starter,
         deadline: now + TURN_MS,

@@ -141,6 +141,11 @@ service cloud.firestore {
         allow read: if isMe(uid) || isHost();
         allow write: if isHost();
       }
+      match /emotes/{uid} {
+        allow read: if signedIn();
+        allow create, update: if isMe(uid) && request.resource.data.e is string && request.resource.data.e.size() <= 8;
+        allow delete: if isMe(uid) || isHost();
+      }
       match /moves/{id} {
         allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
         allow read, delete: if isHost();

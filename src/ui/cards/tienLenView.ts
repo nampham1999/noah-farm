@@ -1,8 +1,8 @@
 import type { Card } from '../../cards/cards.ts'
 import { t, tKey } from '../../i18n/index.ts'
 import { beats, classify, findPlays, type Combo } from '../../cards/tienLen.ts'
-import { banner, cardEl } from './cardEl.ts'
-import type { ViewCtx } from './table.ts'
+import { animate, banner, cardEl, fanHand } from './cardEl.ts'
+import type { ViewCtx, ViewParts } from './table.ts'
 
 interface Local {
   round: number
@@ -15,138 +15,117 @@ interface Last {
   cards: Card[]
 }
 
-/** Màn Tiến lên: bài của mình ở dưới, bài vừa đánh ở giữa, đối thủ ở trên. */
-export function renderTienLen(root: HTMLElement, ctx: ViewCtx): void {
+const btn = (cls: string, text: string, onClick: () => void, disabled = false): HTMLButtonElement => {
+  const b = document.createElement('button')
+  b.className = `btn ${cls}`.trim()
+  b.textContent = text
+  b.disabled = disabled
+  b.addEventListener('click', onClick)
+  return b
+}
+
+/** Tiến lên: bài vừa đánh ở giữa bàn, đối thủ quanh bàn, bài của mình xoè quạt ở dưới. */
+export function renderTienLen(ctx: ViewCtx): ViewParts {
   const s = ctx.session
   const pub = s.pub!
   if (local.round !== s.meta.round) local = { round: s.meta.round, selected: new Set() }
   const name = (uid: string) => s.seats.find((x) => x.uid === uid)?.name ?? '?'
-  const order = pub.order as string[]
   const counts = pub.counts as Record<string, number>
   const passed = pub.passed as string[]
   const last = pub.last as Last | null
   const turn = pub.turn as string
   const over = pub.phase === 'result'
+  const lastCombo = last ? classify(last.cards) : null
+  const mine = turn === ctx.me && !over
+  const must = pub.must as number | null
 
-  const foes = document.createElement('div')
-  foes.className = 'tl__foes'
-  for (const uid of order.filter((u) => u !== ctx.me)) {
-    const f = document.createElement('div')
-    f.className = 'tl__foe' + (uid === turn && !over ? ' is-turn' : '')
-    const left = counts[uid] ?? 0
-    f.innerHTML = '<strong></strong><span></span>'
-    f.querySelector('strong')!.textContent = name(uid)
-    f.querySelector('span')!.textContent = over && uid === pub.winner ? `🏆` : passed.includes(uid) ? t('tl.passed') : `🂠 ${left}`
-    foes.append(f)
-  }
-  root.append(foes)
-
-  const center = document.createElement('div')
-  center.className = 'tl__center'
-  const lastCombo0 = last ? classify(last.cards) : null
-  if (over) center.append(banner(t('tl.winner', { name: name(pub.winner as string) }), true))
-  else if (turn === ctx.me) {
-    center.append(banner(`${t('tl.yourTurn')} · ${lastCombo0 ? t('tl.beatHint', { kind: tKey(`tl.kind.${lastCombo0.kind}`), name: name(last!.uid) }) : pub.must !== null ? t('tl.firstMove') : t('tl.leadHint')}`, true))
-  } else center.append(banner(t('tl.wait', { name: name(turn) }), false))
-  const played = document.createElement('div')
-  played.className = 'tl__played'
+  const center: HTMLElement[] = []
   if (last) {
-    const who = document.createElement('span')
-    who.className = 'mb__label'
-    who.textContent = name(last.uid)
-    played.append(who)
-    for (const c of last.cards) played.append(cardEl(c))
+    const from = document.createElement('div')
+    from.className = 'ct__from'
+    from.textContent = `${name(last.uid)} · ${tKey(`tl.kind.${lastCombo!.kind}`)}`
+    const row = document.createElement('div')
+    row.className = 'ct__played'
+    last.cards.forEach((c, i) => {
+      const el = cardEl(c, { lg: true })
+      animate(el, 'is-drop', `tl:${s.meta.round}:${last.uid}:${last.cards.join(',')}`, 400, i, 40)
+      row.append(el)
+    })
+    center.push(from, row)
   } else if (!over) {
-    const p = document.createElement('span')
-    p.className = 'mb__label'
-    p.textContent = '—'
-    played.append(p)
-  }
-  center.append(played)
-  root.append(center)
-
-  if (over) {
-    for (const uid of order) {
-      const row = document.createElement('div')
-      row.className = 'mb__result' + (uid === ctx.me ? ' is-me' : '')
-      const gold = s.meta.results?.[uid] ?? 0
-      row.innerHTML = `<div class="mb__head"><strong></strong><span class="ct__delta ${gold >= 0 ? 'is-up' : 'is-down'}">${gold >= 0 ? '+' : ''}${gold} 🪙</span></div>`
-      row.querySelector('strong')!.textContent = `${name(uid)} · ${uid === pub.winner ? t('tl.out') : t('tl.cardsLeft', { n: counts[uid] })}`
-      root.append(row)
-    }
+    const p = document.createElement('div')
+    p.className = 'ct__from'
+    p.textContent = t('tl.newRound')
+    center.push(p)
   }
 
-  // Tay bài của mình, xếp chồng nhẹ để vừa màn hình điện thoại.
   const hand = s.hand.slice().sort((a, b) => a - b)
   for (const c of [...local.selected]) if (!hand.includes(c)) local.selected.delete(c)
-  const fan = document.createElement('div')
-  fan.className = 'tl__hand'
-  for (const c of hand) {
-    fan.append(cardEl(c, {
-      selected: local.selected.has(c),
-      onClick: () => {
-        if (local.selected.has(c)) local.selected.delete(c)
-        else local.selected.add(c)
-        ctx.refresh()
-      },
-    }))
-  }
-  root.append(fan)
-  if (over) return
-
-  const mine = turn === ctx.me
   const picked = [...local.selected]
   const combo: Combo | null = picked.length ? classify(picked) : null
-  const lastCombo = last ? classify(last.cards) : null
-  const must = pub.must as number | null
   const legal = !!combo && mine && (!lastCombo || beats(lastCombo, combo)) && (must === null || picked.includes(must))
 
-  const bar = document.createElement('div')
-  bar.className = 'ct__actions'
-  const play = document.createElement('button')
-  play.className = 'btn primary'
-  play.disabled = !legal || ctx.pending
-  play.textContent = `▶ ${t('tl.play')}`
-  play.addEventListener('click', () => {
-    ctx.send({ type: 'play', cards: picked })
-    local.selected.clear()
-  })
-  const pass = document.createElement('button')
-  pass.className = 'btn'
-  pass.disabled = !mine || !last || ctx.pending
-  pass.textContent = t('tl.pass')
-  pass.addEventListener('click', () => ctx.send({ type: 'pass' }))
-  const hint = document.createElement('button')
-  hint.className = 'btn'
-  hint.disabled = !mine
-  hint.textContent = `💡 ${t('tl.hint')}`
-  hint.addEventListener('click', () => {
-    const plays = findPlays(hand, lastCombo, must ?? undefined)
-    // Gợi ý bộ nhỏ nhất đủ chặt (ưu tiên bộ ít lá hơn).
-    plays.sort((a, b) => a.length - b.length || a[a.length - 1] - b[b.length - 1])
-    local.selected = new Set(plays[0] ?? [])
-    if (!plays.length) ctx.send({ type: 'pass' })
-    ctx.refresh()
-  })
-  const clear = document.createElement('button')
-  clear.className = 'btn'
-  clear.textContent = '✖'
-  clear.disabled = !picked.length
-  clear.addEventListener('click', () => {
-    local.selected.clear()
-    ctx.refresh()
-  })
-  bar.append(play, pass, hint, clear)
-  root.append(bar)
-  if (picked.length && !combo) {
+  const fan = fanHand(
+    hand.map((c) =>
+      cardEl(c, {
+        selected: local.selected.has(c),
+        onClick: () => {
+          if (local.selected.has(c)) local.selected.delete(c)
+          else local.selected.add(c)
+          ctx.refresh()
+        },
+      }),
+    ),
+    `deal:${s.tid}:${s.meta.round}`,
+  )
+
+  const actions: HTMLElement[] = []
+  if (!over) {
+    actions.push(
+      btn('primary big', `▶ ${t('tl.play')}`, () => {
+        ctx.send({ type: 'play', cards: picked })
+        local.selected.clear()
+      }, !legal || ctx.pending),
+      btn('', t('tl.pass'), () => ctx.send({ type: 'pass' }), !mine || !last || ctx.pending),
+      btn('', `💡 ${t('tl.hint')}`, () => {
+        const plays = findPlays(hand, lastCombo, must ?? undefined)
+        // Gợi ý bộ nhỏ nhất đủ chặt (ưu tiên bộ ít lá hơn).
+        plays.sort((a, b) => a.length - b.length || a[a.length - 1] - b[b.length - 1])
+        local.selected = new Set(plays[0] ?? [])
+        if (!plays.length) ctx.send({ type: 'pass' })
+        ctx.refresh()
+      }, !mine || ctx.pending),
+    )
+  }
+
+  const extra: HTMLElement[] = []
+  if (!over && picked.length && !combo) {
     const w = document.createElement('p')
     w.className = 'ct__warn'
     w.textContent = t('tl.invalid')
-    root.append(w)
+    extra.push(w)
   } else if (combo && mine) {
     const k = document.createElement('p')
     k.className = 'ct__hint'
-    k.textContent = tKey(`tl.kind.${combo.kind}`)
-    root.append(k)
+    k.textContent = `${tKey(`tl.kind.${combo.kind}`)}${legal ? ' ✓' : lastCombo ? ` · ${t('tl.tooWeak')}` : ''}`
+    extra.push(k)
+  }
+
+  return {
+    center,
+    flat: false,
+    banner: over
+      ? banner(t('tl.winner', { name: name(pub.winner as string) }), true)
+      : mine
+        ? banner(`${t('tl.yourTurn')} · ${lastCombo ? t('tl.beatHint', { kind: tKey(`tl.kind.${lastCombo.kind}`), name: name(last!.uid) }) : must !== null ? t('tl.firstMove') : t('tl.leadHint')}`, true)
+        : banner(t('tl.wait', { name: name(turn) }), false),
+    extra,
+    hand: fan,
+    actions,
+    seat: (uid) => ({
+      cards: over || uid === ctx.me ? undefined : counts[uid],
+      tag: over && uid === pub.winner ? `🏆 ${t('tl.out')}` : over ? t('tl.cardsLeft', { n: counts[uid] }) : passed.includes(uid) ? t('tl.passed') : undefined,
+      tagKind: over && uid === pub.winner ? 'ok' : passed.includes(uid) ? 'bad' : undefined,
+    }),
   }
 }

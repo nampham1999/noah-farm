@@ -749,7 +749,7 @@
   "mb.arrange": "Tap cards to place them: Hand 3 (strongest) first, then Hand 2, Hand 1. Tap a placed card to take it back. Hand 1 ≤ Hand 2 ≤ Hand 3, then press Done.",
   "mb.waiting": "Submitted, waiting for {n} more…",
   "mb.chi": "Hand {n}",
-  "mb.auto": "Auto-arrange",
+  "mb.auto": "Auto",
   "mb.reset": "Reset",
   "mb.done": "Done",
   "mb.lung": "Each hand must be at least as strong as the one before. This is a foul hand: you lose all three!",
@@ -814,5 +814,14 @@
   "tl.beatHint": "beat {name}'s {kind} with a higher one, or Pass",
   "phom.canEat": "{name}'s {card} can be taken: it makes a meld!",
   "phom.cantEat": "{name}'s {card} can't be taken (no meld)",
-  "cards.help": "How to play"
+  "cards.help": "How to play",
+  "cards.resultWin": "You win!",
+  "cards.resultLose": "You lost",
+  "cards.resultDraw": "Draw",
+  "cards.viewTable": "View table",
+  "tl.newRound": "New round: anyone leads",
+  "tl.tooWeak": "not strong enough",
+  "xd.dealer": "Dealer: {name}",
+  "mb.sent": "ready",
+  "mb.arranging": "arranging…"
 }

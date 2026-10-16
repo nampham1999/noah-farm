@@ -107,6 +107,7 @@ export const xiDach: Engine = {
       pub: {
         game: 'xiDach',
         phase: 'play',
+        ms: TURN_MS,
         order: seats.map((s) => s.uid),
         turn: seats[0].uid,
         deadline: now + TURN_MS,

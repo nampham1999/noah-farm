@@ -749,7 +749,7 @@
   "mb.arrange": "Chạm từng lá để xếp: vào Chi 3 (mạnh nhất) trước, rồi Chi 2, Chi 1. Chạm lá đã xếp để bỏ ra. Chi 1 ≤ Chi 2 ≤ Chi 3, rồi bấm Xong.",
   "mb.waiting": "Đã xếp xong, chờ {n} người nữa…",
   "mb.chi": "Chi {n}",
-  "mb.auto": "Xếp tự động",
+  "mb.auto": "Tự xếp",
   "mb.reset": "Xếp lại",
   "mb.done": "Xong",
   "mb.lung": "Chi sau phải mạnh hơn hoặc bằng chi trước. Xếp thế này là binh lủng, thua cả ba chi!",
@@ -814,5 +814,14 @@
   "tl.beatHint": "cần đánh {kind} lớn hơn của {name}, hoặc Bỏ lượt",
   "phom.canEat": "Lá {card} của {name} ăn được: tạo thành phỏm!",
   "phom.cantEat": "Lá {card} của {name} chưa ăn được (chưa tạo phỏm)",
-  "cards.help": "Cách chơi"
+  "cards.help": "Cách chơi",
+  "cards.resultWin": "Bạn thắng!",
+  "cards.resultLose": "Bạn thua",
+  "cards.resultDraw": "Hoà",
+  "cards.viewTable": "Xem bàn",
+  "tl.newRound": "Vòng mới: ai đánh cũng được",
+  "tl.tooWeak": "chưa đủ mạnh để chặt",
+  "xd.dealer": "Nhà cái: {name}",
+  "mb.sent": "đã xếp",
+  "mb.arranging": "đang xếp…"
 }
