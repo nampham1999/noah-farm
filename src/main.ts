@@ -67,7 +67,7 @@ import { collectNearby } from './systems/forage.ts'
 import { createCardHouse } from './render/cardHouse.ts'
 import { attachCardTable } from './ui/cards/table.ts'
 import { cardsLobbyPanel } from './ui/cards/lobby.ts'
-import { cardTable, startCards } from './online/cardTable.ts'
+import { cardTable, createTable, joinTable, leaveTable, sendMove, startCards, startRound, watchLobby } from './online/cardTable.ts'
 import { createMonument } from './render/monument.ts'
 import { onVillageProgress, startVillage, village } from './online/village.ts'
 import { villagePanel } from './ui/village.ts'
@@ -646,6 +646,7 @@ async function start(): Promise<void> {
         village,
         /** Bàn bài: cardTable để test giao diện bằng phiên giả, bus để báo thay đổi. */
         cards: cardTable,
+        cardsApi: { createTable, joinTable, startRound, sendMove, leaveTable, watchLobby },
         bus,
         /** Giả lập một việc vừa làm (để test thách đấu, nhiệm vụ). */
         progress: (ev: Progress) => bus.emit('progress', ev),
