@@ -1,3 +1,4 @@
+import { online } from '../online/online.ts'
 import { bus } from '../core/events.ts'
 import { enableNotifications, notifySupported } from '../systems/notifications.ts'
 import type { GameState } from '../core/state.ts'
@@ -182,6 +183,13 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
         )
       }
 
+      // Mã/tệp sao lưu chỉ chép dữ liệu, không chuyển tài khoản online: nhắc dùng Google để dùng chung một tài khoản.
+      if (online.cloud) {
+        const hint = document.createElement('p')
+        hint.className = 'panel__hint'
+        hint.textContent = online.cloud.account.anonymous ? t('save.deviceHintAnon') : t('save.deviceHintGoogle')
+        body.append(hint)
+      }
       const actions = document.createElement('div')
       actions.className = 'menu-actions'
       actions.append(

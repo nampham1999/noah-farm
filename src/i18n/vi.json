@@ -823,5 +823,7 @@
   "tl.tooWeak": "chưa đủ mạnh để chặt",
   "xd.dealer": "Nhà cái: {name}",
   "mb.sent": "đã xếp",
-  "mb.arranging": "đang xếp…"
+  "mb.arranging": "đang xếp…",
+  "save.deviceHintAnon": "Lưu ý: mã/tệp sao lưu chỉ chép dữ liệu game sang máy khác, mỗi máy vẫn là một tài khoản online riêng nên tiến trình sẽ không tự đồng bộ giữa các máy. Muốn dùng một tài khoản trên nhiều máy, hãy đăng nhập Google (Bạn bè → Đăng nhập Google) ở mọi máy.",
+  "save.deviceHintGoogle": "Bạn đã đăng nhập Google: đăng nhập cùng tài khoản trên máy khác là tự có bản mới nhất, không cần mã sao lưu."
 }

@@ -823,5 +823,7 @@
   "tl.tooWeak": "not strong enough",
   "xd.dealer": "Dealer: {name}",
   "mb.sent": "ready",
-  "mb.arranging": "arranging…"
+  "mb.arranging": "arranging…",
+  "save.deviceHintAnon": "Note: backup codes/files only copy game data. Each device is still its own online account, so progress won't sync between devices. To use one account on several devices, sign in with Google (Friends → Google sign-in) on each.",
+  "save.deviceHintGoogle": "You're signed in with Google: signing in with the same account on another device gives you the latest save, no backup code needed."
 }
