@@ -2544,3 +2544,55 @@ body.is-visiting .energy-pill {
   align-items: center;
   justify-content: space-between;
 }
+
+.tl__foes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.tl__foe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 78px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 0.22);
+  font-size: 13px;
+}
+
+.tl__foe.is-turn {
+  box-shadow: 0 0 0 2px #ffcd50;
+  background: rgb(255 205 80 / 0.22);
+}
+
+.tl__center {
+  padding: 6px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.16);
+  min-height: 118px;
+}
+
+.tl__played {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.tl__hand {
+  display: flex;
+  justify-content: center;
+  padding: 10px 6px 4px;
+}
+
+.tl__hand .pc {
+  margin-left: -11px;
+}
+
+.tl__hand .pc:first-child {
+  margin-left: 0;
+}

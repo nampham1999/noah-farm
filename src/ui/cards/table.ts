@@ -4,6 +4,7 @@ import type { GameId } from '../../cards/engine.ts'
 import { t, tKey } from '../../i18n/index.ts'
 import { cardTable, leaveTable, sendMove, startRound, type Session } from '../../online/cardTable.ts'
 import { renderMauBinh } from './mauBinhView.ts'
+import { renderTienLen } from './tienLenView.ts'
 
 export interface ViewCtx {
   session: Session
@@ -15,6 +16,7 @@ export interface ViewCtx {
 
 const VIEWS: Partial<Record<GameId, (root: HTMLElement, ctx: ViewCtx) => void>> = {
   mauBinh: renderMauBinh,
+  tienLen: renderTienLen,
 }
 
 let overlay: HTMLElement | null = null
