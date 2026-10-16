@@ -1,7 +1,8 @@
 import type { Card } from '../../cards/cards.ts'
 import { bestArrangement, canEat } from '../../cards/phom.ts'
 import { t } from '../../i18n/index.ts'
-import { cardEl } from './cardEl.ts'
+import { banner, cardEl } from './cardEl.ts'
+import { cardText } from '../../cards/cards.ts'
 import type { ViewCtx } from './table.ts'
 
 interface Local {
@@ -78,12 +79,17 @@ export function renderPhom(root: HTMLElement, ctx: ViewCtx): void {
   root.append(table)
 
   const mine = turn === ctx.me
-  const info = document.createElement('p')
-  info.className = 'ct__hint'
-  info.textContent = mine
-    ? t(stage === 'draw' ? 'phom.drawTurn' : 'phom.discardTurn', { s: Math.max(0, Math.ceil(((pub.deadline as number) - Date.now()) / 1000)) })
-    : t('tl.wait', { name: name(turn) })
-  root.append(info)
+  const canEatNow = !!last && last.uid !== ctx.me && canEat(s.hand, last.card)
+  if (!mine) root.append(banner(t('tl.wait', { name: name(turn) }), false))
+  else if (stage === 'draw') {
+    root.append(banner(t('phom.drawTurn'), true))
+    if (last && last.uid !== ctx.me) {
+      const hint = document.createElement('p')
+      hint.className = 'ct__hint'
+      hint.textContent = canEatNow ? t('phom.canEat', { card: cardText(last.card), name: name(last.uid) }) : t('phom.cantEat', { card: cardText(last.card), name: name(last.uid) })
+      root.append(hint)
+    }
+  } else root.append(banner(t('phom.discardTurn'), true))
 
   // Tay bài, gom phỏm lên trước và hiện điểm rác.
   const hand = s.hand
@@ -116,18 +122,18 @@ export function renderPhom(root: HTMLElement, ctx: ViewCtx): void {
     const draw = document.createElement('button')
     draw.className = 'btn primary'
     draw.textContent = `🂠 ${t('phom.draw', { n: pub.deckCount as number })}`
+    draw.disabled = ctx.pending
     draw.addEventListener('click', () => ctx.send({ type: 'draw' }))
     const eat = document.createElement('button')
     eat.className = 'btn'
-    const can = !!last && last.uid !== ctx.me && canEat(hand, last.card)
-    eat.disabled = !can
+    eat.disabled = !canEatNow || ctx.pending
     eat.textContent = `🍴 ${t('phom.eat')}`
     eat.addEventListener('click', () => ctx.send({ type: 'eat' }))
     bar.append(draw, eat)
   } else if (mine) {
     const go = document.createElement('button')
     go.className = 'btn primary'
-    go.disabled = local.selected === null
+    go.disabled = local.selected === null || ctx.pending
     go.textContent = `⬇ ${t('phom.discard')}`
     go.addEventListener('click', () => {
       ctx.send({ type: 'discard', card: local.selected })

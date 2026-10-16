@@ -1,7 +1,7 @@
 import type { Card } from '../../cards/cards.ts'
 import { t, tKey } from '../../i18n/index.ts'
 import { beats, classify, findPlays, type Combo } from '../../cards/tienLen.ts'
-import { cardEl } from './cardEl.ts'
+import { banner, cardEl } from './cardEl.ts'
 import type { ViewCtx } from './table.ts'
 
 interface Local {
@@ -43,12 +43,11 @@ export function renderTienLen(root: HTMLElement, ctx: ViewCtx): void {
 
   const center = document.createElement('div')
   center.className = 'tl__center'
-  const info = document.createElement('p')
-  info.className = 'ct__hint'
-  if (over) info.textContent = t('tl.winner', { name: name(pub.winner as string) })
-  else if (turn === ctx.me) info.textContent = t('tl.yourTurn', { s: Math.max(0, Math.ceil(((pub.deadline as number) - Date.now()) / 1000)) })
-  else info.textContent = t('tl.wait', { name: name(turn) })
-  center.append(info)
+  const lastCombo0 = last ? classify(last.cards) : null
+  if (over) center.append(banner(t('tl.winner', { name: name(pub.winner as string) }), true))
+  else if (turn === ctx.me) {
+    center.append(banner(`${t('tl.yourTurn')} · ${lastCombo0 ? t('tl.beatHint', { kind: tKey(`tl.kind.${lastCombo0.kind}`), name: name(last!.uid) }) : pub.must !== null ? t('tl.firstMove') : t('tl.leadHint')}`, true))
+  } else center.append(banner(t('tl.wait', { name: name(turn) }), false))
   const played = document.createElement('div')
   played.className = 'tl__played'
   if (last) {
@@ -60,7 +59,7 @@ export function renderTienLen(root: HTMLElement, ctx: ViewCtx): void {
   } else if (!over) {
     const p = document.createElement('span')
     p.className = 'mb__label'
-    p.textContent = pub.must !== null ? t('tl.firstMove') : t('tl.freeLead')
+    p.textContent = '—'
     played.append(p)
   }
   center.append(played)
@@ -106,7 +105,7 @@ export function renderTienLen(root: HTMLElement, ctx: ViewCtx): void {
   bar.className = 'ct__actions'
   const play = document.createElement('button')
   play.className = 'btn primary'
-  play.disabled = !legal
+  play.disabled = !legal || ctx.pending
   play.textContent = `▶ ${t('tl.play')}`
   play.addEventListener('click', () => {
     ctx.send({ type: 'play', cards: picked })
@@ -114,7 +113,7 @@ export function renderTienLen(root: HTMLElement, ctx: ViewCtx): void {
   })
   const pass = document.createElement('button')
   pass.className = 'btn'
-  pass.disabled = !mine || !last
+  pass.disabled = !mine || !last || ctx.pending
   pass.textContent = t('tl.pass')
   pass.addEventListener('click', () => ctx.send({ type: 'pass' }))
   const hint = document.createElement('button')

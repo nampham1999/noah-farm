@@ -1,7 +1,7 @@
 import type { Card } from '../../cards/cards.ts'
 import { bestTotal, classOf, DEALER_MIN, PLAYER_MIN } from '../../cards/xiDach.ts'
 import { t, tKey } from '../../i18n/index.ts'
-import { cardEl } from './cardEl.ts'
+import { banner, cardEl } from './cardEl.ts'
 import type { ViewCtx } from './table.ts'
 
 const label = (cards: Card[]): string => {
@@ -52,14 +52,7 @@ export function renderXiDach(root: HTMLElement, ctx: ViewCtx): void {
 
   const hand = s.hand
   const mine = turn === ctx.me
-  const info = document.createElement('p')
-  info.className = 'ct__hint'
-  info.textContent = mine
-    ? t('xd.yourTurn', { s: Math.max(0, Math.ceil(((pub.deadline as number) - Date.now()) / 1000)) })
-    : done.includes(ctx.me)
-      ? t('xd.waitOthers')
-      : t('tl.wait', { name: name(turn) })
-  root.append(info)
+  root.append(banner(mine ? t('xd.yourTurn') : done.includes(ctx.me) ? t('xd.waitOthers') : t('tl.wait', { name: name(turn) }), mine))
 
   const mineBox = document.createElement('div')
   mineBox.className = 'tl__center'
@@ -77,12 +70,12 @@ export function renderXiDach(root: HTMLElement, ctx: ViewCtx): void {
   bar.className = 'ct__actions'
   const hit = document.createElement('button')
   hit.className = 'btn primary'
-  hit.disabled = !mine || hand.length >= 5
+  hit.disabled = !mine || hand.length >= 5 || ctx.pending
   hit.textContent = `➕ ${t('xd.hit')}`
   hit.addEventListener('click', () => ctx.send({ type: 'hit' }))
   const stand = document.createElement('button')
   stand.className = 'btn'
-  stand.disabled = !mine || (hand.length < 5 && bestTotal(hand) < min)
+  stand.disabled = !mine || (hand.length < 5 && bestTotal(hand) < min) || ctx.pending
   stand.textContent = `✋ ${t('xd.stand')}`
   stand.addEventListener('click', () => ctx.send({ type: 'stand' }))
   bar.append(hit, stand)

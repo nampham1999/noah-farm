@@ -16,3 +16,11 @@ export function cardEl(c: Card | null, opts: { selected?: boolean; mini?: boolea
   if (opts.onClick) el.addEventListener('click', opts.onClick)
   return el
 }
+
+/** Dải hướng dẫn: vàng nổi bật khi đến lượt bạn, mờ khi đang chờ người khác. */
+export function banner(text: string, active: boolean): HTMLElement {
+  const el = document.createElement('p')
+  el.className = 'ct__turn' + (active ? '' : ' is-wait')
+  el.textContent = text
+  return el
+}

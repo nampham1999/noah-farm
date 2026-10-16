@@ -42,6 +42,8 @@ export interface Session {
 export const cardTable = {
   session: null as Session | null,
   lobby: [] as TableMeta[],
+  /** Vừa gửi một nước đi, chưa thấy bàn cập nhật: giao diện tạm khoá nút để khỏi bấm đúp. */
+  pending: false,
 }
 
 /** Bàn không cập nhật quá lâu coi như chủ bàn đã thoát. */
@@ -191,6 +193,7 @@ async function attach(tid: string): Promise<void> {
       const json = (snap.data() as { pubJson?: string }).pubJson
       session.pub = json ? (JSON.parse(json) as Record<string, unknown>) : null
       applyHand()
+      cardTable.pending = false
       onRound(session)
       changed()
     }, (e) => console.warn('Table', e)),
@@ -309,9 +312,20 @@ export async function sendMove(move: unknown): Promise<void> {
     return
   }
   const fs = await lib()
+  cardTable.pending = true
+  changed()
+  // Không thấy bàn trả lời sau vài giây thì mở khoá lại để bấm lần nữa.
+  window.setTimeout(() => {
+    if (cardTable.pending) {
+      cardTable.pending = false
+      changed()
+    }
+  }, 4000)
   try {
     await fs.addDoc(fs.collection(db(fs), 'tables', s.tid, 'moves'), { uid: me(), round: s.meta.round, move: JSON.stringify(move), at: Date.now() })
   } catch (e) {
+    cardTable.pending = false
+    changed()
     notifyError(e)
   }
 }
@@ -377,13 +391,15 @@ async function publish(): Promise<void> {
   const results = s.engine.result(round, s.meta.stake)
   const status = results ? 'done' : 'playing'
   try {
+    // Bài và thông tin bàn ghi cùng một lần (một vòng gửi duy nhất, mọi người thấy nhất quán).
+    const batch = fs.writeBatch(d)
     for (const [uid, cards] of Object.entries(round.hands)) {
       const json = JSON.stringify(cards)
       if (host.lastHands[uid] === json) continue
       host.lastHands[uid] = json
-      await fs.setDoc(fs.doc(d, 'tables', s.tid, 'hands', uid), { round: s.meta.round, cards })
+      batch.set(fs.doc(d, 'tables', s.tid, 'hands', uid), { round: s.meta.round, cards })
     }
-    await fs.updateDoc(fs.doc(d, 'tables', s.tid), {
+    batch.update(fs.doc(d, 'tables', s.tid), {
       round: s.meta.round,
       status,
       results: results ?? null,
@@ -391,6 +407,7 @@ async function publish(): Promise<void> {
       players: s.seats.map((x) => x.name),
       updatedAt: Date.now(),
     })
+    await batch.commit()
   } catch (e) {
     notifyError(e)
   }

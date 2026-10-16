@@ -14,6 +14,8 @@ export interface ViewCtx {
   state: GameState
   send(move: unknown): void
   refresh(): void
+  /** Vừa gửi nước đi, đang chờ bàn trả lời: nên khoá nút. */
+  pending: boolean
 }
 
 const VIEWS: Partial<Record<GameId, (root: HTMLElement, ctx: ViewCtx) => void>> = {
@@ -25,7 +27,9 @@ const VIEWS: Partial<Record<GameId, (root: HTMLElement, ctx: ViewCtx) => void>> 
 
 let overlay: HTMLElement | null = null
 let confirmLeave = false
+let showHelp = false
 let ticker = 0
+let frame = 0
 
 /** Màn hình bàn bài: hiện khi đang ngồi bàn, tự đóng khi rời bàn. */
 export function attachCardTable(ui: HTMLElement, state: GameState, myUid: () => string): void {
@@ -37,21 +41,37 @@ export function attachCardTable(ui: HTMLElement, state: GameState, myUid: () => 
       clearInterval(ticker)
       ticker = 0
       confirmLeave = false
+      showHelp = false
       return
     }
     if (!overlay) {
       overlay = document.createElement('div')
       overlay.className = 'ct'
       ui.append(overlay)
-      // Có đồng hồ đếm ngược thì vẽ lại mỗi giây.
-      ticker = window.setInterval(() => {
-        if (cardTable.session?.pub?.deadline) render()
-      }, 1000)
+      // Chỉ cập nhật đồng hồ mỗi giây (không dựng lại cả bàn, tránh giật và nuốt cú chạm).
+      ticker = window.setInterval(updateTimer, 500)
     }
-    draw(overlay, s, state, myUid(), render)
+    draw(overlay, s, state, myUid(), schedule)
   }
-  bus.on('cardsChanged', render)
-  bus.on('langChanged', render)
+  // Gộp nhiều cập nhật liên tiếp (bàn, ghế, bài) thành một lần vẽ mỗi khung hình.
+  const schedule = () => {
+    if (frame) return
+    frame = requestAnimationFrame(() => {
+      frame = 0
+      render()
+    })
+  }
+  bus.on('cardsChanged', schedule)
+  bus.on('langChanged', schedule)
+}
+
+function updateTimer(): void {
+  const el = overlay?.querySelector<HTMLElement>('.ct__timer')
+  if (!el) return
+  const deadline = Number(el.dataset.deadline)
+  const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+  el.textContent = `⏱ ${left}`
+  el.classList.toggle('is-low', left <= 8)
 }
 
 function draw(el: HTMLElement, s: Session, state: GameState, me: string, refresh: () => void): void {
@@ -78,7 +98,24 @@ function draw(el: HTMLElement, s: Session, state: GameState, me: string, refresh
     confirmLeave = false
     void leaveTable()
   })
-  top.append(title, leave)
+  const deadline = (s.pub?.deadline as number | undefined) ?? 0
+  const right = document.createElement('div')
+  right.className = 'ct__tools'
+  if (deadline > 0 && s.meta.status === 'playing') {
+    const timer = document.createElement('span')
+    timer.className = 'ct__timer'
+    timer.dataset.deadline = String(deadline)
+    right.append(timer)
+  }
+  const help = document.createElement('button')
+  help.className = 'btn small' + (showHelp ? ' is-active' : '')
+  help.textContent = '❓'
+  help.addEventListener('click', () => {
+    showHelp = !showHelp
+    refresh()
+  })
+  right.append(help, leave)
+  top.append(title, right)
 
   const seats = document.createElement('div')
   seats.className = 'ct__seats'
@@ -87,7 +124,9 @@ function draw(el: HTMLElement, s: Session, state: GameState, me: string, refresh
     const chip = document.createElement('div')
     chip.className = 'ct__seat' + (seat.uid === me ? ' is-me' : '')
     const gold = s.meta.results?.[seat.uid]
-    chip.textContent = `${seat.uid === s.meta.host ? '👑 ' : ''}${seat.name}${midRound && submitted.includes(seat.uid) ? ' ✅' : ''}`
+    const turn = midRound && s.pub?.turn === seat.uid
+    if (turn) chip.classList.add('is-turn')
+    chip.textContent = `${turn ? '▶ ' : ''}${seat.uid === s.meta.host ? '👑 ' : ''}${seat.name}${midRound && submitted.includes(seat.uid) ? ' ✅' : ''}`
     if (gold !== undefined) {
       const d = document.createElement('b')
       d.className = gold >= 0 ? 'is-up' : 'is-down'
@@ -99,6 +138,12 @@ function draw(el: HTMLElement, s: Session, state: GameState, me: string, refresh
 
   const main = document.createElement('div')
   main.className = 'ct__main'
+  if (showHelp) {
+    const box = document.createElement('div')
+    box.className = 'ct__help'
+    box.textContent = tKey(`cards.rule.${s.meta.game}`)
+    main.append(box)
+  }
   if (s.meta.status === 'lobby' || !s.pub) {
     const p = document.createElement('p')
     p.className = 'ct__hint'
@@ -107,7 +152,7 @@ function draw(el: HTMLElement, s: Session, state: GameState, me: string, refresh
       : t('cards.guestWait')
     main.append(p)
   } else {
-    VIEWS[s.meta.game]?.(main, { session: s, me, state, send: (m) => void sendMove(m), refresh })
+    VIEWS[s.meta.game]?.(main, { session: s, me, state, send: (m) => void sendMove(m), refresh, pending: cardTable.pending })
   }
 
   const bar = document.createElement('div')
@@ -122,4 +167,5 @@ function draw(el: HTMLElement, s: Session, state: GameState, me: string, refresh
   }
   el.append(top, seats, main, bar)
   main.scrollTop = scroll
+  updateTimer()
 }
