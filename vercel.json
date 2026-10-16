@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/__/auth/:path*", "destination": "https://nsoft-dfe66.firebaseapp.com/__/auth/:path*" }
-  ]
-}
