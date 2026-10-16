@@ -122,6 +122,8 @@ export function dayKey(d = new Date()): string {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
 }
 
+const REDIRECT_KEY = 'noahfarm.googleRedirect'
+
 export class Cloud {
   private readonly authLib: Auth
   private readonly fs: Store
@@ -145,6 +147,18 @@ export class Cloud {
       const app = initializeApp(FIREBASE_CONFIG)
       const auth = authLib.getAuth(app)
       await auth.authStateReady()
+      // Vừa quay về từ trang đăng nhập Google (cách đăng nhập dự phòng khi cửa sổ bật lên bị chặn): hoàn tất liên kết.
+      if (sessionStorage.getItem(REDIRECT_KEY)) {
+        sessionStorage.removeItem(REDIRECT_KEY)
+        try {
+          await authLib.getRedirectResult(auth)
+        } catch (e) {
+          // Tài khoản Google này đã có người chơi ở máy khác: đăng nhập thẳng vào tài khoản đó.
+          const cred = authLib.GoogleAuthProvider.credentialFromError(e as import('firebase/auth').AuthError)
+          if (cred) await authLib.signInWithCredential(auth, cred)
+          else console.warn('Redirect sign-in failed', e)
+        }
+      }
       if (!auth.currentUser) await authLib.signInAnonymously(auth)
       return new Cloud(app, authLib, fs, auth, fs.getFirestore(app))
     } catch (e) {
@@ -163,13 +177,25 @@ export class Cloud {
    * (đã chơi trên máy khác) thì chuyển sang tài khoản đó và trả về 'switched'.
    */
   async signInGoogle(): Promise<'linked' | 'switched'> {
-    const { GoogleAuthProvider, linkWithPopup, signInWithPopup } = this.authLib
+    const { GoogleAuthProvider, linkWithPopup, linkWithRedirect, signInWithPopup } = this.authLib
     const provider = new GoogleAuthProvider()
     try {
       await linkWithPopup(this.auth.currentUser!, provider)
       return 'linked'
     } catch (e) {
       const code = (e as { code?: string }).code ?? ''
+      // Cửa sổ bật lên bị chặn / môi trường không hỗ trợ: chuyển hẳn sang trang đăng nhập rồi quay lại (xử lý ở connect()).
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment' || code === 'auth/web-storage-unsupported') {
+        sessionStorage.setItem(REDIRECT_KEY, '1')
+        try {
+          await linkWithRedirect(this.auth.currentUser!, provider)
+        } catch (e2) {
+          sessionStorage.removeItem(REDIRECT_KEY)
+          throw wrap(e2)
+        }
+        // Trình duyệt đang chuyển trang; giữ lời hứa treo cho tới lúc đó.
+        return new Promise<never>(() => {})
+      }
       if (code === 'auth/credential-already-in-use' || code === 'auth/provider-already-linked') {
         try {
           await signInWithPopup(this.auth, provider)
