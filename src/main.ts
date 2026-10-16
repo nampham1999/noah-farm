@@ -64,13 +64,17 @@ import { createNewsPanel } from './ui/news.ts'
 import { checkinStatus } from './systems/checkin.ts'
 import { createForageView } from './render/forage.ts'
 import { collectNearby } from './systems/forage.ts'
+import { createCardHouse } from './render/cardHouse.ts'
+import { attachCardTable } from './ui/cards/table.ts'
+import { cardsLobbyPanel } from './ui/cards/lobby.ts'
+import { cardTable, startCards } from './online/cardTable.ts'
 import { createMonument } from './render/monument.ts'
 import { onVillageProgress, startVillage, village } from './online/village.ts'
 import { villagePanel } from './ui/village.ts'
 import { stallPanel } from './ui/market.ts'
 import { collectSales } from './online/market.ts'
 import { createLabels } from './render/labels.ts'
-import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, FOREST_ZONE, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
+import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, CARD_HOUSE, FOREST_ZONE, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
 import { GREENHOUSE_PRICE } from './systems/land.ts'
 import { HITCH } from './systems/riding.ts'
 import { racePanel } from './ui/race.ts'
@@ -239,6 +243,13 @@ async function start(): Promise<void> {
     openPanel(stallPanel(state, owner, () => (visiting ? { name: myName(), gold: myGold() } : { name: state.player.name, gold: state.player.gold }), visiting))
   }
   const monument = createMonument(world.scene, models)
+  const cardHouse = createCardHouse(world.scene)
+  const lobbyPanel = cardsLobbyPanel(state)
+  const openCards = () => {
+    if (visiting) return
+    if (online.status !== 'on') return void bus.emit('notify', { key: 'cards.offline' })
+    if (!cardTable.session) openPanel(lobbyPanel)
+  }
   const pestsView = createPestsView(world.scene)
   const forageView = createForageView(world.scene)
   // Bảng tên nổi trên các chỗ có chức năng, để người chơi biết chỗ nào làm gì.
@@ -252,6 +263,7 @@ async function start(): Promise<void> {
     { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
     { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
     { x: FOREST_ZONE.gateX, y: 2.6, z: FOREST_ZONE.z1 - 0.2, text: () => `🍄 ${t('forage.label')}`, visible: () => !visiting },
+    { x: CARD_HOUSE.x, y: 4.6, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
     { x: MONUMENT.x, y: 4, z: MONUMENT.z, text: () => `🏘️ ${t('village.title')}`, visible: () => !visiting },
     { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => state.greenhouse ? `🪴 ${t('shop.greenhouse')}` : `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g` },
     { x: HITCH.x, y: 2.3, z: HITCH.z, text: () => `🐴 ${t('horse.shopName')}`, visible: () => state.horse && !ridingAnimal() },
@@ -309,11 +321,13 @@ async function start(): Promise<void> {
         void watchContests(state)
         void collectSales(state)
         void startVillage(state)
+        void startCards(state)
         window.setInterval(() => void collectSales(state), 120_000)
       }
     })
     attachChatButton(ui, state)
     attachContestBar(ui)
+    attachCardTable(ui, state, () => online.cloud?.account.uid ?? '')
     // Đua chó: trả thưởng khi có kết quả (cả cược từ lần chơi trước); thắng lớn thì báo lên kênh Làng.
     const settle = () => {
       const won = settleBet(state)
@@ -477,6 +491,7 @@ async function start(): Promise<void> {
     if (raceBooth.hitTest(followCam.camera, x, y)) return interaction.tapRace()
     if (marketStall.hitTest(followCam.camera, x, y)) return openStall()
     if (monument.hitTest(followCam.camera, x, y)) return openPanel(villagePanel(state))
+    if (cardHouse.hitTest(followCam.camera, x, y)) return openCards()
     const spot = orchardView.hitTest(followCam.camera, x, y)
     if (spot >= 0) return interaction.tapTree(spot)
     const hit = pickGround(followCam.camera, x, y)
@@ -629,6 +644,9 @@ async function start(): Promise<void> {
         online,
         presence,
         village,
+        /** Bàn bài: cardTable để test giao diện bằng phiên giả, bus để báo thay đổi. */
+        cards: cardTable,
+        bus,
         /** Giả lập một việc vừa làm (để test thách đấu, nhiệm vụ). */
         progress: (ev: Progress) => bus.emit('progress', ev),
         saveNow: () => autosaver.saveNow(),

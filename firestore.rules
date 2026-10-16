@@ -120,6 +120,33 @@ service cloud.firestore {
           && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid]));
     }
 
+    // Khu giải trí (bài): chủ bàn là nhà cái. Ghế do từng người tự ngồi/rời; bài kín chỉ chủ bàn ghi và
+    // chủ bài đọc được; nước đi gửi qua moves cho chủ bàn xử lý.
+    match /tables/{tid} {
+      function isHost() {
+        return signedIn() && get(/databases/$(database)/documents/tables/$(tid)).data.host == request.auth.uid;
+      }
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.host == request.auth.uid
+        && request.resource.data.status == 'lobby' && request.resource.data.stake is int
+        && request.resource.data.stake >= 1 && request.resource.data.stake <= 10;
+      allow update, delete: if signedIn() && resource.data.host == request.auth.uid;
+
+      match /seats/{uid} {
+        allow read: if signedIn();
+        allow create, delete: if isMe(uid) || isHost();
+        allow update: if isMe(uid);
+      }
+      match /hands/{uid} {
+        allow read: if isMe(uid) || isHost();
+        allow write: if isHost();
+      }
+      match /moves/{id} {
+        allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+        allow read, delete: if isHost();
+      }
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();

@@ -195,6 +195,8 @@ export interface GameState {
   festival: { stamp: number; progress: number; done: boolean } | null
   /** Điểm danh hằng ngày: day là số thứ tự ngày thật lần nhận gần nhất, streak là chuỗi ngày liên tiếp. */
   checkin: { day: number; streak: number }
+  /** Khu giải trí: tiền cọc đang giữ của ván bài chưa xong, và thành tích chơi bài. */
+  cards: { escrow: { tid: string; round: number; amount: number } | null; played: number; won: number; net: number }
   /** Hái lượm trong rừng: stamp là dayStamp của lứa đang có, taken là các điểm đã hái. */
   forage: { stamp: number; taken: number[] }
   /** Độ thân thiết với từng dân làng (theo id). */
@@ -255,6 +257,7 @@ export function createInitialState(): GameState {
     orchard: [],
     festival: null,
     checkin: { day: -1, streak: 0 },
+    cards: { escrow: null, played: 0, won: 0, net: 0 },
     forage: { stamp: -1, taken: [] },
     friends: {},
     guestbook: [],

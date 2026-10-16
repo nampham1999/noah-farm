@@ -179,6 +179,18 @@ function normalize(data: Record<string, unknown>): GameState {
       const f = obj(data.forage)
       return { stamp: num(f.stamp, -1), taken: Array.isArray(f.taken) ? f.taken.filter((n): n is number => typeof n === 'number').slice(0, 40) : [] }
     })(),
+    cards: (() => {
+      const c = obj(data.cards)
+      const e = obj(c.escrow)
+      return {
+        escrow: typeof e.tid === 'string' && typeof e.round === 'number' && typeof e.amount === 'number' && e.amount > 0
+          ? { tid: e.tid.slice(0, 40), round: e.round, amount: Math.floor(e.amount) }
+          : null,
+        played: Math.max(0, Math.floor(num(c.played, 0))),
+        won: Math.max(0, Math.floor(num(c.won, 0))),
+        net: Math.floor(num(c.net, 0)),
+      }
+    })(),
     checkin: (() => {
       const c = obj(data.checkin)
       return { day: num(c.day, -1), streak: Math.max(0, Math.floor(num(c.streak, 0))) }
