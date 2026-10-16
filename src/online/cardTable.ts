@@ -351,7 +351,9 @@ export async function startRound(): Promise<void> {
   const s = cardTable.session
   if (!s || !s.isHost || !host) return
   if (s.seats.length < s.engine.min) return void bus.emit('notify', { key: 'cards.needPlayers', params: { n: s.engine.min } })
-  host.round = s.engine.deal(s.seats.slice(0, s.engine.max), host.rand, Date.now())
+  // Chủ bàn ngồi đầu (làm nhà cái ở Xì dách), những người khác theo thứ tự ghế.
+  const seated = [...s.seats.filter((x) => x.uid === s.meta.host), ...s.seats.filter((x) => x.uid !== s.meta.host)]
+  host.round = s.engine.deal(seated.slice(0, s.engine.max), host.rand, Date.now())
   host.lastHands = {}
   s.meta = { ...s.meta, round: s.meta.round + 1, status: 'playing', results: null }
   await publish()
