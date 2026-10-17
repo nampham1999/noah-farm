@@ -84,7 +84,7 @@ import { createFoxView } from './render/fox.ts'
 import { renderPortrait } from './render/portrait.ts'
 import { attachNotifications } from './systems/notifications.ts'
 import { helpPest, loadFriendFarm, online, sendHelp, setVisitName, startOnline, stealCrop } from './online/online.ts'
-import { pestsNewDay } from './systems/pests.ts'
+import { markActive, pestsNewDay } from './systems/pests.ts'
 import { createPestsView } from './render/pests.ts'
 import { askUseCloud, guestbookPanel } from './ui/online.ts'
 import { announce, startChat } from './online/chat.ts'
@@ -451,7 +451,9 @@ async function start(): Promise<void> {
   // Thành tựu không gắn với một việc cụ thể (cấp, đất, vật nuôi): kiểm tra định kỳ.
   if (!visiting) window.setInterval(() => checkAchievements(state), 5000)
 
+  bus.on('action', markActive)
   bus.on('tap', ({ x, y }) => {
+    markActive()
     if (isPanelOpen()) return
     // Đang thăm: chỉ đi lại và vào xem nhà.
     if (visiting) {
@@ -764,6 +766,7 @@ async function start(): Promise<void> {
     petView.update(state, clock.getElapsed())
     greenhouseView.update(state)
     horseView.update(state, clock.getElapsed(), dt)
+    if (speed > 0.1) markActive()
     sendPose(state.player.pos[0], state.player.pos[2], state.player.rotY, Math.min(1, speed / WALK_SPEED), state.player.indoors)
     if (!visiting) updateIdentity({ name: state.player.name, look: state.player.look })
     remoteView.update(dt, state.player.indoors)

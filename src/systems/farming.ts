@@ -42,15 +42,16 @@ export function timeToRipe(plot: PlotState, t: number): number {
 
 /**
  * Cho cây lớn tới thời điểm t. Gọi mỗi khung hình, và một lần khi mở game để tính bù.
- * prevT là lần gọi trước: cây sai mùa (chưa chín) đứng yên, nên dời mốc giai đoạn
- * đi đúng khoảng thời gian đó để khi về đúng mùa cây lớn tiếp chứ không nhảy cóc.
+ * prevT là lần gọi trước: cây bị sâu đứng yên, nên dời mốc giai đoạn đi đúng khoảng thời gian đó
+ * để khi bắt sâu xong cây lớn tiếp chứ không nhảy cóc.
  */
 export function updateCrops(state: GameState, t: number, prevT = t): void {
   for (const plot of state.plots) {
     const crop = cropOf(plot)
     if (!crop) continue
-    // Trái mùa (ngoài nhà kính) hoặc bị sâu thì đứng yên: dời mốc thời gian theo.
-    if ((!crop.seasons.includes(state.clock.season) && !inGreenhouse(plot.x, plot.z)) || state.pests.includes(`${plot.x},${plot.z}`)) {
+    // Bị sâu thì đứng yên: dời mốc thời gian theo. (Mùa chỉ quyết định gieo được hay không; cây đã gieo
+    // cứ lớn tới khi chín dù giữa chừng sang mùa khác, để treo máy qua đêm vẫn có nông sản.)
+    if (state.pests.includes(`${plot.x},${plot.z}`)) {
       if (plot.stage < STAGES && t > prevT) {
         plot.stageStartedAt += t - prevT
         if (plot.wateredAt !== null) plot.wateredAt += t - prevT
