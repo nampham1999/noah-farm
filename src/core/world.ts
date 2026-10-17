@@ -136,8 +136,8 @@ export const RACE_BOOTH = { x: 15.2, z: 11.8, r: 0.6 }
 /** Sạp chợ phiên của người chơi, cạnh đường chính gần cổng. */
 export const MARKET_STALL = { x: 7.9, z: 16.8, r: 0.9 }
 /** Quảng trường làng: công trình chung (đài phun nước, cối xay gió, tượng gà vàng). */
-/** Khu giải trí (chơi bài cùng bạn bè), phía bắc đường chính, cạnh lối vào rừng. */
-export const CARD_HOUSE = { x: 2.2, z: -10.5, r: 1.8 }
+/** Khu giải trí (chơi bài cùng bạn bè), góc đông nam, cạnh trường đua chó. */
+export const CARD_HOUSE = { x: 15.2, z: 16.1, r: 1.6 }
 export const MONUMENT = { x: 1.9, z: 11.1, r: 1.3 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
 export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
