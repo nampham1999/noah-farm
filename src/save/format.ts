@@ -104,7 +104,9 @@ function normalize(data: Record<string, unknown>): GameState {
       ? { id: st.id, qty: Math.floor(st.qty) }
       : null
   })
-  while (slots.length < balance.inventorySize) slots.push(null)
+  const bagLevel = Math.max(0, Math.min(balance.bagUpgrades.length, Math.floor(typeof data.bagLevel === 'number' ? data.bagLevel : 0)))
+  const bagSize = balance.bagUpgrades.slice(0, bagLevel).reduce((n, u) => n + u.slots, balance.inventorySize)
+  while (slots.length < bagSize) slots.push(null)
 
   const savedPlots = new Map<string, Record<string, unknown>>()
   for (const raw of data.plots as unknown[]) {
@@ -154,6 +156,7 @@ function normalize(data: Record<string, unknown>): GameState {
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
     landLevel,
+    bagLevel,
     coopLevel,
     animals,
     pet: normalizePet(data.pet),

@@ -2,6 +2,7 @@ import type { GameState, ItemStack } from '../core/state.ts'
 import { balance } from '../data/index.ts'
 import { itemName, t } from '../i18n/index.ts'
 import { itemIconHtml } from './icons.ts'
+import { buyBagUpgrade, nextBagUpgrade } from '../systems/inventory.ts'
 import type { PanelSpec } from './panel.ts'
 
 /** Vẽ một ô vật phẩm; dùng chung cho túi đồ và thanh công cụ. */
@@ -54,6 +55,31 @@ export function createInventoryPanel(state: GameState): PanelSpec {
         ? itemName(state.inventory.slots[picked]!.id)
         : t('inventory.hint')
       body.append(grid, hint)
+
+      // Mở rộng túi: thêm ô trống, mở dần theo cấp.
+      const used = state.inventory.slots.filter(Boolean).length
+      const cap = document.createElement('p')
+      cap.className = 'panel__hint'
+      cap.textContent = t('inventory.capacity', { used, total: state.inventory.slots.length })
+      body.append(cap)
+      const up = nextBagUpgrade(state)
+      if (up) {
+        const b = document.createElement('button')
+        b.className = 'btn' + (state.player.gold >= up.price && state.player.level >= up.level ? ' primary' : '')
+        b.textContent = state.player.level < up.level
+          ? `🎒 ${t('inventory.expandLocked', { slots: up.slots, level: up.level })}`
+          : `🎒 ${t('inventory.expand', { slots: up.slots, price: up.price })}`
+        b.addEventListener('click', () => {
+          buyBagUpgrade(state)
+          refresh()
+        })
+        body.append(b)
+      } else {
+        const full = document.createElement('p')
+        full.className = 'panel__hint'
+        full.textContent = `🎒 ${t('inventory.maxed')}`
+        body.append(full)
+      }
     },
   }
 }

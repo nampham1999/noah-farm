@@ -19,6 +19,13 @@
     }
   ],
   "inventorySize": 24,
+  "bagUpgrades": [
+    { "slots": 3, "price": 250, "level": 2 },
+    { "slots": 9, "price": 700, "level": 4 },
+    { "slots": 9, "price": 1800, "level": 6 },
+    { "slots": 9, "price": 4500, "level": 9 },
+    { "slots": 9, "price": 9000, "level": 12 }
+  ],
   "toolbarSize": 9,
   "cropStages": 3,
   "staminaMax": 100,

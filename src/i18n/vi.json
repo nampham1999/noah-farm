@@ -40,7 +40,7 @@
   "notice.needCan": "Cần có bình tưới",
   "notice.noSeeds": "Hết hạt giống, ra quầy hàng mua thêm",
   "notice.wrongSeason": "{item} không gieo được mùa này",
-  "notice.bagFull": "Túi đồ đã đầy",
+  "notice.bagFull": "Túi đầy! Mở rộng túi trong Túi đồ để có thêm chỗ.",
   "notice.harvested": "+1 {item} (+{xp} XP)",
   "notice.growing": "{item} đang lớn, còn khoảng {minutes} phút",
   "notice.locked": "Cần cấp {level}",
@@ -829,5 +829,10 @@
   "online.google.domain": "Đăng nhập Google bị chặn: tên miền {host} chưa được cho phép. Người quản trị cần vào Firebase → Authentication → Settings → Authorized domains và thêm {host}.",
   "online.google.setup": "Đăng nhập Google chưa được bật. Người quản trị cần vào Firebase → Authentication → Sign-in method và bật Google.",
   "online.google.popup": "Cửa sổ đăng nhập Google bị chặn hoặc bị đóng. Hãy cho phép cửa sổ bật lên (popup) cho trang này rồi thử lại, hoặc mở game bằng trình duyệt thường thay vì ứng dụng đã cài.",
-  "online.google.other": "Đăng nhập Google chưa được. Thử lại, hoặc mở game bằng trình duyệt thường."
+  "online.google.other": "Đăng nhập Google chưa được. Thử lại, hoặc mở game bằng trình duyệt thường.",
+  "inventory.capacity": "Túi: {used}/{total} ô",
+  "inventory.expand": "Mở rộng túi (+{slots} ô) · {price}g",
+  "inventory.expandLocked": "Mở rộng túi (+{slots} ô): cần cấp {level}",
+  "inventory.maxed": "Túi đã mở rộng tối đa.",
+  "inventory.expanded": "🎒 Túi đã mở rộng, giờ có {slots} ô!"
 }

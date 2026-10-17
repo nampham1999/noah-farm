@@ -1,5 +1,7 @@
 import type { InventoryState, ItemStack } from '../core/state.ts'
-import { item } from '../data/index.ts'
+import { bus } from '../core/events.ts'
+import type { GameState } from '../core/state.ts'
+import { balance, item } from '../data/index.ts'
 
 const MAX_STACK = 999
 
@@ -58,4 +60,30 @@ export function canFit(inv: InventoryState, id: string, qty: number): boolean {
 
 export function selectedStack(inv: InventoryState): ItemStack | null {
   return inv.slots[inv.selected] ?? null
+}
+
+/** Lần mở rộng túi kế tiếp; null nếu đã mở hết. */
+export function nextBagUpgrade(state: GameState): { slots: number; price: number; level: number } | null {
+  return balance.bagUpgrades[state.bagLevel] ?? null
+}
+
+/** Mua lần mở rộng túi kế tiếp (thêm ô trống cuối túi). */
+export function buyBagUpgrade(state: GameState): boolean {
+  const up = nextBagUpgrade(state)
+  if (!up) return false
+  if (state.player.level < up.level) {
+    bus.emit('notify', { key: 'notice.locked', params: { level: up.level } })
+    return false
+  }
+  if (state.player.gold < up.price) {
+    bus.emit('notify', { key: 'notice.noGold' })
+    return false
+  }
+  state.player.gold -= up.price
+  state.bagLevel++
+  for (let i = 0; i < up.slots; i++) state.inventory.slots.push(null)
+  bus.emit('notify', { key: 'inventory.expanded', params: { slots: state.inventory.slots.length }, good: true })
+  bus.emit('sfx', 'coin')
+  bus.emit('saveRequest', undefined)
+  return true
 }

@@ -179,6 +179,8 @@ export interface GameState {
   plots: PlotState[]
   /** Số khu ruộng đã mua thêm (0..4); khu thứ i dùng LAND_BLOCKS[i]. */
   landLevel: number
+  /** Số lần đã mở rộng túi đồ (xem balance.bagUpgrades). */
+  bagLevel: number
   /** Cấp chuồng: 0 là chưa có chuồng. */
   coopLevel: number
   animals: AnimalState[]
@@ -247,6 +249,7 @@ export function createInitialState(): GameState {
     inventory: { slots, selected: 0 },
     plots,
     landLevel: 0,
+    bagLevel: 0,
     coopLevel: 0,
     animals: [],
     machines: [],

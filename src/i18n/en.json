@@ -40,7 +40,7 @@
   "notice.needCan": "You need a watering can",
   "notice.noSeeds": "Out of seeds, buy more at the stall",
   "notice.wrongSeason": "{item} can't be planted this season",
-  "notice.bagFull": "Inventory is full",
+  "notice.bagFull": "Bag full! Expand it in the Inventory for more room.",
   "notice.harvested": "+1 {item} (+{xp} XP)",
   "notice.growing": "{item} is growing, about {minutes} min left",
   "notice.locked": "Requires level {level}",
@@ -829,5 +829,10 @@
   "online.google.domain": "Google sign-in blocked: the domain {host} isn't allowed yet. The admin must add {host} in Firebase → Authentication → Settings → Authorized domains.",
   "online.google.setup": "Google sign-in isn't enabled. The admin must enable Google in Firebase → Authentication → Sign-in method.",
   "online.google.popup": "The Google sign-in window was blocked or closed. Allow pop-ups for this site and try again, or open the game in a normal browser instead of the installed app.",
-  "online.google.other": "Google sign-in failed. Try again, or open the game in a normal browser."
+  "online.google.other": "Google sign-in failed. Try again, or open the game in a normal browser.",
+  "inventory.capacity": "Bag: {used}/{total} slots",
+  "inventory.expand": "Expand bag (+{slots} slots) · {price}g",
+  "inventory.expandLocked": "Expand bag (+{slots} slots): needs level {level}",
+  "inventory.maxed": "Your bag is fully expanded.",
+  "inventory.expanded": "🎒 Bag expanded, now {slots} slots!"
 }
