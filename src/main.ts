@@ -263,7 +263,7 @@ async function start(): Promise<void> {
     { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
     { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
     { x: FOREST_ZONE.gateX, y: 2.6, z: FOREST_ZONE.z1 - 0.2, text: () => `🍄 ${t('forage.label')}`, visible: () => !visiting },
-    { x: CARD_HOUSE.x, y: 4.6, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
+    { x: CARD_HOUSE.x, y: 4.1, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
     { x: MONUMENT.x, y: 4, z: MONUMENT.z, text: () => `🏘️ ${t('village.title')}`, visible: () => !visiting },
     { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => state.greenhouse ? `🪴 ${t('shop.greenhouse')}` : `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g` },
     { x: HITCH.x, y: 2.3, z: HITCH.z, text: () => `🐴 ${t('horse.shopName')}`, visible: () => state.horse && !ridingAnimal() },
