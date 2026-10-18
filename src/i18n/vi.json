@@ -292,7 +292,7 @@
   "journal.orders": "Đơn hàng ({n})",
   "quest.d_deliver": "Giao {n} đơn hàng cho dân làng",
   "pwa.install": "Cài vào màn hình chính",
-  "pwa.updated": "✨ Đã tải bản mới của game, sẽ dùng từ lần mở sau",
+  "pwa.updated": "✨ Có bản mới của game, đang tải lại…",
   "social.title": "Bạn bè",
   "social.visitTitle": "Khoe nông trại",
   "social.visitHint": "Gửi link này cho bạn bè để họ đi dạo nông trại của {name} (chỉ xem, không sửa được gì). Link là ảnh chụp lúc tạo; muốn khoe cảnh mới thì tạo lại.",

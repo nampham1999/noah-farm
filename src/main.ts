@@ -981,13 +981,30 @@ function supportsWebGL(): boolean {
 function registerServiceWorker(): void {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((e: unknown) => console.warn('SW register failed', e))
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then((reg) => {
+        // Tab mở lâu (treo máy) cũng phải biết có bản mới: hỏi lại máy chủ định kỳ và khi quay lại tab.
+        const check = () => void reg.update().catch(() => {})
+        window.setInterval(check, 20 * 60_000)
+        document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && check())
+      })
+      .catch((e: unknown) => console.warn('SW register failed', e))
   })
-  // Có bản mới thay vào: báo người chơi, bản mới dùng từ lần mở sau.
+  // Có bản mới thay vào: lưu game rồi tải lại để chạy bản mới (không làm gián đoạn lúc đang câu cá hay chơi bài).
   let hadController = !!navigator.serviceWorker.controller
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController) bus.emit('notify', { key: 'pwa.updated', good: true })
-    hadController = true
+    if (!hadController) {
+      hadController = true
+      return
+    }
+    bus.emit('notify', { key: 'pwa.updated', good: true })
+    bus.emit('saveRequest', undefined)
+    const reload = () => {
+      if (cardTable.session || isFishing()) return void window.setTimeout(reload, 5000)
+      location.reload()
+    }
+    window.setTimeout(reload, 2500)
   })
 }
 

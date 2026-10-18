@@ -292,7 +292,7 @@
   "journal.orders": "Orders ({n})",
   "quest.d_deliver": "Deliver {n} villager orders",
   "pwa.install": "Install to home screen",
-  "pwa.updated": "✨ A new version was downloaded and will be used next time",
+  "pwa.updated": "✨ A new version is available, reloading…",
   "social.title": "Friends",
   "social.visitTitle": "Show off your farm",
   "social.visitHint": "Send this link so friends can stroll around {name}'s farm (view only). It's a snapshot from now; make a new one to show changes.",
