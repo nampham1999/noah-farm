@@ -834,5 +834,8 @@
   "inventory.expand": "Expand bag (+{slots} slots) · {price}g",
   "inventory.expandLocked": "Expand bag (+{slots} slots): needs level {level}",
   "inventory.maxed": "Your bag is fully expanded.",
-  "inventory.expanded": "🎒 Bag expanded, now {slots} slots!"
+  "inventory.expanded": "🎒 Bag expanded, now {slots} slots!",
+  "crop.potato": "Potato",
+  "crop.bok_choy": "Bok choy",
+  "crop.purple_cabbage": "Purple cabbage"
 }

@@ -834,5 +834,8 @@
   "inventory.expand": "Mở rộng túi (+{slots} ô) · {price}g",
   "inventory.expandLocked": "Mở rộng túi (+{slots} ô): cần cấp {level}",
   "inventory.maxed": "Túi đã mở rộng tối đa.",
-  "inventory.expanded": "🎒 Túi đã mở rộng, giờ có {slots} ô!"
+  "inventory.expanded": "🎒 Túi đã mở rộng, giờ có {slots} ô!",
+  "crop.potato": "Khoai tây",
+  "crop.bok_choy": "Cải thìa",
+  "crop.purple_cabbage": "Bắp cải tím"
 }
