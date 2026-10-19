@@ -177,7 +177,7 @@ export class Cloud {
    * (đã chơi trên máy khác) thì chuyển sang tài khoản đó và trả về 'switched'.
    */
   async signInGoogle(): Promise<'linked' | 'switched'> {
-    const { GoogleAuthProvider, linkWithPopup, linkWithRedirect, signInWithPopup } = this.authLib
+    const { GoogleAuthProvider, linkWithPopup, linkWithRedirect, signInWithCredential, signInWithPopup } = this.authLib
     const provider = new GoogleAuthProvider()
     try {
       await linkWithPopup(this.auth.currentUser!, provider)
@@ -198,7 +198,11 @@ export class Cloud {
       }
       if (code === 'auth/credential-already-in-use' || code === 'auth/provider-already-linked') {
         try {
-          await signInWithPopup(this.auth, provider)
+          // Tài khoản Google này đã có người chơi (ở máy khác): dùng luôn chứng chỉ Google vừa lấy được để đăng nhập,
+          // không mở cửa sổ thứ hai (trình duyệt sẽ chặn vì không còn nằm trong cú bấm của người chơi).
+          const cred = GoogleAuthProvider.credentialFromError(e as import('firebase/auth').AuthError)
+          if (cred) await signInWithCredential(this.auth, cred)
+          else await signInWithPopup(this.auth, provider)
           localStorage.setItem(SWITCHED_KEY, '1')
           return 'switched'
         } catch (e2) {

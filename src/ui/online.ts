@@ -84,7 +84,12 @@ export function renderOnline(body: HTMLElement, state: GameState, refresh: () =>
       authError = null
       void cloud.signInGoogle().then(
         // Đổi sang tài khoản đã chơi ở máy khác: tải lại để lấy bản lưu trên mây.
-        (r) => (r === 'switched' ? location.reload() : refresh()),
+        (r) => {
+          if (r === 'switched') return location.reload()
+          // Vừa liên kết Google: gửi bản lưu hiện tại lên mây ngay để máy khác đăng nhập là có dữ liệu mới nhất.
+          bus.emit('saveRequest', undefined)
+          refresh()
+        },
         (e: unknown) => {
           // Thông báo nổi nằm dưới cửa sổ này nên không thấy được: hiện lỗi ngay trong cửa sổ.
           authError = authErrorText(e)

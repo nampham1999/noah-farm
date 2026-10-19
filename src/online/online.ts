@@ -123,24 +123,28 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
     return
   }
 
+  // Lấy bản lưu trên mây trước (đừng để lỗi đồng bộ hồ sơ chặn việc nạp dữ liệu tài khoản).
+  const switched = localStorage.getItem(SWITCHED_KEY) !== null
   try {
-    await syncProfile(state)
-    // Bản trên mây mới hơn (chơi ở máy khác): hỏi có dùng không.
     const remote = await cloud.downloadSave()
     // Vừa đăng nhập vào tài khoản Google đã có: dùng luôn bản lưu của tài khoản đó (không hỏi), giữ bản cũ trên máy để khôi phục.
-    const switched = localStorage.getItem(SWITCHED_KEY) !== null
-    localStorage.removeItem(SWITCHED_KEY)
-    if (switched && remote) {
-      try {
-        localStorage.setItem('noahfarm.preSwitchSave', store.exportText(state, Date.now()))
-      } catch {
-        /* hết chỗ lưu: bỏ qua bản dự phòng */
+    if (switched) {
+      if (remote) {
+        localStorage.removeItem(SWITCHED_KEY)
+        try {
+          localStorage.setItem('noahfarm.preSwitchSave', store.exportText(state, Date.now()))
+        } catch {
+          /* hết chỗ lưu: bỏ qua bản dự phòng */
+        }
+        autosaver.suspend()
+        await store.replace(await gunzipBase64Url(remote.data))
+        location.reload()
+        return
       }
-      autosaver.suspend()
-      await store.replace(await gunzipBase64Url(remote.data))
-      location.reload()
-      return
+      // Tài khoản chưa lưu gì lên mây: giữ dữ liệu trên máy và lưu lên tài khoản này.
+      localStorage.removeItem(SWITCHED_KEY)
     }
+    // Bản trên mây mới hơn (chơi ở máy khác): hỏi có dùng không.
     if (remote && remote.savedAt > Math.max(localSavedAt, autosaver.lastSavedAt) + NEWER_MS) {
       const parsed = await decodeSave(remote.data)
       if (await askUseCloud(parsed)) {
@@ -151,7 +155,14 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
       }
     }
   } catch (e) {
+    // Lỗi mạng khi vừa đổi tài khoản: giữ cờ để lần mở sau thử tải lại, và báo người chơi.
     console.warn('Online sync failed', e)
+    if (switched) notifyError(e)
+  }
+  try {
+    await syncProfile(state)
+  } catch (e) {
+    console.warn('Profile sync failed', e)
   }
 
   // Gửi bản lưu lên sau khi lưu trên máy (thưa nhất mỗi phút), và một lần ngay bây giờ
