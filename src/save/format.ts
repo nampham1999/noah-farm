@@ -151,7 +151,7 @@ function normalize(data: Record<string, unknown>): GameState {
   return {
     version: SAVE_VERSION,
     meta: { ...base.meta, ...obj(data.meta) },
-    player: { ...base.player, ...p, look: normalizeLook(p.look), ...outdoorPos(p) },
+    player: { ...base.player, ...p, floor: Math.max(0, Math.min(2, Math.floor(num(p.floor, 0)))), look: normalizeLook(p.look), ...outdoorPos(p) },
     clock: { ...base.clock, ...obj(data.clock), weather: normalizeWeather(obj(data.clock).weather) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
@@ -220,7 +220,7 @@ function normalize(data: Record<string, unknown>): GameState {
           furniture: (obj(data.house).furniture as unknown[]).flatMap((raw) => {
             const f = obj(raw)
             return typeof f.id === 'string' && FURNITURE_BY_ID.has(f.id)
-              ? [{ id: f.id, cx: Math.floor(num(f.cx, 0)), cz: Math.floor(num(f.cz, 0)), rot: Math.floor(num(f.rot, 0)) & 3 }]
+              ? [{ id: f.id, cx: Math.floor(num(f.cx, 0)), cz: Math.floor(num(f.cz, 0)), rot: Math.floor(num(f.rot, 0)) & 3, ...(num(f.fl, 0) > 0 ? { fl: Math.min(2, Math.floor(num(f.fl, 0))) } : {}) }]
               : []
           }),
         }

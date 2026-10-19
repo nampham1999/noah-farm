@@ -1,7 +1,7 @@
 import type { GameState } from '../core/state.ts'
 import { animalData, CROP_BY_ID, FRUIT_TREES, FURNITURE, item, MACHINES } from '../data/index.ts'
 import { buyFurniture, nextHouseUpgrade, upgradeHouse } from '../systems/house.ts'
-import { ROOM_SIZES } from '../core/world.ts'
+import { HOUSE_LAYOUTS } from '../core/world.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import { now } from '../core/time.ts'
 import { buyAnimal, buyCoopLevel, coopCapacity } from '../systems/animals.ts'
@@ -141,7 +141,7 @@ export function createShopPanel(state: GameState): PanelSpec {
     const house = nextHouseUpgrade(state)
     const houseRow = iconRow('🏡', t('shop.houseUpgrade', { level: state.house.level + 1 }),
       house
-        ? `${t('shop.houseSub', { w: ROOM_SIZES[state.house.level].w, d: ROOM_SIZES[state.house.level].d })}${p.level < house.level ? ` · ${t('notice.locked', { level: house.level })}` : ''}`
+        ? `${t('shop.houseSub', { w: HOUSE_LAYOUTS[state.house.level].w, d: HOUSE_LAYOUTS[state.house.level].d, floors: HOUSE_LAYOUTS[state.house.level].floors })} · ${tKey(`house.feature.${state.house.level + 1}`)}${p.level < house.level ? ` · ${t('notice.locked', { level: house.level })}` : ''}`
         : t('shop.houseMax'))
     if (house) {
       if (p.level < house.level) houseRow.classList.add('locked')

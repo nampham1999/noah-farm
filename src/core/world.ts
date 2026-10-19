@@ -50,25 +50,48 @@ export function roomCellAt(wx: number, wz: number): { cx: number; cz: number } |
   return cx >= 0 && cx < ROOM.w && cz >= 0 && cz < ROOM.d ? { cx, cz } : null
 }
 
-/** Chỗ xuất hiện khi vào nhà (ngay trong cửa). */
-export const ROOM_ENTRY = { x: ROOM.x, z: ROOM.z + ROOM.d / 2 - 0.7 }
-
-/** Kích thước phòng (ô) theo cấp nhà 1..5; chiều rộng chẵn để cửa nằm giữa. */
-export const ROOM_SIZES = [
-  { w: 12, d: 9 },
-  { w: 14, d: 10 },
-  { w: 16, d: 11 },
-  { w: 18, d: 12 },
-  { w: 20, d: 13 },
+/**
+ * Bố cục nhà theo cấp 1..5. Phòng chính rộng MAIN_W ô (có cửa ra ở giữa cạnh nam và cầu thang ở góc đông bắc);
+ * nhà từ cấp 2 có thêm phòng phụ ở phía đông (ngăn bằng vách có lối đi), từ cấp 3 có thêm tầng.
+ * Mọi tầng dùng chung kích thước; đồ nội thất thuộc về một tầng (trường fl).
+ */
+export interface HouseLayout {
+  w: number
+  d: number
+  floors: number
+}
+export const HOUSE_LAYOUTS: HouseLayout[] = [
+  { w: 12, d: 9, floors: 1 },
+  { w: 18, d: 10, floors: 1 },
+  { w: 18, d: 11, floors: 2 },
+  { w: 20, d: 12, floors: 2 },
+  { w: 20, d: 13, floors: 3 },
 ]
+export const MAIN_W = 12
+
+/** Cầu thang (ô, từ góc tây bắc): lên ở phía đông, xuống ở phía tây của nó. Bước vào là đổi tầng. */
+export const STAIRS_UP = { cx: 10, cz: 0, w: 2, d: 2 }
+export const STAIRS_DOWN = { cx: 8, cz: 0, w: 2, d: 2 }
+
+/** Vách ngăn phòng chính và phòng phụ: lối đi rộng 2 ô gần cạnh nam. */
+export const DOORWAY_ROWS = 2
+
+/** Chỗ xuất hiện khi vào nhà (ngay trong cửa). */
+export const ROOM_ENTRY = { x: ROOM.x - ROOM.w / 2 + MAIN_W / 2, z: ROOM.z + ROOM.d / 2 - 0.7 }
 
 /** Đổi kích thước phòng theo cấp nhà (đồ đã đặt tính từ góc tây bắc nên vẫn giữ chỗ). */
 export function setRoomSize(level: number): void {
-  const size = ROOM_SIZES[Math.max(0, Math.min(ROOM_SIZES.length - 1, level - 1))]
+  const size = layoutOf(level)
   ROOM.w = size.w
   ROOM.d = size.d
+  ROOM_ENTRY.x = ROOM.x - ROOM.w / 2 + MAIN_W / 2
   ROOM_ENTRY.z = ROOM.z + ROOM.d / 2 - 0.7
 }
+
+export function layoutOf(level: number): HouseLayout {
+  return HOUSE_LAYOUTS[Math.max(0, Math.min(HOUSE_LAYOUTS.length - 1, level - 1))]
+}
+
 /** Hồ cá: tâm và bán kính trung bình; viền thật uốn lượn theo pondRadius(). */
 export const POND = { x: 11.5, z: 4.5, r: 4.2 }
 

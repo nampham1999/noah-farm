@@ -4,7 +4,7 @@ import type { PlotState, Season, Weather } from './core/state.ts'
 import { addItem, countItem } from './systems/inventory.ts'
 import { blockPlots, greenhousePlots } from './core/state.ts'
 import { ANIMAL_BY_ID, animalData, CROPS, DAY_MS, FRUIT_TREES, MACHINES, ORCHARD, type AnimalType } from './data/index.ts'
-import { inGreenhouse, LAND_BLOCKS, ROOM_SIZES } from './core/world.ts'
+import { HOUSE_LAYOUTS, inGreenhouse, LAND_BLOCKS } from './core/world.ts'
 import { NPCS } from './systems/orders.ts'
 import { applyWeather, setWeather, WEATHERS } from './systems/weather.ts'
 import { collect, machineStatus, updateMachines } from './systems/machines.ts'
@@ -28,7 +28,7 @@ import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
 import { createFishingView } from './render/fishing.ts'
 import { createHouseView, type HouseView } from './render/house.ts'
-import { atRoomDoor, blockedRects, enterHouse, exitHouse } from './systems/house.ts'
+import { atRoomDoor, blockedRects, changeFloor, enterHouse, exitHouse, reconcileHouse, stairsUnderfoot } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
 import { createCharacterPanel } from './ui/character.ts'
@@ -213,11 +213,15 @@ async function start(): Promise<void> {
     if (name === 'chicken' || name === 'cow' || name === 'pig') farmer.playAction?.('pet')
   })
   let lastFishPhase = 'idle'
+  let stairsReadyAt = 0
   const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
   const machinesView = createMachinesView(world.scene, models)
   // Cấp nhà: phòng trong nhà và mô hình nhà bên ngoài.
   setRoomSize(state.house.level)
+  // Bản lưu từ trước khi nhà có phòng phụ và cầu thang: cất đồ đang đè vách, cầu thang hay cửa về túi.
+  const movedBack = reconcileHouse(state)
+  if (movedBack) bus.emit('notify', { key: 'house.movedBack', params: { n: movedBack } })
   world.setHouseLevel(state.house.level)
   bus.on('houseUpgraded', (level) => world.setHouseLevel(level))
   const petView = createPetView(world.scene, models)
@@ -748,10 +752,19 @@ async function start(): Promise<void> {
       state.player.indoors ? blockedRects(state) : [],
     )
     // Bước ra thảm cửa thì ra ngoài.
-    if (state.player.indoors && atRoomDoor(state.player.pos[0], state.player.pos[2])) {
+    if (state.player.indoors && atRoomDoor(state.player.pos[0], state.player.pos[2], state.player.floor)) {
       interaction.cancel()
       decorUi.close()
       exitHouse(state)
+    }
+    // Bước lên cầu thang thì đổi tầng (nghỉ một chút để không nảy qua lại).
+    if (state.player.indoors && performance.now() > stairsReadyAt) {
+      const stairs = stairsUnderfoot(state)
+      if (stairs) {
+        interaction.cancel()
+        changeFloor(state, stairs)
+        stairsReadyAt = performance.now() + 900
+      }
     }
     updateRiding(state, Math.min(1, speed / (WALK_SPEED * rideSpeed())), dt)
     farmer.setRiding(riding, ridingAnimal() === HORSE_ID ? horseView.saddleY : undefined)
@@ -1084,8 +1097,8 @@ function maxOut(state: GameState): void {
   }
   state.pet ??= { name: 'Lu', pettedDay: -1, gift: { id: 'gold', qty: 50 } }
   state.horse = true
-  if (state.house.level < ROOM_SIZES.length) {
-    state.house.level = ROOM_SIZES.length
+  if (state.house.level < HOUSE_LAYOUTS.length) {
+    state.house.level = HOUSE_LAYOUTS.length
     setRoomSize(state.house.level)
   }
 

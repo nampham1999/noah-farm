@@ -403,7 +403,7 @@
   "pet.gift": "🎁 {name} tìm được {qty} {item}!",
   "pet.giftGold": "🎁 {name} đào được {qty} vàng!",
   "shop.houseUpgrade": "Nâng nhà lên cấp {level}",
-  "shop.houseSub": "Phòng rộng {w}×{d} ô, nhà to và đẹp hơn",
+  "shop.houseSub": "Nhà {w}×{d} ô, {floors} tầng",
   "shop.houseMax": "Nhà đã ở cấp cao nhất",
   "house.upgraded": "🏡 Nhà đã lên cấp {level}! Phòng giờ rộng {w}×{d} ô",
   "shop.greenhouse": "Nhà kính",
@@ -837,5 +837,11 @@
   "inventory.expanded": "🎒 Túi đã mở rộng, giờ có {slots} ô!",
   "crop.potato": "Khoai tây",
   "crop.bok_choy": "Cải thìa",
-  "crop.purple_cabbage": "Bắp cải tím"
+  "crop.purple_cabbage": "Bắp cải tím",
+  "house.feature.2": "Thêm phòng ngủ ở phía đông, ngăn bằng vách có lối đi",
+  "house.feature.3": "Thêm tầng 2: lên cầu thang ở góc đông bắc phòng chính",
+  "house.feature.4": "Mở rộng cả hai tầng",
+  "house.feature.5": "Thêm tầng 3 (gác áp mái)",
+  "house.floor": "Bạn đang ở tầng {n}",
+  "house.movedBack": "Nhà đổi bố cục: {n} món đồ đã được cất lại vào túi"
 }
