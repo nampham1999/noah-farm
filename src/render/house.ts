@@ -67,10 +67,6 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
           room.add(win)
         }
       }
-      const sign = createSign(ROOM_ICONS[r.id])
-      sign.scale.setScalar(0.9)
-      sign.position.set(c.x + r.x0 + w / 2, 2.05, c.z + r.z0 + 0.4)
-      room.add(sign)
     }
     const base = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w + 0.4, 0.18, 0.24), trimMat)
     base.position.set(ROOM.x, 0.09, c.z - 0.08)
@@ -116,7 +112,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
     }
 
     // Cầu thang: lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt), kèm biển chỉ tầng.
-    const st = stairsOf(HOUSE_NOW.level)
+    const st = stairsOf(HOUSE_NOW.level, floor)
     const addStairs = (s: { cx: number; cz: number; w: number; d: number }, up: boolean, target: number) => {
       const stairs = new THREE.Group()
       const steps = 6
@@ -140,8 +136,8 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
       sign.scale.setScalar(1.1)
       room.add(sign)
     }
-    if (floor + 1 < floors) addStairs(st.up, true, floor + 2)
-    if (floor > 0) addStairs(st.down, false, floor)
+    if (st.up) addStairs(st.up, true, floor + 2)
+    if (st.down) addStairs(st.down, false, floor)
 
     // Đèn ấm: phòng khách, dãy phía bắc và phòng ngủ (ít đèn cho nhẹ máy).
     const lampAt = (x: number, z: number, span: number) => {
@@ -280,8 +276,6 @@ function roomStyle(room: RoomDef, floor: number): Style {
   const wallsWing: [string, string][] = [['#dfe8f4', '#cddcee'], ['#f3e0ee', '#e8cde1'], ['#d9d3ea', '#c7bfe0']]
   return { kind: wing ? 'carpet' : 'plank', plank: planks[f], carpet: carpets[f], tile: TILE_DEFAULT, wall: wing ? wallsWing[f] : wallsMain[f] }
 }
-
-const ROOM_ICONS: Record<RoomDef['id'], string> = { living: '🛋️', bedroom: '🛏️', kitchen: '🍳', bath: '🛁', study: '📚' }
 
 /** Sàn ván gỗ: các tấm dài so le, mỗi tấm hơi khác màu (màu theo tầng). */
 function plankTexture(style: Style): THREE.CanvasTexture {

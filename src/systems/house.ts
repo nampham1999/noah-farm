@@ -1,6 +1,6 @@
 import { bus } from '../core/events.ts'
 import type { GameState, PlacedFurniture } from '../core/state.ts'
-import { HOUSE_DOOR, layoutOf, MAIN_W, NORTH_D, ROOM, ROOM_ENTRY, roomCorner, setRoomSize, solidRanges, stairsOf } from '../core/world.ts'
+import { HOUSE_DOOR, layoutOf, MAIN_W, NORTH_D, ROOM, ROOM_ENTRY, roomCorner, setRoomSize, solidRanges, stairLink, stairsOf } from '../core/world.ts'
 import { FURNITURE_BY_ID, type FurnitureDef } from '../data/index.ts'
 import { advanceClock, GAME_MINUTES_PER_SECOND } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
@@ -40,9 +40,9 @@ function stairCells(level: number, floor: number): { cx: number; cz: number }[] 
   const add = (s: { cx: number; cz: number; w: number; d: number }) => {
     for (let i = 0; i < s.w; i++) for (let j = 0; j < s.d; j++) out.push({ cx: s.cx + i, cz: s.cz + j })
   }
-  const st = stairsOf(level)
-  if (floor + 1 < layoutOf(level).floors) add(st.up)
-  if (floor > 0) add(st.down)
+  const st = stairsOf(level, floor)
+  if (st.up) add(st.up)
+  if (st.down) add(st.down)
   return out
 }
 
@@ -204,20 +204,20 @@ function stairRect(s: { cx: number; cz: number; w: number; d: number }): Rect {
 export function stairsUnderfoot(state: GameState): 'up' | 'down' | null {
   const [x, , z] = state.player.pos
   const inside = (r: Rect) => x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1 + 0.15
-  if (state.player.floor + 1 < floorCount(state) && inside(stairRect(stairsOf(state.house.level).up))) return 'up'
-  if (state.player.floor > 0 && inside(stairRect(stairsOf(state.house.level).down))) return 'down'
+  const st = stairsOf(state.house.level, state.player.floor)
+  if (st.up && inside(stairRect(st.up))) return 'up'
+  if (st.down && inside(stairRect(st.down))) return 'down'
   return null
 }
 
-/** Đi lên / xuống một tầng: đứng ngay trước cầu thang của tầng mới. */
+/** Đi lên / xuống một tầng: đứng ngay trước chỗ nối cầu thang ở tầng mới (cùng một đầu nhà). */
 export function changeFloor(state: GameState, dir: 'up' | 'down'): void {
   const c = roomCorner()
+  const from = state.player.floor
+  const link = stairLink(state.house.level, dir === 'up' ? from : from - 1)
   state.player.floor += dir === 'up' ? 1 : -1
-  // Lên bằng cầu thang lên thì tới chân cầu thang xuống của tầng trên, và ngược lại.
-  const st = stairsOf(state.house.level)
-  const stairs = dir === 'up' ? st.down : st.up
-  state.player.pos[0] = c.x + stairs.cx + stairs.w / 2
-  state.player.pos[2] = c.z + stairs.cz + stairs.d + 1.8
+  state.player.pos[0] = c.x + link.cx + link.w / 2
+  state.player.pos[2] = c.z + link.cz + link.d + 1.8
   state.player.rotY = 0
   bus.emit('sfx', 'click')
   bus.emit('notify', { key: 'house.floor', params: { n: state.player.floor + 1 }, good: true })
