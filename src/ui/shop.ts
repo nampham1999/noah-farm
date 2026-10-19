@@ -141,7 +141,7 @@ export function createShopPanel(state: GameState): PanelSpec {
     const house = nextHouseUpgrade(state)
     const houseRow = iconRow('🏡', t('shop.houseUpgrade', { level: state.house.level + 1 }),
       house
-        ? `${t('shop.houseSub', { w: HOUSE_LAYOUTS[state.house.level].w, d: HOUSE_LAYOUTS[state.house.level].d, floors: HOUSE_LAYOUTS[state.house.level].floors })} · ${tKey(`house.feature.${state.house.level + 1}`)}${p.level < house.level ? ` · ${t('notice.locked', { level: house.level })}` : ''}`
+        ? `${t('shop.houseSub', { w: HOUSE_LAYOUTS[state.house.level].w, d: HOUSE_LAYOUTS[state.house.level].d })} · ${tKey(`house.feature.${state.house.level + 1}`)}${p.level < house.level ? ` · ${t('notice.locked', { level: house.level })}` : ''}`
         : t('shop.houseMax'))
     if (house) {
       if (p.level < house.level) houseRow.classList.add('locked')

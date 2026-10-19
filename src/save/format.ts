@@ -151,7 +151,7 @@ function normalize(data: Record<string, unknown>): GameState {
   return {
     version: SAVE_VERSION,
     meta: { ...base.meta, ...obj(data.meta) },
-    player: { ...base.player, ...p, floor: Math.max(0, Math.min(2, Math.floor(num(p.floor, 0)))), look: normalizeLook(p.look), ...outdoorPos(p) },
+    player: { ...base.player, ...p, look: normalizeLook(p.look), ...outdoorPos(p) },
     clock: { ...base.clock, ...obj(data.clock), weather: normalizeWeather(obj(data.clock).weather) },
     inventory: { slots, selected: Math.max(0, Math.min(balance.toolbarSize - 1, selected)) },
     plots,
