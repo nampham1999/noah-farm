@@ -3,7 +3,6 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameState } from '../core/state.ts'
 import { HOUSE_NOW, MAIN_W, ROOM, roomCorner, solidRanges, stairsOf, type Fixture, type RoomDef } from '../core/world.ts'
 import { canPlace, floorCount, footprint, furnitureCenter, furnitureDef, STAIR_H } from '../systems/house.ts'
-import { createSign } from './animals.ts'
 
 const WALL_H = 2.6
 
@@ -116,7 +115,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
     }
 
     // Cầu thang: lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt), kèm biển chỉ tầng.
-    const addStairs = (s: { cx: number; cz: number; w: number; d: number }, up: boolean, target: number) => {
+    const addStairs = (s: { cx: number; cz: number; w: number; d: number }, up: boolean) => {
       const stairs = new THREE.Group()
       const steps = 8
       const dh = STAIR_H / steps
@@ -167,13 +166,9 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
       }
       stairs.position.set(c.x + s.cx + s.w / 2, 0, c.z + s.cz + s.d / 2)
       room.add(stairs)
-      const sign = createSign(`${up ? '⬆️' : '⬇️'}${target}`)
-      sign.position.set(c.x + s.cx + s.w / 2, up ? STAIR_H + 1.3 : 1.5, c.z + s.cz + s.d + 0.15)
-      sign.scale.setScalar(0.9)
-      room.add(sign)
     }
-    if (stairSet.up) addStairs(stairSet.up, true, floor + 2)
-    if (stairSet.down) addStairs(stairSet.down, false, floor)
+    if (stairSet.up) addStairs(stairSet.up, true)
+    if (stairSet.down) addStairs(stairSet.down, false)
 
     // Đèn ấm: phòng khách, dãy phía bắc và phòng ngủ (ít đèn cho nhẹ máy).
     const lampAt = (x: number, z: number, span: number) => {
