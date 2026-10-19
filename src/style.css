@@ -3102,3 +3102,18 @@ body.is-visiting .energy-pill {
     height: 78px;
   }
 }
+
+/* Mờ dần khi đổi tầng. */
+.stair-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 54;
+  background: #0b0705;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.stair-fade.is-on {
+  opacity: 1;
+}

@@ -28,7 +28,7 @@ import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
 import { createFishingView } from './render/fishing.ts'
 import { createHouseView, type HouseView } from './render/house.ts'
-import { atRoomDoor, blockedRects, changeFloor, enterHouse, exitHouse, reconcileHouse, stairsUnderfoot } from './systems/house.ts'
+import { atRoomDoor, blockedRects, changeFloor, enterHouse, exitHouse, reconcileHouse, stairHeight, stairProgress, STAIR_TOP } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
 import { createCharacterPanel } from './ui/character.ts'
@@ -213,8 +213,12 @@ async function start(): Promise<void> {
     if (name === 'chicken' || name === 'cow' || name === 'pig') farmer.playAction?.('pet')
   })
   let lastFishPhase = 'idle'
-  let stairsReadyAt = 0
-  let stairsArmed = false
+  // Đi cầu thang: đi dọc dốc (độ cao đổi dần), tới đỉnh thì mờ dần rồi sang tầng mới; sau đó phải nhả phím mới đi tiếp.
+  let stairBusy = false
+  let needRelease = false
+  const fade = document.createElement('div')
+  fade.className = 'stair-fade'
+  ui.append(fade)
   const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
   const machinesView = createMachinesView(world.scene, models)
@@ -736,7 +740,7 @@ async function start(): Promise<void> {
     // Tự điều khiển (WASD/joystick) thì huỷ việc tự đi tới chỗ đã chạm.
     const manual = isPanelOpen() ? { x: 0, y: 0 } : input.moveVector()
     updateFishing(state, dt)
-    let dir
+    let dir: { x: number; z: number }
     if (Math.hypot(manual.x, manual.y) > 0.05) {
       interaction.cancel()
       // Tự đi thì thu cần.
@@ -746,6 +750,11 @@ async function start(): Promise<void> {
       dir = { x: 0, z: 0 }
     } else {
       dir = interaction.autoWalk(dt)
+    }
+    // Đang chuyển tầng, hoặc vừa chuyển xong mà còn giữ phím: đứng yên tới khi nhả phím (không bị đá ngược lại cầu thang).
+    if (stairBusy || needRelease) {
+      if (needRelease && !stairBusy && Math.hypot(dir.x, dir.z) < 0.05) needRelease = false
+      else dir = { x: 0, z: 0 }
     }
     const riding = ridingAnimal() !== null
     const speed = movePlayer(
@@ -758,20 +767,24 @@ async function start(): Promise<void> {
       decorUi.close()
       exitHouse(state)
     }
-    // Bước lên cầu thang thì đổi tầng (nghỉ một chút để không nảy qua lại).
     if (state.player.indoors) {
-      const stairs = stairsUnderfoot(state)
-      const nowMs = performance.now()
-      // Sau khi đổi tầng phải bước ra khỏi cầu thang (sau thời gian nghỉ) thì mới bước vào được lần nữa:
-      // giữ phím đi tới thì không bị đá xuống ngay vì đang đứng trên cầu thang.
-      if (!stairs && nowMs > stairsReadyAt) stairsArmed = true
-      else if (stairs && stairsArmed && nowMs > stairsReadyAt) {
+      const sp = stairBusy ? null : stairProgress(state)
+      if (!stairBusy) state.player.pos[1] = sp ? stairHeight(sp) : 0
+      if (sp && sp.t >= STAIR_TOP) {
+        stairBusy = true
         interaction.cancel()
-        changeFloor(state, stairs)
-        stairsArmed = false
-        stairsReadyAt = nowMs + 700
+        fade.classList.add('is-on')
+        window.setTimeout(() => {
+          changeFloor(state, sp.dir)
+          state.player.pos[1] = 0
+          fade.classList.remove('is-on')
+          window.setTimeout(() => {
+            stairBusy = false
+            needRelease = true
+          }, 260)
+        }, 240)
       }
-    }
+    } else state.player.pos[1] = 0
     updateRiding(state, Math.min(1, speed / (WALK_SPEED * rideSpeed())), dt)
     farmer.setRiding(riding, ridingAnimal() === HORSE_ID ? horseView.saddleY : undefined)
 

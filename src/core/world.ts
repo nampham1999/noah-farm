@@ -154,7 +154,7 @@ export type StairRect = { cx: number; cz: number; w: number; d: number }
 
 /** Chỗ nối giữa tầng f và tầng f + 1. */
 export function stairLink(level: number, f: number): StairRect {
-  return { cx: f % 2 === 0 ? 0 : MAIN_W - 2, cz: layoutOf(level).north, w: 2, d: 2 }
+  return { cx: f % 2 === 0 ? 0 : MAIN_W - 2, cz: layoutOf(level).north, w: 2, d: 3 }
 }
 
 /** Cầu thang lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt) của một tầng. */

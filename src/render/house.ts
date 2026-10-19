@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameState } from '../core/state.ts'
 import { HOUSE_NOW, MAIN_W, ROOM, roomCorner, solidRanges, stairsOf, type Fixture, type RoomDef } from '../core/world.ts'
-import { canPlace, floorCount, footprint, furnitureCenter, furnitureDef } from '../systems/house.ts'
+import { canPlace, floorCount, footprint, furnitureCenter, furnitureDef, STAIR_H } from '../systems/house.ts'
 import { createSign } from './animals.ts'
 
 const WALL_H = 2.6
@@ -33,6 +33,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
     builtKey = `${HOUSE_NOW.level}|${ROOM.w}x${ROOM.d}|${floor}|${floors}`
     const c = roomCorner()
     const trimMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1 })
+    const stairSet = stairsOf(HOUSE_NOW.level, floor)
     const livingStyle = roomStyle(layout.rooms.find((r) => r.id === 'living')!, floor)
 
     // Sàn từng phòng (mỗi phòng một kiểu) và tường ngoài (giấy dán theo phòng).
@@ -49,7 +50,10 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
       const st = roomStyle(r, floor)
       const w = r.x1 - r.x0
       const dz = r.z1 - r.z0
-      const f = new THREE.Mesh(new THREE.PlaneGeometry(w, dz), new THREE.MeshStandardMaterial({ map: floorTex(st), roughness: 0.9 }))
+      // Phòng có cầu thang xuống: sàn khoét lỗ đúng chỗ cầu thang (nhân vật chìm dần xuống lỗ khi đi xuống).
+      const hole = r.id === 'living' && stairSet.down ? stairSet.down : null
+      const geo = hole ? floorWithHole(r, hole) : new THREE.PlaneGeometry(w, dz)
+      const f = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: floorTex(roomStyle(r, floor)), roughness: 0.9, side: THREE.DoubleSide }))
       f.rotation.x = -Math.PI / 2
       f.position.set(c.x + r.x0 + w / 2, 0.02, c.z + r.z0 + dz / 2)
       f.receiveShadow = true
@@ -112,32 +116,64 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
     }
 
     // Cầu thang: lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt), kèm biển chỉ tầng.
-    const st = stairsOf(HOUSE_NOW.level, floor)
     const addStairs = (s: { cx: number; cz: number; w: number; d: number }, up: boolean, target: number) => {
       const stairs = new THREE.Group()
-      const steps = 6
+      const steps = 8
+      const dh = STAIR_H / steps
+      const sd = s.d / steps
       const wood = new THREE.MeshStandardMaterial({ color: up ? 0xb9854a : 0x9a6a3a, roughness: 1 })
+      const dark = new THREE.MeshStandardMaterial({ color: 0x24160d, roughness: 1 })
+      // Bậc từ mép nam (i = 0) tới mép bắc. Lên: bậc cao dần. Xuống: bậc sâu dần dưới sàn, trong lỗ khoét.
       for (let i = 0; i < steps; i++) {
-        const h = 0.22 * (i + 1)
-        const step = new THREE.Mesh(new THREE.BoxGeometry(s.w, h, s.d / steps), wood)
-        step.position.set(0, h / 2, (s.d / steps) * (steps - 1 - i) - s.d / 2 + s.d / steps / 2)
-        step.castShadow = true
-        stairs.add(step)
+        const z = s.d / 2 - (i + 0.5) * sd
+        if (up) {
+          const h = dh * (i + 1)
+          const step = new THREE.Mesh(new THREE.BoxGeometry(s.w, h, sd), wood)
+          step.position.set(0, h / 2, z)
+          step.castShadow = true
+          stairs.add(step)
+        } else {
+          const top = -dh * (i + 1)
+          const h = STAIR_H + 0.3 + top
+          const step = new THREE.Mesh(new THREE.BoxGeometry(s.w, h, sd), wood)
+          step.position.set(0, top - h / 2, z)
+          stairs.add(step)
+        }
       }
-      for (const dx of [-s.w / 2, s.w / 2]) {
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.2, s.d), trimMat)
-        rail.position.set(dx, 0.9, 0)
-        stairs.add(rail)
+      if (!up) {
+        // Thành lỗ cầu thang (tối) ở ba phía để không nhìn thấy khoảng trống.
+        for (const dx of [-s.w / 2, s.w / 2]) {
+          const wall = new THREE.Mesh(new THREE.BoxGeometry(0.06, STAIR_H + 0.3, s.d), dark)
+          wall.position.set(dx, -(STAIR_H + 0.3) / 2, 0)
+          stairs.add(wall)
+        }
+        const back = new THREE.Mesh(new THREE.BoxGeometry(s.w, STAIR_H + 0.3, 0.06), dark)
+        back.position.set(0, -(STAIR_H + 0.3) / 2, -s.d / 2)
+        stairs.add(back)
+      }
+      // Tay vịn hai bên (cầu thang lên) cao dần theo bậc.
+      if (up) {
+        for (const dx of [-s.w / 2, s.w / 2]) {
+          const rail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, s.d), trimMat)
+          rail.position.set(dx, STAIR_H / 2 + 0.55, 0)
+          rail.rotation.x = Math.atan2(STAIR_H, s.d)
+          stairs.add(rail)
+          for (const t of [0.05, 0.5, 0.95]) {
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.06), trimMat)
+            post.position.set(dx, STAIR_H * t + 0.3, s.d / 2 - s.d * t)
+            stairs.add(post)
+          }
+        }
       }
       stairs.position.set(c.x + s.cx + s.w / 2, 0, c.z + s.cz + s.d / 2)
       room.add(stairs)
       const sign = createSign(`${up ? '⬆️' : '⬇️'}${target}`)
-      sign.position.set(c.x + s.cx + s.w / 2, 2.15, c.z + s.cz + s.d + 0.1)
-      sign.scale.setScalar(1.1)
+      sign.position.set(c.x + s.cx + s.w / 2, up ? STAIR_H + 1.3 : 1.5, c.z + s.cz + s.d + 0.15)
+      sign.scale.setScalar(0.9)
       room.add(sign)
     }
-    if (st.up) addStairs(st.up, true, floor + 2)
-    if (st.down) addStairs(st.down, false, floor)
+    if (stairSet.up) addStairs(stairSet.up, true, floor + 2)
+    if (stairSet.down) addStairs(stairSet.down, false, floor)
 
     // Đèn ấm: phòng khách, dãy phía bắc và phòng ngủ (ít đèn cho nhẹ máy).
     const lampAt = (x: number, z: number, span: number) => {
@@ -451,4 +487,33 @@ function buildFixture(f: Fixture, x: number, z: number): THREE.Group {
   }
   g.position.set(x, 0, z)
   return g
+}
+
+/** Mặt sàn một phòng có khoét lỗ chữ nhật (cầu thang xuống), UV chuẩn hoá để vân sàn trải đều như tấm phẳng. */
+function floorWithHole(r: RoomDef, hole: { cx: number; cz: number; w: number; d: number }): THREE.BufferGeometry {
+  const w = r.x1 - r.x0
+  const dz = r.z1 - r.z0
+  const shape = new THREE.Shape()
+  shape.moveTo(-w / 2, -dz / 2)
+  shape.lineTo(w / 2, -dz / 2)
+  shape.lineTo(w / 2, dz / 2)
+  shape.lineTo(-w / 2, dz / 2)
+  shape.closePath()
+  // Sau khi xoay nằm ngang, trục y của hình thành -z của thế giới: lật dấu độ dời theo z.
+  const x0 = hole.cx - (r.x0 + r.x1) / 2
+  const x1 = x0 + hole.w
+  const y1 = -(hole.cz - (r.z0 + r.z1) / 2)
+  const y0 = y1 - hole.d
+  const h = new THREE.Path()
+  h.moveTo(x0, y0)
+  h.lineTo(x0, y1)
+  h.lineTo(x1, y1)
+  h.lineTo(x1, y0)
+  h.closePath()
+  shape.holes.push(h)
+  const geo = new THREE.ShapeGeometry(shape)
+  const pos = geo.attributes.position
+  const uv = geo.attributes.uv
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + w / 2) / w, (pos.getY(i) + dz / 2) / dz)
+  return geo
 }

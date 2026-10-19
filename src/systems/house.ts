@@ -200,14 +200,33 @@ function stairRect(s: { cx: number; cz: number; w: number; d: number }): Rect {
   return { x0: c.x + s.cx, z0: c.z + s.cz, x1: c.x + s.cx + s.w, z1: c.z + s.cz + s.d }
 }
 
-/** Đang đứng trên cầu thang nào (chỉ khi cầu thang đó có ở tầng này). */
-export function stairsUnderfoot(state: GameState): 'up' | 'down' | null {
+/** Độ cao cầu thang (m): lên thì nhân vật nhích dần lên, xuống thì chìm dần xuống lỗ cầu thang. */
+export const STAIR_H = 1.5
+
+/**
+ * Nhân vật đang ở đâu trên dốc cầu thang: t từ 0 (mép nam, chỗ bước vào) tới 1 (mép bắc, đỉnh / đáy cầu thang).
+ * Đi dọc dốc thì độ cao đổi dần; tới đầu bắc thì game chuyển tầng.
+ */
+export function stairProgress(state: GameState): { dir: 'up' | 'down'; t: number } | null {
   const [x, , z] = state.player.pos
-  const inside = (r: Rect) => x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1 + 0.15
   const st = stairsOf(state.house.level, state.player.floor)
-  if (st.up && inside(stairRect(st.up))) return 'up'
-  if (st.down && inside(stairRect(st.down))) return 'down'
-  return null
+  const test = (s: { cx: number; cz: number; w: number; d: number } | null): number | null => {
+    if (!s) return null
+    const r = stairRect(s)
+    if (x < r.x0 + 0.1 || x > r.x1 - 0.1 || z < r.z0 || z > r.z1) return null
+    return Math.max(0, Math.min(1, (r.z1 - z) / (r.z1 - r.z0)))
+  }
+  const up = test(st.up)
+  if (up !== null) return { dir: 'up', t: up }
+  const down = test(st.down)
+  return down !== null ? { dir: 'down', t: down } : null
+}
+
+/** Tới t này thì coi như đã lên tới đỉnh (nhân vật dừng cách vách phía bắc một chút nên không bao giờ tới đúng t = 1). */
+export const STAIR_TOP = 0.78
+
+export function stairHeight(p: { dir: 'up' | 'down'; t: number }): number {
+  return (p.dir === 'up' ? 1 : -1) * STAIR_H * Math.min(1, p.t / STAIR_TOP)
 }
 
 /** Đi lên / xuống một tầng: đứng ngay trước chỗ nối cầu thang ở tầng mới (cùng một đầu nhà). */
