@@ -214,7 +214,8 @@ export interface GameState {
   /** Ô đất đang bị sâu ("cột,hàng"): cây ở đó ngừng lớn tới khi bắt sâu. */
   pests: string[]
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
-  house: { level: number; furniture: PlacedFurniture[] }
+  /** shifted: đồ đã dịch xuống khi nhà có dãy phía bắc (từ cấp 3). */
+  house: { level: number; furniture: PlacedFurniture[]; shifted?: boolean }
   /**
    * Nhật ký (GDD mục 3.7): sổ cá và sổ cây ghi số con đã câu / cây đã thu của từng loài;
    * achievements là các thành tựu đã đạt (để chỉ báo một lần).

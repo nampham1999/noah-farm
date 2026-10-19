@@ -1100,6 +1100,7 @@ function maxOut(state: GameState): void {
   if (state.house.level < HOUSE_LAYOUTS.length) {
     state.house.level = HOUSE_LAYOUTS.length
     setRoomSize(state.house.level)
+    reconcileHouse(state)
   }
 
   // Cây ăn quả đã lớn ở mọi ô vườn.

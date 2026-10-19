@@ -839,8 +839,8 @@
   "crop.bok_choy": "Bok choy",
   "crop.purple_cabbage": "Purple cabbage",
   "house.feature.2": "Adds a bedroom on the east side, behind a partition with a doorway",
-  "house.feature.3": "Adds a 2nd floor: take the stairs in the main room's north-east corner",
-  "house.feature.4": "Enlarges every floor",
+  "house.feature.3": "Adds a north wing: kitchen, bathroom and study",
+  "house.feature.4": "Adds a 2nd floor (stairs in the living room's north-west corner)",
   "house.feature.5": "Adds a 3rd floor (attic)",
   "house.floor": "You are on floor {n}",
   "house.movedBack": "The house layout changed: {n} furniture pieces went back into your bag"

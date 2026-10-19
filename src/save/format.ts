@@ -217,6 +217,7 @@ function normalize(data: Record<string, unknown>): GameState {
     house: Array.isArray(obj(data.house).furniture)
       ? {
           level: Math.max(1, Math.min(HOUSE_UPGRADES.length + 1, Math.floor(num(obj(data.house).level, 1)))),
+          shifted: obj(data.house).shifted === true,
           furniture: (obj(data.house).furniture as unknown[]).flatMap((raw) => {
             const f = obj(raw)
             return typeof f.id === 'string' && FURNITURE_BY_ID.has(f.id)

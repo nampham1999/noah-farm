@@ -51,30 +51,108 @@ export function roomCellAt(wx: number, wz: number): { cx: number; cz: number } |
 }
 
 /**
- * Bố cục nhà theo cấp 1..5. Phòng chính rộng MAIN_W ô (có cửa ra ở giữa cạnh nam và cầu thang ở góc đông bắc);
- * nhà từ cấp 2 có thêm phòng phụ ở phía đông (ngăn bằng vách có lối đi), từ cấp 3 có thêm tầng.
- * Mọi tầng dùng chung kích thước; đồ nội thất thuộc về một tầng (trường fl).
+ * Bố cục nhà theo cấp 1..5 (mặt bằng chia phòng, tính theo ô từ góc tây bắc):
+ * - Cấp 1: phòng khách. Cấp 2: thêm phòng ngủ ở phía đông.
+ * - Cấp 3: thêm dãy phía bắc gồm bếp, nhà vệ sinh và phòng làm việc (ngăn bằng vách thấp có lối đi).
+ * - Cấp 4, 5: thêm tầng 2, tầng 3 (cầu thang ở góc tây bắc phòng khách), cùng mặt bằng.
+ * Đồ nội thất thuộc về một tầng (trường fl). Phòng khách luôn rộng MAIN_W ô và có cửa ra ở giữa cạnh nam.
  */
+export interface RoomDef {
+  id: 'living' | 'bedroom' | 'kitchen' | 'bath' | 'study'
+  x0: number
+  x1: number
+  z0: number
+  z1: number
+}
+
+/** Vách: axis 'z' chạy dọc theo z tại x = at (từ from tới to); axis 'x' chạy dọc theo x tại z = at. doors là các khoảng ô để trống. */
+export interface WallDef {
+  axis: 'x' | 'z'
+  at: number
+  from: number
+  to: number
+  doors: [number, number][]
+  half?: boolean
+}
+
+/** Đồ cố định của bếp và nhà vệ sinh (chiếm ô, không dời được). */
+export interface Fixture {
+  id: 'counter' | 'sink' | 'stove' | 'fridge' | 'toilet' | 'basin' | 'tub'
+  cx: number
+  cz: number
+  w: number
+  d: number
+}
+
 export interface HouseLayout {
   w: number
   d: number
   floors: number
+  /** Số hàng ô ở dãy phía bắc (0 nếu chưa có). */
+  north: number
+  rooms: RoomDef[]
+  walls: WallDef[]
+  fixtures: Fixture[]
 }
-export const HOUSE_LAYOUTS: HouseLayout[] = [
-  { w: 12, d: 9, floors: 1 },
-  { w: 18, d: 10, floors: 1 },
-  { w: 18, d: 11, floors: 2 },
-  { w: 20, d: 12, floors: 2 },
-  { w: 20, d: 13, floors: 3 },
-]
+
 export const MAIN_W = 12
+/** Độ sâu dãy phía bắc (bếp, nhà vệ sinh, phòng làm việc). */
+export const NORTH_D = 5
 
-/** Cầu thang (ô, từ góc tây bắc): lên ở phía đông, xuống ở phía tây của nó. Bước vào là đổi tầng. */
-export const STAIRS_UP = { cx: 10, cz: 0, w: 2, d: 2 }
-export const STAIRS_DOWN = { cx: 8, cz: 0, w: 2, d: 2 }
+function makeLayout(level: number): HouseLayout {
+  const living: RoomDef = { id: 'living', x0: 0, x1: MAIN_W, z0: 0, z1: 9 }
+  if (level <= 1) return { w: MAIN_W, d: 9, floors: 1, north: 0, rooms: [living], walls: [], fixtures: [] }
+  const bedroom: RoomDef = { id: 'bedroom', x0: MAIN_W, x1: 18, z0: 0, z1: 9 }
+  if (level === 2) {
+    return {
+      w: 18, d: 9, floors: 1, north: 0, rooms: [living, bedroom],
+      walls: [{ axis: 'z', at: MAIN_W, from: 0, to: 9, doors: [[6, 8]] }],
+      fixtures: [],
+    }
+  }
+  const n = NORTH_D
+  const d = n + 9
+  return {
+    w: 18, d, floors: level - 2, north: n,
+    rooms: [
+      { id: 'kitchen', x0: 0, x1: 8, z0: 0, z1: n },
+      { id: 'bath', x0: 8, x1: MAIN_W, z0: 0, z1: n },
+      { id: 'study', x0: MAIN_W, x1: 18, z0: 0, z1: n },
+      { ...living, z0: n, z1: d },
+      { ...bedroom, z0: n, z1: d },
+    ],
+    walls: [
+      { axis: 'x', at: n, from: 0, to: 18, doors: [[5, 7], [9, 11], [14, 16]], half: true },
+      { axis: 'z', at: 8, from: 0, to: n, doors: [] },
+      { axis: 'z', at: MAIN_W, from: 0, to: d, doors: [[d - 3, d - 1]] },
+    ],
+    fixtures: [
+      { id: 'counter', cx: 0, cz: 0, w: 2, d: 1 },
+      { id: 'sink', cx: 2, cz: 0, w: 1, d: 1 },
+      { id: 'stove', cx: 3, cz: 0, w: 1, d: 1 },
+      { id: 'counter', cx: 4, cz: 0, w: 2, d: 1 },
+      { id: 'fridge', cx: 6, cz: 0, w: 1, d: 1 },
+      { id: 'toilet', cx: 8, cz: 0, w: 1, d: 1 },
+      { id: 'basin', cx: 9, cz: 0, w: 1, d: 1 },
+      { id: 'tub', cx: 10, cz: 0, w: 2, d: 2 },
+    ],
+  }
+}
 
-/** Vách ngăn phòng chính và phòng phụ: lối đi rộng 2 ô gần cạnh nam. */
-export const DOORWAY_ROWS = 2
+export const HOUSE_LAYOUTS: HouseLayout[] = [1, 2, 3, 4, 5].map(makeLayout)
+
+export function layoutOf(level: number): HouseLayout {
+  return HOUSE_LAYOUTS[Math.max(0, Math.min(HOUSE_LAYOUTS.length - 1, level - 1))]
+}
+
+/** Cầu thang (ô, từ góc tây bắc): ở phía tây phòng khách, ngay dưới vách dãy phía bắc. Bước vào là đổi tầng. */
+export function stairsOf(level: number): { up: { cx: number; cz: number; w: number; d: number }; down: { cx: number; cz: number; w: number; d: number } } {
+  const z = layoutOf(level).north
+  return { up: { cx: 0, cz: z, w: 2, d: 2 }, down: { cx: 2, cz: z, w: 2, d: 2 } }
+}
+
+/** Bố cục đang dùng (theo cấp nhà của người chơi) để hệ thống và hiển thị không phải truyền cấp nhà khắp nơi. */
+export const HOUSE_NOW = { level: 1, layout: HOUSE_LAYOUTS[0] }
 
 /** Chỗ xuất hiện khi vào nhà (ngay trong cửa). */
 export const ROOM_ENTRY = { x: ROOM.x - ROOM.w / 2 + MAIN_W / 2, z: ROOM.z + ROOM.d / 2 - 0.7 }
@@ -82,14 +160,12 @@ export const ROOM_ENTRY = { x: ROOM.x - ROOM.w / 2 + MAIN_W / 2, z: ROOM.z + ROO
 /** Đổi kích thước phòng theo cấp nhà (đồ đã đặt tính từ góc tây bắc nên vẫn giữ chỗ). */
 export function setRoomSize(level: number): void {
   const size = layoutOf(level)
+  HOUSE_NOW.level = level
+  HOUSE_NOW.layout = size
   ROOM.w = size.w
   ROOM.d = size.d
   ROOM_ENTRY.x = ROOM.x - ROOM.w / 2 + MAIN_W / 2
   ROOM_ENTRY.z = ROOM.z + ROOM.d / 2 - 0.7
-}
-
-export function layoutOf(level: number): HouseLayout {
-  return HOUSE_LAYOUTS[Math.max(0, Math.min(HOUSE_LAYOUTS.length - 1, level - 1))]
 }
 
 /** Hồ cá: tâm và bán kính trung bình; viền thật uốn lượn theo pondRadius(). */
@@ -446,4 +522,16 @@ function distToSegment(x: number, z: number, a: [number, number], b: [number, nu
   const dz = b[1] - a[1]
   const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1)))
   return Math.hypot(x - (a[0] + t * dx), z - (a[1] + t * dz))
+}
+
+/** Các đoạn vách đặc (bỏ lối đi) của một vách, theo ô. */
+export function solidRanges(wall: WallDef): [number, number][] {
+  const out: [number, number][] = []
+  let at = wall.from
+  for (const [a, b] of [...wall.doors].sort((x, y) => x[0] - y[0])) {
+    if (a > at) out.push([at, a])
+    at = Math.max(at, b)
+  }
+  if (at < wall.to) out.push([at, wall.to])
+  return out
 }
