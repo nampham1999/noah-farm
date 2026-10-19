@@ -28,7 +28,7 @@ import { createAnimalsView } from './render/animals.ts'
 import { createFarmView } from './render/farm.ts'
 import { createFishingView } from './render/fishing.ts'
 import { createHouseView, type HouseView } from './render/house.ts'
-import { atRoomDoor, blockedRects, enterHouse, exitHouse, reconcileHouse } from './systems/house.ts'
+import { atRoomDoor, blockedRects, changeFloor, enterHouse, exitHouse, reconcileHouse, stairsUnderfoot } from './systems/house.ts'
 import { createDecorUi } from './ui/decorate.ts'
 import { createJournalPanel } from './ui/journal.ts'
 import { createCharacterPanel } from './ui/character.ts'
@@ -213,6 +213,8 @@ async function start(): Promise<void> {
     if (name === 'chicken' || name === 'cow' || name === 'pig') farmer.playAction?.('pet')
   })
   let lastFishPhase = 'idle'
+  let stairsReadyAt = 0
+  let stairsArmed = false
   const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
   const machinesView = createMachinesView(world.scene, models)
@@ -751,10 +753,24 @@ async function start(): Promise<void> {
       state.player.indoors ? blockedRects(state) : [],
     )
     // Bước ra thảm cửa thì ra ngoài.
-    if (state.player.indoors && atRoomDoor(state.player.pos[0], state.player.pos[2])) {
+    if (state.player.indoors && atRoomDoor(state.player.pos[0], state.player.pos[2], state.player.floor)) {
       interaction.cancel()
       decorUi.close()
       exitHouse(state)
+    }
+    // Bước lên cầu thang thì đổi tầng (nghỉ một chút để không nảy qua lại).
+    if (state.player.indoors) {
+      const stairs = stairsUnderfoot(state)
+      const nowMs = performance.now()
+      // Sau khi đổi tầng phải bước ra khỏi cầu thang (sau thời gian nghỉ) thì mới bước vào được lần nữa:
+      // giữ phím đi tới thì không bị đá xuống ngay vì đang đứng trên cầu thang.
+      if (!stairs && nowMs > stairsReadyAt) stairsArmed = true
+      else if (stairs && stairsArmed && nowMs > stairsReadyAt) {
+        interaction.cancel()
+        changeFloor(state, stairs)
+        stairsArmed = false
+        stairsReadyAt = nowMs + 700
+      }
     }
     updateRiding(state, Math.min(1, speed / (WALK_SPEED * rideSpeed())), dt)
     farmer.setRiding(riding, ridingAnimal() === HORSE_ID ? horseView.saddleY : undefined)

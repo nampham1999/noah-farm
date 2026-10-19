@@ -54,8 +54,8 @@ export function roomCellAt(wx: number, wz: number): { cx: number; cz: number } |
  * Bố cục nhà theo cấp 1..5 (mặt bằng chia phòng, tính theo ô từ góc tây bắc):
  * - Cấp 1: phòng khách. Cấp 2: thêm phòng ngủ ở phía đông.
  * - Cấp 3: thêm dãy phía bắc gồm bếp, nhà vệ sinh và phòng làm việc (ngăn bằng vách thấp có lối đi).
- * - Cấp 4: các phòng phía đông rộng thêm 2 ô. Cấp 5: phòng khách và phòng ngủ sâu thêm 2 hàng ô về phía nam.
- * Phòng khách luôn rộng MAIN_W ô và có cửa ra ở giữa cạnh nam.
+ * - Cấp 4, 5: thêm tầng 2, tầng 3 (cầu thang ở góc tây bắc phòng khách), cùng mặt bằng.
+ * Đồ nội thất thuộc về một tầng (trường fl). Phòng khách luôn rộng MAIN_W ô và có cửa ra ở giữa cạnh nam.
  */
 export interface RoomDef {
   id: 'living' | 'bedroom' | 'kitchen' | 'bath' | 'study'
@@ -87,6 +87,7 @@ export interface Fixture {
 export interface HouseLayout {
   w: number
   d: number
+  floors: number
   /** Số hàng ô ở dãy phía bắc (0 nếu chưa có). */
   north: number
   rooms: RoomDef[]
@@ -100,29 +101,28 @@ export const NORTH_D = 5
 
 function makeLayout(level: number): HouseLayout {
   const living: RoomDef = { id: 'living', x0: 0, x1: MAIN_W, z0: 0, z1: 9 }
-  if (level <= 1) return { w: MAIN_W, d: 9, north: 0, rooms: [living], walls: [], fixtures: [] }
+  if (level <= 1) return { w: MAIN_W, d: 9, floors: 1, north: 0, rooms: [living], walls: [], fixtures: [] }
   const bedroom: RoomDef = { id: 'bedroom', x0: MAIN_W, x1: 18, z0: 0, z1: 9 }
   if (level === 2) {
     return {
-      w: 18, d: 9, north: 0, rooms: [living, bedroom],
+      w: 18, d: 9, floors: 1, north: 0, rooms: [living, bedroom],
       walls: [{ axis: 'z', at: MAIN_W, from: 0, to: 9, doors: [[6, 8]] }],
       fixtures: [],
     }
   }
   const n = NORTH_D
-  const w = level >= 4 ? 20 : 18
-  const d = n + (level >= 5 ? 11 : 9)
+  const d = n + 9
   return {
-    w, d, north: n,
+    w: 18, d, floors: level - 2, north: n,
     rooms: [
       { id: 'kitchen', x0: 0, x1: 8, z0: 0, z1: n },
       { id: 'bath', x0: 8, x1: MAIN_W, z0: 0, z1: n },
-      { id: 'study', x0: MAIN_W, x1: w, z0: 0, z1: n },
+      { id: 'study', x0: MAIN_W, x1: 18, z0: 0, z1: n },
       { ...living, z0: n, z1: d },
-      { ...bedroom, x1: w, z0: n, z1: d },
+      { ...bedroom, z0: n, z1: d },
     ],
     walls: [
-      { axis: 'x', at: n, from: 0, to: w, doors: [[5, 7], [8, 10], [14, 16]], half: true },
+      { axis: 'x', at: n, from: 0, to: 18, doors: [[5, 7], [8, 10], [14, 16]], half: true },
       { axis: 'z', at: 8, from: 0, to: n, doors: [] },
       { axis: 'z', at: MAIN_W, from: 0, to: d, doors: [[d - 3, d - 1]] },
     ],
@@ -143,6 +143,26 @@ export const HOUSE_LAYOUTS: HouseLayout[] = [1, 2, 3, 4, 5].map(makeLayout)
 
 export function layoutOf(level: number): HouseLayout {
   return HOUSE_LAYOUTS[Math.max(0, Math.min(HOUSE_LAYOUTS.length - 1, level - 1))]
+}
+
+/**
+ * Cầu thang ở phòng khách (ô, từ góc tây bắc), ngay dưới vách dãy phía bắc. Mỗi chỗ nối hai tầng nằm ở một đầu nhà:
+ * nối tầng 1-2 ở đầu tây, tầng 2-3 ở đầu đông... nên cầu thang lên và xuống của cùng một tầng luôn ở hai đầu đối lập.
+ * Bước vào là đổi tầng.
+ */
+export type StairRect = { cx: number; cz: number; w: number; d: number }
+
+/** Chỗ nối giữa tầng f và tầng f + 1. */
+export function stairLink(level: number, f: number): StairRect {
+  return { cx: f % 2 === 0 ? 0 : MAIN_W - 2, cz: layoutOf(level).north, w: 2, d: 2 }
+}
+
+/** Cầu thang lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt) của một tầng. */
+export function stairsOf(level: number, floor: number): { up: StairRect | null; down: StairRect | null } {
+  return {
+    up: floor + 1 < layoutOf(level).floors ? stairLink(level, floor) : null,
+    down: floor > 0 ? stairLink(level, floor - 1) : null,
+  }
 }
 
 /** Bố cục đang dùng (theo cấp nhà của người chơi) để hệ thống và hiển thị không phải truyền cấp nhà khắp nơi. */

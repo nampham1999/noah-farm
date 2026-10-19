@@ -403,7 +403,7 @@
   "pet.gift": "🎁 {name} found {qty} {item}!",
   "pet.giftGold": "🎁 {name} dug up {qty} gold!",
   "shop.houseUpgrade": "Upgrade house to level {level}",
-  "shop.houseSub": "House {w}×{d} tiles",
+  "shop.houseSub": "House {w}×{d} tiles, {floors} floors",
   "shop.houseMax": "Your house is fully upgraded",
   "house.upgraded": "🏡 House upgraded to level {level}! The room is now {w}×{d}",
   "shop.greenhouse": "Greenhouse",
@@ -840,7 +840,8 @@
   "crop.purple_cabbage": "Purple cabbage",
   "house.feature.2": "Adds a bedroom on the east side, behind a partition with a doorway",
   "house.feature.3": "Adds a north wing: kitchen, bathroom and study",
-  "house.feature.4": "The east rooms get 2 tiles wider",
-  "house.feature.5": "The living room and bedroom grow 2 rows deeper to the south",
+  "house.feature.4": "Adds a 2nd floor (stairs in the living room's north-west corner)",
+  "house.feature.5": "Adds a 3rd floor (attic)",
+  "house.floor": "You are on floor {n}",
   "house.movedBack": "The house layout changed: {n} furniture pieces went back into your bag"
 }

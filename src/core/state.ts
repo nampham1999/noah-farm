@@ -23,6 +23,8 @@ export interface PlayerState {
   rotY: number
   /** Đang ở trong nhà. */
   indoors: boolean
+  /** Tầng đang đứng trong nhà (0 là tầng trệt). */
+  floor: number
   /** Ngoại hình tự tạo; null là dùng nhân vật mẫu gốc của bản cũ. */
   look: Look | null
 }
@@ -64,7 +66,7 @@ export interface PlacedFurniture {
   cx: number
   cz: number
   rot: number
-  /** Chỉ có ở bản lưu cũ từng có tầng trên: đồ ở tầng trên được cất về túi khi tải. */
+  /** Tầng đặt đồ (0 là tầng trệt); thiếu nghĩa là tầng trệt. */
   fl?: number
 }
 
@@ -246,6 +248,7 @@ export function createInitialState(): GameState {
       pos: [SPAWN.x, 0, SPAWN.z],
       rotY: SPAWN.rotY,
       indoors: false,
+      floor: 0,
       look: null,
     },
     clock: { day: 1, season: 'spring', year: 1, minuteOfDay: balance.dayStartMinute, weather: 'sunny' },
