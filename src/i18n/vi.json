@@ -635,7 +635,7 @@
   "label.fishing": "Câu cá",
   "label.field": "Ruộng",
   "label.orchard": "Trồng cây",
-  "pest.appeared": "🐛 Có sâu bò vào ruộng! Cây bị sâu sẽ ngừng lớn. Chạm vào ô có sâu để bắt.",
+  "pest.appeared": "🐛 Có sâu bò vào ruộng! Cây bị sâu sẽ lớn chậm một nửa. Chạm vào ô có sâu để bắt.",
   "pest.removed": "🐛 Đã bắt sâu!",
   "pest.helped": "🐛 Đã bắt sâu giúp bạn! Về nhà nhận {gold} vàng",
   "pest.friendHelped": "🐛 {name} đã ghé bắt sâu giúp ruộng của bạn!",

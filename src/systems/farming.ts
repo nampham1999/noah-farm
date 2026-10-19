@@ -9,7 +9,7 @@ import { gainXp, useStamina } from './progress.ts'
  * Đất và cây trồng (GDD mục 3.1).
  * Cây chia `cropStages` giai đoạn đều nhau. Gieo xong tưới một lần là cây tự lớn tới khi chín;
  * chưa tưới thì cây đứng chờ (trời mưa thì tự được tưới).
- * Thời gian tính theo dấu thời gian nên cây vẫn lớn khi đóng tab.
+ * Thời gian tính theo dấu thời gian nên cây vẫn lớn khi đóng tab. Cây bị sâu lớn chậm một nửa.
  */
 
 export type PlotAction = 'till' | 'plant' | 'water' | 'harvest'
@@ -49,14 +49,12 @@ export function updateCrops(state: GameState, t: number, prevT = t): void {
   for (const plot of state.plots) {
     const crop = cropOf(plot)
     if (!crop) continue
-    // Bị sâu thì đứng yên: dời mốc thời gian theo. (Mùa chỉ quyết định gieo được hay không; cây đã gieo
-    // cứ lớn tới khi chín dù giữa chừng sang mùa khác, để treo máy qua đêm vẫn có nông sản.)
-    if (state.pests.includes(`${plot.x},${plot.z}`)) {
-      if (plot.stage < STAGES && t > prevT) {
-        plot.stageStartedAt += t - prevT
-        if (plot.wateredAt !== null) plot.wateredAt += t - prevT
-      }
-      continue
+    // Bị sâu thì lớn chậm một nửa: dời mốc thời gian theo nửa khoảng trôi qua. (Mùa chỉ quyết định gieo được hay không;
+    // cây đã gieo cứ lớn tới khi chín dù giữa chừng sang mùa khác, và sâu không bao giờ giữ cây mãi mãi.)
+    if (state.pests.includes(`${plot.x},${plot.z}`) && plot.stage < STAGES && t > prevT) {
+      const slow = (t - prevT) / 2
+      plot.stageStartedAt += slow
+      if (plot.wateredAt !== null) plot.wateredAt += slow
     }
     // Đã tưới thì lớn liền một mạch tới khi chín (treo máy hay đóng game vẫn lớn).
     while (plot.stage < STAGES && plot.wateredAt !== null) {

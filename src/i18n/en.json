@@ -635,7 +635,7 @@
   "label.fishing": "Fishing",
   "label.field": "Field",
   "label.orchard": "Plant a tree",
-  "pest.appeared": "🐛 Bugs got into the field! A crop with bugs stops growing. Tap it to remove them.",
+  "pest.appeared": "🐛 A bug crawled into the field! Infested crops grow at half speed. Tap the plot to catch it.",
   "pest.removed": "🐛 Bugs removed!",
   "pest.helped": "🐛 You removed your friend's bugs! Get {gold} gold back home",
   "pest.friendHelped": "🐛 {name} came by and removed the bugs from your field!",
