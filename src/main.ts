@@ -214,6 +214,7 @@ async function start(): Promise<void> {
   })
   let lastFishPhase = 'idle'
   let stairsReadyAt = 0
+  let stairsArmed = false
   const rodTip = new THREE.Vector3()
   const animalsView = createAnimalsView(world.scene, models)
   const machinesView = createMachinesView(world.scene, models)
@@ -758,12 +759,17 @@ async function start(): Promise<void> {
       exitHouse(state)
     }
     // Bước lên cầu thang thì đổi tầng (nghỉ một chút để không nảy qua lại).
-    if (state.player.indoors && performance.now() > stairsReadyAt) {
+    if (state.player.indoors) {
       const stairs = stairsUnderfoot(state)
-      if (stairs) {
+      const nowMs = performance.now()
+      // Sau khi đổi tầng phải bước ra khỏi cầu thang (sau thời gian nghỉ) thì mới bước vào được lần nữa:
+      // giữ phím đi tới thì không bị đá xuống ngay vì đang đứng trên cầu thang.
+      if (!stairs && nowMs > stairsReadyAt) stairsArmed = true
+      else if (stairs && stairsArmed && nowMs > stairsReadyAt) {
         interaction.cancel()
         changeFloor(state, stairs)
-        stairsReadyAt = performance.now() + 900
+        stairsArmed = false
+        stairsReadyAt = nowMs + 700
       }
     }
     updateRiding(state, Math.min(1, speed / (WALK_SPEED * rideSpeed())), dt)

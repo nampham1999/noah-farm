@@ -217,7 +217,7 @@ export function changeFloor(state: GameState, dir: 'up' | 'down'): void {
   const st = stairsOf(state.house.level)
   const stairs = dir === 'up' ? st.down : st.up
   state.player.pos[0] = c.x + stairs.cx + stairs.w / 2
-  state.player.pos[2] = c.z + stairs.cz + stairs.d + 0.9
+  state.player.pos[2] = c.z + stairs.cz + stairs.d + 1.8
   state.player.rotY = 0
   bus.emit('sfx', 'click')
   bus.emit('notify', { key: 'house.floor', params: { n: state.player.floor + 1 }, good: true })
