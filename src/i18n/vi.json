@@ -843,5 +843,6 @@
   "house.feature.4": "Thêm tầng 2 (cầu thang ở góc tây bắc phòng khách)",
   "house.feature.5": "Thêm tầng 3 (gác áp mái)",
   "house.floor": "Bạn đang ở tầng {n}",
-  "house.movedBack": "Nhà đổi bố cục: {n} món đồ đã được cất lại vào túi"
+  "house.movedBack": "Nhà đổi bố cục: {n} món đồ đã được cất lại vào túi",
+  "menu.resetZoom": "Đặt lại zoom"
 }

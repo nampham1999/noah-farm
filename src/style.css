@@ -3117,3 +3117,30 @@ body.is-visiting .energy-pill {
 .stair-fade.is-on {
   opacity: 1;
 }
+
+/* Điện thoại hẹp (dưới 360px): thu nhỏ thanh trên để đồng hồ và nút menu không tràn ra ngoài màn hình. */
+@media (max-width: 359px) {
+  .hud-top {
+    gap: 4px;
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
+  }
+
+  .hud-left,
+  .hud-right {
+    gap: 4px;
+  }
+
+  .hud-right {
+    zoom: 0.84;
+  }
+
+  .hud-left .avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .gold-pill {
+    font-size: 12px;
+  }
+}

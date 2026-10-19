@@ -408,7 +408,9 @@ async function start(): Promise<void> {
   const input = new Input()
   attachKeyboard(input)
   attachPointer(input, canvas, ui)
-  followCam.zoom = state.settings.zoom
+  // Mức zoom đã lưu quá xa (lỡ chụm tay) thì kéo về mức hợp lý, để mở lại game không bị nhỏ xíu.
+  followCam.zoom = Math.min(1.8, Math.max(0.7, state.settings.zoom || 1))
+  let lastZoomSaved = followCam.zoom
   const hud = createHud(ui, state, {
     eat: () => eat(state),
     openInventory: () => togglePanel(inventoryPanel),
@@ -832,9 +834,12 @@ async function start(): Promise<void> {
     const decorating = state.player.indoors && decorUi.active
     followCam.frame = decorating ? { x: ROOM.x, z: ROOM.z, w: ROOM.w, d: ROOM.d } : null
     if (decorating !== document.body.classList.contains('is-decorating')) document.body.classList.toggle('is-decorating', decorating)
-    followCam.update(dt, playerPos, input.zoomScale)
+    // Menu đặt lại zoom: nhận giá trị mới nếu có người đổi settings.zoom ngoài vòng lặp này.
+    if (Math.abs(state.settings.zoom - lastZoomSaved) > 1e-6) followCam.zoom = state.settings.zoom
+    // Đang mở cửa sổ (tạo nhân vật, túi đồ...) thì chụm hai ngón không đổi zoom thế giới phía sau.
+    followCam.update(dt, playerPos, isPanelOpen() ? 1 : input.zoomScale)
     world.setViewDistance(followCam.distance)
-    state.settings.zoom = followCam.zoom
+    state.settings.zoom = lastZoomSaved = followCam.zoom
     interaction.setHover(hoveredPlot())
     world.update(clock.getElapsed(), playerPos, state.clock, state.player.indoors)
     const t1 = performance.now()

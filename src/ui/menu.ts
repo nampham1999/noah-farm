@@ -75,6 +75,10 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
       // Ngôn ngữ.
       const langRow = section(body, t('menu.language'))
       langRow.append(
+        button(`🔍 ${t('menu.resetZoom')}`, 'btn', () => {
+          state.settings.zoom = 1
+          autosaver.requestSoon()
+        }),
         button(`🌐 ${t('menu.languageName')} → ${getLang() === 'vi' ? 'English' : 'Tiếng Việt'}`, 'btn', () => {
           state.settings.lang = getLang() === 'vi' ? 'en' : 'vi'
           setLang(state.settings.lang)

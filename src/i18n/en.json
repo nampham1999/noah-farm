@@ -843,5 +843,6 @@
   "house.feature.4": "Adds a 2nd floor (stairs in the living room's north-west corner)",
   "house.feature.5": "Adds a 3rd floor (attic)",
   "house.floor": "You are on floor {n}",
-  "house.movedBack": "The house layout changed: {n} furniture pieces went back into your bag"
+  "house.movedBack": "The house layout changed: {n} furniture pieces went back into your bag",
+  "menu.resetZoom": "Reset zoom"
 }
