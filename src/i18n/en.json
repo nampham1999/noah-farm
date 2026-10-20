@@ -41,7 +41,7 @@
   "notice.noSeeds": "Out of seeds, buy more at the stall",
   "notice.wrongSeason": "{item} can't be planted this season",
   "notice.bagFull": "Bag full! Expand it in the Inventory for more room.",
-  "notice.harvested": "+1 {item} (+{xp} XP)",
+  "notice.harvested": "+{qty} {item} (+{xp} XP)",
   "notice.growing": "{item} is growing, about {minutes} min left",
   "notice.locked": "Requires level {level}",
   "notice.noGold": "Not enough gold",

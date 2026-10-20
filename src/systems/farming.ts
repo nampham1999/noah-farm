@@ -7,8 +7,8 @@ import { gainXp, useStamina } from './progress.ts'
 
 /**
  * Đất và cây trồng (GDD mục 3.1).
- * Cây chia `cropStages` giai đoạn đều nhau. Gieo xong tưới một lần là cây tự lớn tới khi chín;
- * chưa tưới thì cây đứng chờ (trời mưa thì tự được tưới).
+ * Cây chia `cropStages` giai đoạn đều nhau và tự lớn tới khi chín. Tưới một lần (trời mưa thì tự được tưới)
+ * thì thu hoạch được gấp đôi; không tưới vẫn chín đúng hạn nhưng chỉ được một nửa.
  * Thời gian tính theo dấu thời gian nên cây vẫn lớn khi đóng tab. Cây bị sâu lớn chậm một nửa.
  */
 
@@ -24,6 +24,10 @@ export function isRipe(plot: PlotState): boolean {
   return plot.crop !== null && plot.stage >= STAGES
 }
 
+/** Số nông sản mỗi ô khi thu hoạch: tưới (ít nhất một lần) thì gấp đôi cây không tưới. */
+export const WATERED_YIELD = 2
+
+/** Ô chưa được tưới: vẫn chín đúng hạn nhưng thu được ít hơn. */
 export function needsWater(plot: PlotState): boolean {
   return plot.crop !== null && plot.stage < STAGES && plot.wateredAt === null
 }
@@ -32,7 +36,7 @@ function stageMs(crop: CropDef): number {
   return (crop.growMinutes * 60_000) / STAGES
 }
 
-/** Thời gian còn lại (ms) đến khi chín, giả sử được tưới đúng lúc. */
+/** Thời gian còn lại (ms) đến khi chín. */
 export function timeToRipe(plot: PlotState, t: number): number {
   const crop = cropOf(plot)
   if (!crop || isRipe(plot)) return 0
@@ -56,13 +60,12 @@ export function updateCrops(state: GameState, t: number, prevT = t): void {
       plot.stageStartedAt += slow
       if (plot.wateredAt !== null) plot.wateredAt += slow
     }
-    // Đã tưới thì lớn liền một mạch tới khi chín (treo máy hay đóng game vẫn lớn).
-    while (plot.stage < STAGES && plot.wateredAt !== null) {
+    // Cây lớn theo thời gian từ lúc gieo, tưới hay không đều chín (treo máy hay đóng game vẫn lớn). Tưới thì được nhiều nông sản hơn.
+    while (plot.stage < STAGES) {
       const end = plot.stageStartedAt + stageMs(crop)
       if (t < end) break
       plot.stage++
-      // Tưới trễ sau khi hết giờ giai đoạn đầu thì giai đoạn mới tính từ lúc tưới.
-      plot.stageStartedAt = Math.max(end, plot.wateredAt)
+      plot.stageStartedAt = end
     }
   }
 }
@@ -159,15 +162,16 @@ export function actOnPlot(state: GameState, plot: PlotState, t: number): boolean
     case 'harvest': {
       const crop = cropOf(plot)!
       const produce = `crop_${crop.id}`
-      if (!canFit(inv, produce, 1)) return fail('notice.bagFull')
-      addItem(inv, produce, 1)
+      const qty = plot.wateredAt !== null ? WATERED_YIELD : 1
+      if (!canFit(inv, produce, qty)) return fail('notice.bagFull')
+      addItem(inv, produce, qty)
       plot.crop = null
       plot.stage = 0
       plot.wateredAt = null
       useStamina(state, balance.staminaCost.harvest)
       gainXp(state, crop.xp)
-      bus.emit('progress', { type: 'harvest', amount: 1, id: crop.id })
-      bus.emit('notify', { key: 'notice.harvested', params: { item: produce, xp: crop.xp }, good: true })
+      bus.emit('progress', { type: 'harvest', amount: qty, id: crop.id })
+      bus.emit('notify', { key: 'notice.harvested', params: { item: produce, xp: crop.xp, qty }, good: true })
       return true
     }
 

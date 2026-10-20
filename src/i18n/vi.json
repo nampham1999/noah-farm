@@ -41,7 +41,7 @@
   "notice.noSeeds": "Hết hạt giống, ra quầy hàng mua thêm",
   "notice.wrongSeason": "{item} không gieo được mùa này",
   "notice.bagFull": "Túi đầy! Mở rộng túi trong Túi đồ để có thêm chỗ.",
-  "notice.harvested": "+1 {item} (+{xp} XP)",
+  "notice.harvested": "+{qty} {item} (+{xp} XP)",
   "notice.growing": "{item} đang lớn, còn khoảng {minutes} phút",
   "notice.locked": "Cần cấp {level}",
   "notice.noGold": "Không đủ vàng",
