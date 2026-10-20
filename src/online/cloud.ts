@@ -256,6 +256,42 @@ export class Cloud {
     }
   }
 
+  /**
+   * Phiên chơi (sessions/{uid}): mỗi lúc chỉ một thiết bị được chơi. Máy mở sau giành quyền; máy trước thấy bị giành thì dừng ghi.
+   * Trả về other = true nếu trước đó có một máy khác đang chơi (còn nhịp tim gần đây).
+   */
+  async claimSession(device: string): Promise<{ other: boolean }> {
+    const { doc, getDoc, setDoc } = this.fs
+    try {
+      const ref = doc(this.db, 'sessions', this.account.uid)
+      const d = (await getDoc(ref)).data() as { device?: string; at?: number } | undefined
+      const other = !!d && d.device !== device && Date.now() - (d.at ?? 0) < 120_000
+      await setDoc(ref, { device, at: Date.now() })
+      return { other }
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  async sessionBeat(): Promise<void> {
+    const { doc, updateDoc } = this.fs
+    try {
+      await updateDoc(doc(this.db, 'sessions', this.account.uid), { at: Date.now() })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  /** Nghe ai đang giữ phiên chơi; trả về hàm huỷ nghe. */
+  watchSession(cb: (device: string | null) => void): () => void {
+    const { doc, onSnapshot } = this.fs
+    return onSnapshot(
+      doc(this.db, 'sessions', this.account.uid),
+      (snap) => cb((snap.data() as { device?: string } | undefined)?.device ?? null),
+      (e) => console.warn('Session watch', e),
+    )
+  }
+
   /** Bản lưu đồng bộ theo mã bí mật (syncs/{mã}): dùng chung giữa các thiết bị của cùng một người. */
   async uploadSync(code: string, data: string, savedAt: number): Promise<void> {
     const { doc, setDoc } = this.fs

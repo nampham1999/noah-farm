@@ -313,7 +313,7 @@ function button(label: string, className: string, onClick: () => void): HTMLButt
 let authError: string | null = null
 
 /** Lý do đăng nhập Google lỗi, kèm cách sửa (và mã lỗi gốc để dễ tra). */
-function authErrorText(e: unknown): string {
+export function authErrorText(e: unknown): string {
   const code = e instanceof CloudError ? e.code : 'other'
   const raw = ((e as { cause?: { code?: string } })?.cause?.code ?? '').replace('auth/', '')
   const key = code === 'domain' ? 'online.google.domain' : code === 'setup' ? 'online.google.setup' : code === 'popup' ? 'online.google.popup' : 'online.google.other'

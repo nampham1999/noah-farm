@@ -159,6 +159,11 @@ service cloud.firestore {
         && request.resource.data.data is string && request.resource.data.data.size() < 900000;
     }
 
+    // Phiên chơi: mỗi người một tài liệu ghi thiết bị đang chơi và nhịp tim (để chỉ một máy chơi tại một thời điểm).
+    match /sessions/{uid} {
+      allow read, write: if isMe(uid);
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();

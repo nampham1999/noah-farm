@@ -87,6 +87,8 @@ import { helpPest, loadFriendFarm, online, sendHelp, setVisitName, startOnline, 
 import { markActive, pestsNewDay } from './systems/pests.ts'
 import { createPestsView } from './render/pests.ts'
 import { askUseCloud, guestbookPanel } from './ui/online.ts'
+import { showSessionLost } from './ui/session.ts'
+import { scheduleLinkPrompt } from './ui/linkPrompt.ts'
 import { announce, startChat } from './online/chat.ts'
 import { refreshTrades } from './online/trade.ts'
 import { onContestProgress, watchContests } from './online/contest.ts'
@@ -317,7 +319,7 @@ async function start(): Promise<void> {
     autosaver.start()
     if (isNew) void autosaver.saveNow()
     // Chơi cùng bạn bè: lưu đám mây, mã bạn bè, hộp thư (mất mạng thì bỏ qua).
-    void startOnline(state, store, autosaver, savedAt, askUseCloud)
+    void startOnline(state, store, autosaver, savedAt, askUseCloud, showSessionLost)
     // Chat: kênh Làng và tin riêng; khởi động lại khi danh sách bạn đổi.
     let tradesChecked = false
     bus.on('onlineChanged', () => {
@@ -331,6 +333,7 @@ async function start(): Promise<void> {
         void collectSales(state)
         void startVillage(state)
         void startCards(state)
+        scheduleLinkPrompt(state)
         window.setInterval(() => void collectSales(state), 120_000)
       }
     })

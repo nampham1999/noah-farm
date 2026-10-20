@@ -852,5 +852,13 @@
   "sync.use": "Use this code",
   "sync.copied": "Sync code copied",
   "sync.invalid": "Invalid code (24 lowercase letters and digits).",
-  "sync.created": "This device now uses that code and uploaded its save. Enter the code on the other device to get the data."
+  "sync.created": "This device now uses that code and uploaded its save. Enter the code on the other device to get the data.",
+  "session.title": "Playing on another device",
+  "session.text": "This account was just opened on another device, so this one paused to keep the two from overwriting each other. Tap to keep playing here (the other one will stop).",
+  "session.loading": "Getting the latest progress, then reloading…",
+  "session.here": "Play on this device",
+  "link.title": "Keep your progress",
+  "link.text": "You're playing as a guest. Link Google so you don't lose your farm and can play the same account on several devices (phone, computer).",
+  "link.yes": "Link Google",
+  "link.later": "Later"
 }

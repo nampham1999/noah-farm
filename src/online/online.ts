@@ -112,7 +112,14 @@ export async function connect(): Promise<Cloud> {
  * Bật online cho nông trại của mình: hồ sơ và mã bạn bè, so bản lưu trên mây,
  * tự gửi bản lưu lên sau mỗi lần lưu, đọc hộp thư định kỳ.
  */
-export async function startOnline(state: GameState, store: SaveStore, autosaver: AutoSaver, localSavedAt: number, askUseCloud: (save: ParsedSave) => Promise<boolean>): Promise<void> {
+export async function startOnline(
+  state: GameState,
+  store: SaveStore,
+  autosaver: AutoSaver,
+  localSavedAt: number,
+  askUseCloud: (save: ParsedSave) => Promise<boolean>,
+  showSessionLost: (reclaim: () => Promise<void>) => void,
+): Promise<void> {
   claimHelpReward(state)
   if (onlineDisabled()) {
     setStatus('off')
@@ -150,9 +157,12 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
       localStorage.removeItem(SWITCHED_KEY)
     }
     // Bản trên mây mới hơn (chơi ở máy khác): hỏi có dùng không.
+    const autoLoad = sessionStorage.getItem(AUTO_LOAD_KEY) !== null
+    sessionStorage.removeItem(AUTO_LOAD_KEY)
     if (remote && remote.savedAt > Math.max(localSavedAt, autosaver.lastSavedAt) + NEWER_MS) {
+      // Vừa giành lại phiên chơi từ máy khác: bản mới nhất là của máy kia, dùng luôn không hỏi.
       const parsed = await decodeSave(remote.data)
-      if (await askUseCloud(parsed)) {
+      if (autoLoad || (await askUseCloud(parsed))) {
         autosaver.suspend()
         await store.replace(await gunzipBase64Url(remote.data))
         location.reload()
@@ -196,6 +206,9 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
   // Lưu trên máy ngay (onSaved gửi lên mây cùng mốc thời gian, để lần sau không bị hỏi nhầm "bản mới hơn").
   void autosaver.saveNow()
 
+  // Chỉ một thiết bị chơi tại một thời điểm: máy mở sau giành phiên, máy trước gửi bản mới nhất lên rồi dừng và hỏi có chơi lại ở đây không.
+  void startSession(cloud, state, store, autosaver, showSessionLost)
+
   // Máy khác (cùng mã đồng bộ) vừa chơi tiếp: hỏi có tải về không, kiểm tra định kỳ và khi quay lại tab.
   const askNewer = (store2: SaveStore) => async () => {
     try {
@@ -224,6 +237,7 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
   void refreshFriends()
 }
 
+const AUTO_LOAD_KEY = 'noahfarm.autoLoadNewer'
 const SYNC_RE = /^[a-z0-9]{20,40}$/
 const SYNC_SLACK_MS = 3000
 
@@ -238,9 +252,9 @@ export function syncCodeOf(state: GameState): string {
 }
 
 /** Gửi bản lưu lên chỗ đồng bộ theo mã, trừ khi máy khác vừa gửi bản mới hơn (để người chơi chọn, đừng ghi đè). */
-async function pushSync(cloud: Cloud, state: GameState, data: string, savedAt: number): Promise<void> {
+async function pushSync(cloud: Cloud, state: GameState, data: string, savedAt: number, force = false): Promise<void> {
   const code = syncCodeOf(state)
-  const remote = await cloud.downloadSync(code)
+  const remote = force ? null : await cloud.downloadSync(code)
   if (remote && remote.savedAt > online.syncBaseline + SYNC_SLACK_MS) return
   await cloud.uploadSync(code, data, savedAt)
   online.syncBaseline = savedAt
@@ -273,6 +287,73 @@ export async function adoptSyncCode(state: GameState, store: SaveStore, autosave
   online.syncBaseline = savedAt
   void autosaver.saveNow()
   return 'created'
+}
+
+function deviceId(): string {
+  try {
+    let id = localStorage.getItem('noahfarm.deviceId')
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem('noahfarm.deviceId', id)
+    }
+    return id
+  } catch {
+    return 'unknown'
+  }
+}
+
+async function startSession(
+  cloud: Cloud,
+  state: GameState,
+  store: SaveStore,
+  autosaver: AutoSaver,
+  showSessionLost: (reclaim: () => Promise<void>) => void,
+): Promise<void> {
+  const device = deviceId()
+  let lost = false
+  try {
+    const { other } = await cloud.claimSession(device)
+    if (other) {
+      // Máy kia đang chơi: chờ nó gửi bản mới nhất lên rồi lấy về dùng luôn.
+      window.setTimeout(() => {
+        void cloud.downloadSync(syncCodeOf(state)).then(async (remote) => {
+          if (!remote || remote.savedAt <= Math.max(autosaver.lastSavedAt, online.syncBaseline) + SYNC_SLACK_MS) return
+          autosaver.suspend()
+          await store.replace(await gunzipBase64Url(remote.data))
+          location.reload()
+        }).catch(() => {})
+      }, 3500)
+    }
+  } catch (e) {
+    console.warn('Session claim failed', e)
+    return
+  }
+  window.setInterval(() => {
+    if (!lost) void cloud.sessionBeat().catch(() => {})
+  }, 30_000)
+  cloud.watchSession((holder) => {
+    if (!holder || holder === device || lost) return
+    lost = true
+    void (async () => {
+      // Gửi tiến trình mới nhất lên mây cho máy kia, rồi dừng ghi để không đè bản của họ.
+      await autosaver.saveNow()
+      try {
+        const savedAt = Date.now()
+        const data = await encodeSave(state, savedAt)
+        await cloud.uploadSave(data, savedAt)
+        await pushSync(cloud, state, data, savedAt, true)
+      } catch (e) {
+        console.warn('Final upload failed', e)
+      }
+      autosaver.suspend()
+      showSessionLost(async () => {
+        await cloud.claimSession(device)
+        sessionStorage.setItem(AUTO_LOAD_KEY, '1')
+        // Chờ máy kia gửi bản mới nhất lên rồi tải lại để lấy về.
+        window.setTimeout(() => location.reload(), 3500)
+      })
+    })()
+  })
 }
 
 async function syncProfile(state: GameState): Promise<void> {

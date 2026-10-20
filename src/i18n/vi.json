@@ -852,5 +852,13 @@
   "sync.use": "Dùng mã này",
   "sync.copied": "Đã chép mã đồng bộ",
   "sync.invalid": "Mã không đúng (24 ký tự chữ thường và số).",
-  "sync.created": "Đã gán mã cho máy này và gửi bản lưu lên. Máy kia nhập mã này là có dữ liệu."
+  "sync.created": "Đã gán mã cho máy này và gửi bản lưu lên. Máy kia nhập mã này là có dữ liệu.",
+  "session.title": "Đang chơi ở thiết bị khác",
+  "session.text": "Tài khoản này vừa được mở ở một thiết bị khác, nên máy này tạm dừng để hai máy không ghi đè dữ liệu của nhau. Bấm để chơi tiếp ở máy này (máy kia sẽ dừng).",
+  "session.loading": "Đang lấy tiến trình mới nhất rồi tải lại…",
+  "session.here": "Chơi ở máy này",
+  "link.title": "Giữ tiến trình của bạn",
+  "link.text": "Bạn đang chơi bằng tài khoản khách. Liên kết Google để không mất nông trại và chơi cùng một tài khoản trên nhiều thiết bị (điện thoại, máy tính).",
+  "link.yes": "Liên kết Google",
+  "link.later": "Để sau"
 }
