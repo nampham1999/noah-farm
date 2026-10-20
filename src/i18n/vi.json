@@ -860,5 +860,14 @@
   "link.title": "Giữ tiến trình của bạn",
   "link.text": "Bạn đang chơi bằng tài khoản khách. Liên kết Google để không mất nông trại và chơi cùng một tài khoản trên nhiều thiết bị (điện thoại, máy tính).",
   "link.yes": "Liên kết Google",
-  "link.later": "Để sau"
+  "link.later": "Để sau",
+  "sync.showQr": "Hiện mã QR",
+  "sync.hideQr": "Ẩn mã QR",
+  "sync.copyLink": "Chép liên kết",
+  "sync.linkCopied": "Đã chép liên kết đồng bộ",
+  "sync.qrHint": "Dùng camera điện thoại quét mã này: trang game mở ra và hỏi có dùng mã đồng bộ không. Ai quét được mã này đều lấy được nông trại của bạn, đừng đưa cho người lạ.",
+  "sync.adoptTitle": "Đồng bộ từ máy khác",
+  "sync.adoptText": "Dùng mã đồng bộ vừa quét cho máy này? Nông trại trên máy này sẽ được thay bằng nông trại có mã đó (bản cũ trên máy được giữ lại để khôi phục).",
+  "sync.adoptYes": "Dùng mã này",
+  "sync.skip": "Bỏ qua"
 }

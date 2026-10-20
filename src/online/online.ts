@@ -251,6 +251,11 @@ export function syncCodeOf(state: GameState): string {
   return state.meta.syncCode
 }
 
+/** Link mở game rồi tự hỏi dùng mã đồng bộ này (đưa vào mã QR hoặc gửi cho máy khác). */
+export function syncLink(code: string): string {
+  return `${location.origin}${location.pathname}#sync=${code}`
+}
+
 /** Gửi bản lưu lên chỗ đồng bộ theo mã, trừ khi máy khác vừa gửi bản mới hơn (để người chơi chọn, đừng ghi đè). */
 async function pushSync(cloud: Cloud, state: GameState, data: string, savedAt: number, force = false): Promise<void> {
   const code = syncCodeOf(state)

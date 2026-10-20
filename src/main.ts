@@ -88,6 +88,7 @@ import { markActive, pestsNewDay } from './systems/pests.ts'
 import { createPestsView } from './render/pests.ts'
 import { askUseCloud, guestbookPanel } from './ui/online.ts'
 import { showSessionLost } from './ui/session.ts'
+import { askAdoptPending, captureSyncLink } from './ui/syncPrompt.ts'
 import { scheduleLinkPrompt } from './ui/linkPrompt.ts'
 import { announce, startChat } from './online/chat.ts'
 import { refreshTrades } from './online/trade.ts'
@@ -334,6 +335,7 @@ async function start(): Promise<void> {
         void startVillage(state)
         void startCards(state)
         scheduleLinkPrompt(state)
+        askAdoptPending(state, store, autosaver)
         window.setInterval(() => void collectSales(state), 120_000)
       }
     })
@@ -1050,8 +1052,10 @@ function registerServiceWorker(): void {
 
 // Dán link thăm vào thanh địa chỉ khi đang mở game: tải lại để vào chế độ thăm.
 window.addEventListener('hashchange', () => {
-  if (/[#&](visit|friend)=/.test(location.hash)) location.reload()
+  // Link đồng bộ (#sync=mã) dán khi đang mở game: ghi nhớ mã rồi tải lại để hỏi dùng mã.
+  if (captureSyncLink() || /[#&](visit|friend)=/.test(location.hash)) location.reload()
 })
+captureSyncLink()
 
 registerServiceWorker()
 void start()

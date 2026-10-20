@@ -860,5 +860,14 @@
   "link.title": "Keep your progress",
   "link.text": "You're playing as a guest. Link Google so you don't lose your farm and can play the same account on several devices (phone, computer).",
   "link.yes": "Link Google",
-  "link.later": "Later"
+  "link.later": "Later",
+  "sync.showQr": "Show QR code",
+  "sync.hideQr": "Hide QR code",
+  "sync.copyLink": "Copy link",
+  "sync.linkCopied": "Sync link copied",
+  "sync.qrHint": "Scan this with a phone camera: the game opens and asks if you want to use the sync code. Anyone who scans it can get your farm, so don't show it to strangers.",
+  "sync.adoptTitle": "Sync from another device",
+  "sync.adoptText": "Use the sync code you just scanned on this device? The farm on this device will be replaced by the one with that code (the old local save is kept so you can restore it).",
+  "sync.adoptYes": "Use this code",
+  "sync.skip": "Skip"
 }

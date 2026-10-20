@@ -1,4 +1,5 @@
-import { adoptSyncCode, notifyError, online, syncCodeOf } from '../online/online.ts'
+import { renderSVG } from 'uqr'
+import { adoptSyncCode, notifyError, online, syncCodeOf, syncLink } from '../online/online.ts'
 import { bus } from '../core/events.ts'
 import { enableNotifications, notifySupported } from '../systems/notifications.ts'
 import type { GameState } from '../core/state.ts'
@@ -50,6 +51,7 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
   let confirmNewGame = false
   let confirmTimer = 0
   let syncMsg = ''
+  let showQr = false
 
   const markBackedUp = () => {
     state.meta.lastBackupAt = Date.now()
@@ -221,7 +223,22 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
             (e: unknown) => notifyError(e),
           )
         })
-        sync.append(mine, copy, other, use)
+        const link = syncLink(mine.value)
+        const copyLink = button(`🔗 ${t('sync.copyLink')}`, 'btn', () => {
+          void navigator.clipboard?.writeText(link).then(() => bus.emit('notify', { key: 'sync.linkCopied', good: true }), () => {})
+        })
+        const qrBtn = button(`📱 ${showQr ? t('sync.hideQr') : t('sync.showQr')}`, 'btn', () => {
+          showQr = !showQr
+          refresh()
+        })
+        sync.append(mine, copy, copyLink, qrBtn)
+        if (showQr) {
+          const qr = document.createElement('div')
+          qr.className = 'qr'
+          qr.innerHTML = renderSVG(link, { ecc: 'M', pixelSize: 4, whiteColor: '#fffdf6', blackColor: '#4e2a0c' })
+          sync.append(qr, note(t('sync.qrHint'), 'menu-note'))
+        }
+        sync.append(other, use)
         if (syncMsg) sync.append(note(syncMsg, 'menu-note'))
       }
       const actions = document.createElement('div')
