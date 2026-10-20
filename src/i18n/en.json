@@ -844,5 +844,13 @@
   "house.feature.5": "Adds a 3rd floor (attic)",
   "house.floor": "You are on floor {n}",
   "house.movedBack": "The house layout changed: {n} furniture pieces went back into your bag",
-  "menu.resetZoom": "Reset zoom"
+  "menu.resetZoom": "Reset zoom",
+  "sync.title": "Sync across devices",
+  "sync.hint": "This farm's secret code. On another device, open the Menu and paste this code below: both devices then share one save, and whichever you play later asks if you want to load the newer one. No Google sign-in needed. Don't share this code.",
+  "sync.copy": "Copy code",
+  "sync.paste": "Paste the sync code from another device",
+  "sync.use": "Use this code",
+  "sync.copied": "Sync code copied",
+  "sync.invalid": "Invalid code (24 lowercase letters and digits).",
+  "sync.created": "This device now uses that code and uploaded its save. Enter the code on the other device to get the data."
 }

@@ -256,6 +256,26 @@ export class Cloud {
     }
   }
 
+  /** Bản lưu đồng bộ theo mã bí mật (syncs/{mã}): dùng chung giữa các thiết bị của cùng một người. */
+  async uploadSync(code: string, data: string, savedAt: number): Promise<void> {
+    const { doc, setDoc } = this.fs
+    try {
+      await setDoc(doc(this.db, 'syncs', code), { data, savedAt })
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
+  async downloadSync(code: string): Promise<{ data: string; savedAt: number } | null> {
+    const { doc, getDoc } = this.fs
+    try {
+      const snap = await getDoc(doc(this.db, 'syncs', code))
+      return snap.exists() ? (snap.data() as { data: string; savedAt: number }) : null
+    } catch (e) {
+      throw wrap(e)
+    }
+  }
+
   /** Bản lưu trên mây của một người (mình hoặc bạn); null nếu chưa có. */
   async downloadSave(uid = this.account.uid): Promise<{ data: string; savedAt: number } | null> {
     const { doc, getDoc } = this.fs

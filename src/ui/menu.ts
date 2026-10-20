@@ -1,4 +1,4 @@
-import { online } from '../online/online.ts'
+import { adoptSyncCode, notifyError, online, syncCodeOf } from '../online/online.ts'
 import { bus } from '../core/events.ts'
 import { enableNotifications, notifySupported } from '../systems/notifications.ts'
 import type { GameState } from '../core/state.ts'
@@ -49,6 +49,7 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
   let error: string | null = null
   let confirmNewGame = false
   let confirmTimer = 0
+  let syncMsg = ''
 
   const markBackedUp = () => {
     state.meta.lastBackupAt = Date.now()
@@ -193,6 +194,35 @@ export function createMenuPanel(state: GameState, store: SaveStore, autosaver: A
         hint.className = 'panel__hint'
         hint.textContent = online.cloud.account.anonymous ? t('save.deviceHintAnon') : t('save.deviceHintGoogle')
         body.append(hint)
+      }
+      // Đồng bộ nhiều thiết bị bằng mã bí mật: máy nào nhập cùng mã thì dùng chung một bản lưu trên mây (không cần Google).
+      if (online.cloud) {
+        const sync = section(body, t('sync.title'))
+        sync.append(note(t('sync.hint'), 'menu-note'))
+        const mine = document.createElement('input')
+        mine.className = 'menu-input'
+        mine.readOnly = true
+        mine.value = syncCodeOf(state)
+        mine.addEventListener('focus', () => mine.select())
+        const copy = button(`📋 ${t('sync.copy')}`, 'btn', () => {
+          void navigator.clipboard?.writeText(mine.value).then(() => bus.emit('notify', { key: 'sync.copied', good: true }), () => {})
+        })
+        const other = document.createElement('input')
+        other.className = 'menu-input'
+        other.placeholder = t('sync.paste')
+        other.autocapitalize = 'off'
+        const use = button(`🔗 ${t('sync.use')}`, 'btn primary', () => {
+          if (!other.value.trim()) return
+          void adoptSyncCode(state, store, autosaver, other.value).then(
+            (r) => {
+              syncMsg = r === 'invalid' ? t('sync.invalid') : r === 'created' ? t('sync.created') : ''
+              refresh()
+            },
+            (e: unknown) => notifyError(e),
+          )
+        })
+        sync.append(mine, copy, other, use)
+        if (syncMsg) sync.append(note(syncMsg, 'menu-note'))
       }
       const actions = document.createElement('div')
       actions.className = 'menu-actions'

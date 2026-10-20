@@ -172,6 +172,8 @@ export interface MetaState {
   inviteCode: string
   /** Mã mời đã dùng khi bắt đầu chơi (được tặng vàng); null nếu không. */
   referredBy: string | null
+  /** Mã đồng bộ nhiều thiết bị (bí mật): mọi máy nhập cùng mã này dùng chung một bản lưu trên mây. */
+  syncCode?: string
 }
 
 export interface GameState {

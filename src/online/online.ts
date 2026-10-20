@@ -69,6 +69,8 @@ export const online = {
   friends: [] as Profile[],
   /** Lần gửi bản lưu lên mây gần nhất (0 là chưa). */
   uploadedAt: 0,
+  /** Mốc thời gian của bản đồng bộ (theo mã) mà máy này đã nhận hoặc đã gửi lần cuối. */
+  syncBaseline: 0,
   /** Lời nhờ giúp đang mở của bạn bè và của mình. */
   requests: [] as HelpRequest[],
 }
@@ -126,7 +128,10 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
   // Lấy bản lưu trên mây trước (đừng để lỗi đồng bộ hồ sơ chặn việc nạp dữ liệu tài khoản).
   const switched = localStorage.getItem(SWITCHED_KEY) !== null
   try {
-    const remote = await cloud.downloadSave()
+    // Bản đồng bộ theo mã (chung giữa các thiết bị); chưa có thì lấy bản theo tài khoản như trước.
+    const syncRemote = switched ? null : await cloud.downloadSync(syncCodeOf(state)).catch(() => null)
+    const remote = syncRemote ?? (await cloud.downloadSave())
+    online.syncBaseline = syncRemote?.savedAt ?? 0
     // Vừa đăng nhập vào tài khoản Google đã có: dùng luôn bản lưu của tài khoản đó (không hỏi), giữ bản cũ trên máy để khôi phục.
     if (switched) {
       if (remote) {
@@ -173,7 +178,10 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
     uploading = true
     lastUpload = savedAt
     void encodeSave(state, savedAt)
-      .then((data) => cloud.uploadSave(data, savedAt))
+      .then(async (data) => {
+        await cloud.uploadSave(data, savedAt)
+        await pushSync(cloud, state, data, savedAt)
+      })
       .then(() => {
         online.uploadedAt = savedAt
         return syncProfile(state)
@@ -188,10 +196,83 @@ export async function startOnline(state: GameState, store: SaveStore, autosaver:
   // Lưu trên máy ngay (onSaved gửi lên mây cùng mốc thời gian, để lần sau không bị hỏi nhầm "bản mới hơn").
   void autosaver.saveNow()
 
+  // Máy khác (cùng mã đồng bộ) vừa chơi tiếp: hỏi có tải về không, kiểm tra định kỳ và khi quay lại tab.
+  const askNewer = (store2: SaveStore) => async () => {
+    try {
+      const remote = await cloud.downloadSync(syncCodeOf(state))
+      if (!remote || remote.savedAt <= online.syncBaseline + SYNC_SLACK_MS) return
+      const parsed = await decodeSave(remote.data)
+      if (await askUseCloud(parsed)) {
+        autosaver.suspend()
+        await store2.replace(await gunzipBase64Url(remote.data))
+        location.reload()
+        return
+      }
+      // Giữ bản máy này: coi như đã biết bản kia, lần lưu sau sẽ ghi đè.
+      online.syncBaseline = remote.savedAt
+    } catch (e) {
+      console.warn('Sync check failed', e)
+    }
+  }
+  const checkRemote = askNewer(store)
+  window.setInterval(() => void checkRemote(), 120_000)
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void checkRemote())
+
   const checkInbox = () => void readInbox(state).catch((e: unknown) => console.warn('Inbox failed', e))
   checkInbox()
   window.setInterval(checkInbox, INBOX_EVERY_MS)
   void refreshFriends()
+}
+
+const SYNC_RE = /^[a-z0-9]{20,40}$/
+const SYNC_SLACK_MS = 3000
+
+/** Mã đồng bộ của nông trại này (tạo ngẫu nhiên lần đầu, lưu trong bản lưu). */
+export function syncCodeOf(state: GameState): string {
+  if (!state.meta.syncCode || !SYNC_RE.test(state.meta.syncCode)) {
+    const a = new Uint8Array(24)
+    crypto.getRandomValues(a)
+    state.meta.syncCode = Array.from(a, (b) => (b % 36).toString(36)).join('')
+  }
+  return state.meta.syncCode
+}
+
+/** Gửi bản lưu lên chỗ đồng bộ theo mã, trừ khi máy khác vừa gửi bản mới hơn (để người chơi chọn, đừng ghi đè). */
+async function pushSync(cloud: Cloud, state: GameState, data: string, savedAt: number): Promise<void> {
+  const code = syncCodeOf(state)
+  const remote = await cloud.downloadSync(code)
+  if (remote && remote.savedAt > online.syncBaseline + SYNC_SLACK_MS) return
+  await cloud.uploadSync(code, data, savedAt)
+  online.syncBaseline = savedAt
+}
+
+/**
+ * Nhập mã đồng bộ từ máy khác: có bản lưu theo mã đó thì tải về dùng luôn (giữ bản cũ trên máy để khôi phục),
+ * chưa có thì máy này gửi bản của mình lên mã đó. Trả về kết quả để giao diện báo.
+ */
+export async function adoptSyncCode(state: GameState, store: SaveStore, autosaver: AutoSaver, raw: string): Promise<'downloaded' | 'created' | 'invalid' | 'offline'> {
+  const code = raw.trim().toLowerCase().replace(/\s+/g, '')
+  if (!SYNC_RE.test(code)) return 'invalid'
+  const cloud = online.cloud
+  if (!cloud) return 'offline'
+  const remote = await cloud.downloadSync(code)
+  if (remote) {
+    try {
+      localStorage.setItem('noahfarm.preSwitchSave', store.exportText(state, Date.now()))
+    } catch {
+      /* hết chỗ lưu: bỏ qua bản dự phòng */
+    }
+    autosaver.suspend()
+    await store.replace(await gunzipBase64Url(remote.data))
+    location.reload()
+    return 'downloaded'
+  }
+  state.meta.syncCode = code
+  const savedAt = Date.now()
+  await cloud.uploadSync(code, await encodeSave(state, savedAt), savedAt)
+  online.syncBaseline = savedAt
+  void autosaver.saveNow()
+  return 'created'
 }
 
 async function syncProfile(state: GameState): Promise<void> {

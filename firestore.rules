@@ -152,6 +152,13 @@ service cloud.firestore {
       }
     }
 
+    // Đồng bộ nhiều thiết bị: bản lưu theo mã bí mật (24 ký tự, đoán không ra); chỉ lấy từng bản, không liệt kê được.
+    match /syncs/{code} {
+      allow get: if signedIn() && code.matches('[a-z0-9]{20,40}');
+      allow create, update: if signedIn() && code.matches('[a-z0-9]{20,40}')
+        && request.resource.data.data is string && request.resource.data.data.size() < 900000;
+    }
+
     // Mã bạn bè → uid: đặt chỗ một lần, không đổi chủ.
     match /codes/{code} {
       allow read: if signedIn();

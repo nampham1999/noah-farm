@@ -844,5 +844,13 @@
   "house.feature.5": "Thêm tầng 3 (gác áp mái)",
   "house.floor": "Bạn đang ở tầng {n}",
   "house.movedBack": "Nhà đổi bố cục: {n} món đồ đã được cất lại vào túi",
-  "menu.resetZoom": "Đặt lại zoom"
+  "menu.resetZoom": "Đặt lại zoom",
+  "sync.title": "Đồng bộ nhiều thiết bị",
+  "sync.hint": "Mã bí mật của nông trại này. Trên máy khác (điện thoại, máy tính), mở Menu và dán mã này vào ô bên dưới là hai máy dùng chung một bản lưu: máy nào chơi sau sẽ được hỏi có tải bản mới về không. Không cần đăng nhập Google. Đừng chia sẻ mã này cho người khác.",
+  "sync.copy": "Chép mã",
+  "sync.paste": "Dán mã đồng bộ từ máy khác",
+  "sync.use": "Dùng mã này",
+  "sync.copied": "Đã chép mã đồng bộ",
+  "sync.invalid": "Mã không đúng (24 ký tự chữ thường và số).",
+  "sync.created": "Đã gán mã cho máy này và gửi bản lưu lên. Máy kia nhập mã này là có dữ liệu."
 }
