@@ -212,6 +212,8 @@ export async function startOnline(
   // Máy khác (cùng mã đồng bộ) vừa chơi tiếp: hỏi có tải về không, kiểm tra định kỳ và khi quay lại tab.
   const askNewer = (store2: SaveStore) => async () => {
     try {
+      // Máy này đã bị máy khác giành phiên chơi: đang hiện hộp thoại chờ, đừng chen vào.
+      if (sessionLost) return
       const remote = await cloud.downloadSync(syncCodeOf(state))
       if (!remote || remote.savedAt <= online.syncBaseline + SYNC_SLACK_MS) return
       const parsed = await decodeSave(remote.data)
@@ -237,6 +239,7 @@ export async function startOnline(
   void refreshFriends()
 }
 
+let sessionLost = false
 const AUTO_LOAD_KEY = 'noahfarm.autoLoadNewer'
 const SYNC_RE = /^[a-z0-9]{20,40}$/
 const SYNC_SLACK_MS = 3000
@@ -316,18 +319,25 @@ async function startSession(
 ): Promise<void> {
   const device = deviceId()
   let lost = false
+  let reloading = false
   try {
     const { other } = await cloud.claimSession(device)
     if (other) {
-      // Máy kia đang chơi: chờ nó gửi bản mới nhất lên rồi lấy về dùng luôn.
-      window.setTimeout(() => {
-        void cloud.downloadSync(syncCodeOf(state)).then(async (remote) => {
-          if (!remote || remote.savedAt <= Math.max(autosaver.lastSavedAt, online.syncBaseline) + SYNC_SLACK_MS) return
+      // Máy kia đang chơi: chờ nó gửi bản mới nhất lên rồi lấy về dùng luôn (thử vài lần vì máy kia có thể gửi chậm).
+      const attempt = () =>
+        cloud.downloadSync(syncCodeOf(state)).then(async (remote) => {
+          // Chỉ so với mốc đồng bộ (không so với lần lưu trên máy: máy này mới mở nên chưa có gì đáng giữ).
+          if (!remote || remote.savedAt <= online.syncBaseline) return false
           autosaver.suspend()
           await store.replace(await gunzipBase64Url(remote.data))
           location.reload()
-        }).catch(() => {})
-      }, 3500)
+          return true
+        }).catch(() => false)
+      for (const delay of [3500, 9000, 18000]) {
+        window.setTimeout(() => {
+          if (!reloading) void attempt().then((done) => (reloading = done))
+        }, delay)
+      }
     }
   } catch (e) {
     console.warn('Session claim failed', e)
@@ -339,6 +349,7 @@ async function startSession(
   cloud.watchSession((holder) => {
     if (!holder || holder === device || lost) return
     lost = true
+    sessionLost = true
     void (async () => {
       // Gửi tiến trình mới nhất lên mây cho máy kia, rồi dừng ghi để không đè bản của họ.
       await autosaver.saveNow()
