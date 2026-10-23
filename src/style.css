@@ -3186,3 +3186,34 @@ body.is-visiting .energy-pill {
   object-fit: contain;
   filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.15));
 }
+
+/* Thiết kế nhà trên màn hình hẹp: tab và ô chọn gọn một hàng cuộn ngang, nhường chỗ cho căn nhà. */
+@media (max-width: 480px) {
+  .decor-tray {
+    padding: 6px 8px 8px;
+    border-width: 3px;
+  }
+
+  .decor-tabs,
+  .decor-subtabs,
+  .decor-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .decor-tabs .btn,
+  .decor-subtabs .btn,
+  .decor-chips .btn {
+    flex: none;
+    padding: 6px 7px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .decor-tray__list .slot {
+    width: 46px;
+    height: 46px;
+  }
+}
