@@ -355,5 +355,12 @@ function normalizeHouse(h: Record<string, unknown>, fallback: GameState['house']
     plans = []
   }
   while (plans.length < layout.floors) plans.push(Array.isArray(h.plans) ? emptyPlan() : presetPlan(level))
-  return { level, furniture, plans }
+  return {
+    level,
+    furniture,
+    plans,
+    rewardDay: num(h.rewardDay, -1),
+    restedDay: num(h.restedDay, -1),
+    praises: Math.max(0, Math.floor(num(h.praises, 0))),
+  }
 }

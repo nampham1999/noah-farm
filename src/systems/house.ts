@@ -3,7 +3,8 @@ import type { GameState, PlacedFurniture } from '../core/state.ts'
 import { edgeBetween, edgesBetween, emptyPlan, hKey, parseEdge, roomCellsAt, ROOM_DEFAULTS, vKey, cellKey, type CellStyle, type HousePlan, type RoomType } from '../core/housePlan.ts'
 import { ENTRY_X, HOUSE_DOOR, layoutOf, ROOM, ROOM_ENTRY, roomCorner, setRoomSize, stairLink, stairsOf } from '../core/world.ts'
 import { FURNITURE_BY_ID, type FurnitureDef } from '../data/index.ts'
-import { advanceClock, GAME_MINUTES_PER_SECOND } from './clock.ts'
+import { roomScoreAt } from './houseStyle.ts'
+import { absDay, advanceClock, GAME_MINUTES_PER_SECOND } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
 
 /**
@@ -291,8 +292,10 @@ export function reconcileHouse(state: GameState): number {
   return moved
 }
 
+export const RESTED_SCORE = 60
+
 /** Ngủ: từ 18:00 tới trước 5:00 thì ngủ tới 6:00 sáng hôm sau (GDD mục 3.2). */
-export function sleep(state: GameState): void {
+export function sleep(state: GameState, bed?: PlacedFurniture): void {
   const m = state.clock.minuteOfDay
   if (m >= 5 * 60 && m < 18 * 60) {
     bus.emit('notify', { key: 'house.notSleepy' })
@@ -300,6 +303,12 @@ export function sleep(state: GameState): void {
   }
   const toMorning = m >= 18 * 60 ? 24 * 60 - m + 6 * 60 : 6 * 60 - m
   advanceClock(state, toMorning / GAME_MINUTES_PER_SECOND)
+  // Ngủ ở giường trong phòng ngủ đã bày biện đẹp: cả ngày hôm sau đỡ tốn thể lực.
+  const room = bed ? roomScoreAt(state, bed.fl ?? 0, bed.cx, bed.cz) : null
+  if (room?.type === 'bedroom' && room.score >= RESTED_SCORE) {
+    state.house.restedDay = absDay(state.clock)
+    bus.emit('notify', { key: 'house.rested', good: true })
+  }
   bus.emit('notify', { key: 'house.slept', good: true })
 }
 

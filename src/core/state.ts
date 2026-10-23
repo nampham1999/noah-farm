@@ -218,7 +218,17 @@ export interface GameState {
   pests: string[]
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
   /** plans: bản vẽ từng tầng (tường, cửa, loại phòng, sàn, màu tường) do người chơi tự thiết kế. */
-  house: { level: number; furniture: PlacedFurniture[]; plans: HousePlan[] }
+  house: {
+    level: number
+    furniture: PlacedFurniture[]
+    plans: HousePlan[]
+    /** Ngày thật (giờ Việt Nam) đã nhận thưởng nhà đẹp gần nhất. */
+    rewardDay: number
+    /** Ngày game (absDay) đang "ngủ ngon" nhờ ngủ ở phòng ngủ đẹp. */
+    restedDay: number
+    /** Số lượt khách khen nhà (từ bạn bè ghé thăm). */
+    praises: number
+  }
   /**
    * Nhật ký (GDD mục 3.7): sổ cá và sổ cây ghi số con đã câu / cây đã thu của từng loài;
    * achievements là các thành tựu đã đạt (để chỉ báo một lần).
@@ -280,7 +290,7 @@ export function createInitialState(): GameState {
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0, forage: 0 },
     orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
-    house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }], plans: [emptyPlan()] },
+    house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }], plans: [emptyPlan()], rewardDay: -1, restedDay: -1, praises: 0 },
     settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1, notify: false },
   }
 }

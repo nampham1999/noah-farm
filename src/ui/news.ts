@@ -6,6 +6,7 @@ import { CHECKIN_REWARDS, checkinStatus, claimCheckin } from '../systems/checkin
 import { FESTIVAL_DAY, festivalToday, nextFestival } from '../systems/festival.ts'
 import { isRipe } from '../systems/farming.ts'
 import { canDeliver } from '../systems/orders.ts'
+import { claimHouseReward, houseReward } from '../systems/houseStyle.ts'
 import { raceAt } from '../systems/race.ts'
 import type { PanelSpec } from './panel.ts'
 
@@ -41,6 +42,21 @@ export function createNewsPanel(state: GameState): PanelSpec {
       streak.textContent = t('checkin.streak', { n: s.streak })
       box.append(strip, btn, streak)
       body.append(box)
+
+      const hr = houseReward(state)
+      if (hr.score > 0) {
+        const hb = document.createElement('button')
+        hb.className = 'btn' + (hr.available ? ' primary' : '')
+        hb.disabled = !hr.available
+        hb.textContent = hr.available
+          ? `🏡 ${'⭐'.repeat(hr.stars)} ${t('house.claim', { gold: hr.gold })}`
+          : `🏡 ${'⭐'.repeat(hr.stars)} ${hr.stars ? t('house.claimed') : t('house.needMore')}`
+        hb.addEventListener('click', () => {
+          claimHouseReward(state)
+          refresh()
+        })
+        body.append(hb)
+      }
 
       const list = document.createElement('div')
       list.className = 'rows'

@@ -407,6 +407,11 @@ async function start(): Promise<void> {
       if (machineStatus(state, id, now()) === 'ready') collect(state, id, now())
       else openPanel(machinePanel(state, id))
     },
+    openCooker: () => {
+      if (!state.machines.some((m) => m.id === 'stove')) state.machines.push({ id: 'stove', output: null, qty: 0, readyAt: 0 })
+      if (machineStatus(state, 'stove', now()) === 'ready') collect(state, 'stove', now())
+      else openPanel(machinePanel(state, 'stove'))
+    },
     now,
     readOnly: visiting,
   })

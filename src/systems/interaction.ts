@@ -5,6 +5,7 @@ import {
   FARM_HALF, FIELD, FIELD_GATE, FOREST_ZONE, RACE_BOOTH, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
 } from '../core/world.ts'
 import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
+import { COOKER_IDS, roomTypeAt } from './houseStyle.ts'
 import { furnitureAt, furnitureCenter, furnitureDef, sleep } from './house.ts'
 import { cast } from './fishing.ts'
 import { nextLandPrice } from './land.ts'
@@ -35,6 +36,7 @@ type Goal =
   | { kind: 'tree'; spot: number }
   | { kind: 'race' }
   | { kind: 'bed'; x: number; z: number }
+  | { kind: 'cooker'; x: number; z: number }
 
 /** Đứng cách cửa nhà / giường chừng này thì vào nhà / ngủ được. */
 const DOOR_REACH = 1.8
@@ -59,6 +61,8 @@ export interface InteractionHooks {
   openBoard(): void
   /** Tới máy chế biến: lấy hàng nếu xong, không thì mở cửa sổ máy. */
   openMachine(id: MachineId): void
+  /** Bếp trong nhà (đặt trong phòng loại Bếp). */
+  openCooker(): void
   /** Tới quầy trường đua chó. */
   openRace(): void
   now(): number
@@ -89,7 +93,9 @@ export class Interaction {
     }
     if (this.state.player.indoors) {
       const bed = this.bedAt(wx, wz)
-      return this.setGoal(bed ? { kind: 'bed', ...bed } : { kind: 'walk', x: wx, z: wz })
+      if (bed) return this.setGoal({ kind: 'bed', ...bed })
+      const cooker = this.cookerAt(wx, wz)
+      return this.setGoal(cooker ? { kind: 'cooker', ...cooker } : { kind: 'walk', x: wx, z: wz })
     }
     if (onHouse) return this.setGoal({ kind: 'house' })
     if (onStall) return this.setGoal({ kind: 'stall' })
@@ -175,7 +181,9 @@ export class Interaction {
     }
     if (this.state.player.indoors) {
       const bed = this.state.house.furniture.find((f) => furnitureDef(f.id).kind === 'bed' && this.distToFurniture(f) < BED_REACH)
-      if (bed) sleep(this.state)
+      if (bed) return sleep(this.state, bed)
+      const cooker = this.state.house.furniture.find((f) => this.isKitchenCooker(f) && this.distToFurniture(f) < BED_REACH)
+      if (cooker) this.hooks.openCooker()
       return
     }
     if (this.distTo(HOUSE_DOOR.x, HOUSE_DOOR.z) <= DOOR_REACH) return this.hooks.enterHouse()
@@ -337,6 +345,7 @@ export class Interaction {
         return [m.x, m.z, MACHINE_REACH]
       }
       case 'bed':
+      case 'cooker':
         return [goal.x, goal.z, BED_REACH - 0.3]
       case 'animal': {
         const p = animalPose(goal.id)
@@ -382,7 +391,10 @@ export class Interaction {
       turnToward(this.state.player, m.x - me[0], m.z - me[2])
       this.hooks.openMachine(goal.id)
     } else if (goal.kind === 'bed') {
-      sleep(this.state)
+      const bed = this.state.house.furniture.find((f) => furnitureDef(f.id).kind === 'bed' && this.distToFurniture(f) < BED_REACH + 0.5)
+      sleep(this.state, bed)
+    } else if (goal.kind === 'cooker') {
+      this.hooks.openCooker()
     } else if (goal.kind === 'fish') {
       this.castAt(goal.x, goal.z)
     } else if (goal.kind === 'animal') {
@@ -416,6 +428,18 @@ export class Interaction {
     const i = furnitureAt(this.state, cell.cx, cell.cz)
     const f = this.state.house.furniture[i]
     return f && furnitureDef(f.id).kind === 'bed' ? furnitureCenter(f) : null
+  }
+
+  /** Bếp đặt trong phòng Bếp ở điểm chạm; trả về tâm bếp. */
+  private cookerAt(wx: number, wz: number): { x: number; z: number } | null {
+    const cell = roomCellAt(wx, wz)
+    if (!cell) return null
+    const f = this.state.house.furniture[furnitureAt(this.state, cell.cx, cell.cz)]
+    return f && this.isKitchenCooker(f) ? furnitureCenter(f) : null
+  }
+
+  private isKitchenCooker(f: PlacedFurniture): boolean {
+    return COOKER_IDS.has(f.id) && roomTypeAt(this.state, f.fl ?? 0, f.cx, f.cz) === 'kitchen'
   }
 
   private distToFurniture(f: PlacedFurniture): number {

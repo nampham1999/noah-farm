@@ -1,3 +1,4 @@
+import { houseScore } from '../systems/houseStyle.ts'
 import { bus } from '../core/events.ts'
 import { edgesBetween, FLOOR_IDS, FLOOR_SWATCH, hKey, parseEdge, presetPlan, ROOM_TYPES, vKey, WALL_COLORS, WALL_PAINTS, type FloorId, type RoomType, type WallPaint } from '../core/housePlan.ts'
 import type { GameState } from '../core/state.ts'
@@ -123,6 +124,9 @@ export function createDecorUi(ui: HTMLElement, state: GameState): DecorUi {
 
   let drawn = ''
   const draw = () => {
+    const hs = houseScore(state)
+    const label = `🏡 ${t('decor.title')} · ${'⭐'.repeat(hs.stars) || '☆'} ${hs.total}`
+    if (title.textContent !== label) title.textContent = label
     if (mode === 'furniture') return drawFurniture()
     const key = `${mode}|${paintTab}|${JSON.stringify(brush)}|${presetConfirm}|${start?.x},${start?.z}|${state.house.level}`
     if (key === drawn) return
@@ -261,7 +265,6 @@ export function createDecorUi(ui: HTMLElement, state: GameState): DecorUi {
         mode = 'furniture'
         document.body.classList.add('is-decorating')
         tray.hidden = false
-        title.textContent = `🏡 ${t('decor.title')}`
         drawn = ''
         drawTabs()
       }

@@ -1,6 +1,7 @@
 import { bus } from '../core/events.ts'
 import type { GameState } from '../core/state.ts'
 import { balance, item, xpToNext } from '../data/index.ts'
+import { isRested } from './houseStyle.ts'
 import { removeItem } from './inventory.ts'
 
 /** Cộng XP và xử lý lên cấp (có thể lên nhiều cấp một lúc). */
@@ -16,8 +17,11 @@ export function gainXp(state: GameState, amount: number): void {
   }
 }
 
+/** Hệ số tốn thể lực khi đang "ngủ ngon". */
+const RESTED_COST = 0.8
+
 export function useStamina(state: GameState, amount: number): void {
-  state.player.stamina = Math.max(0, state.player.stamina - amount)
+  state.player.stamina = Math.max(0, state.player.stamina - (isRested(state) ? amount * RESTED_COST : amount))
 }
 
 /** Hệ số tốc độ đi: hết thể lực thì đi chậm (GDD mục 3.6). */
