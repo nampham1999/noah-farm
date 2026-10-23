@@ -10,4 +10,4 @@ Toàn bộ file trong thư mục này lấy lại từ bản cũ của game (htt
 | `kaykit-hex/` (40 mô hình `.gltf`, `.bin` và texture `hexagons_medieval.png`) | KayKit Medieval Hexagon, Kay Lousberg | CC0 (cần xác nhận lại tại nguồn) |
 
 Mô hình đang dùng trong game được khai báo ở `src/render/assets.ts`; file nào không khai báo thì không bị tải.
-| `furniture-kit/` (60 mô hình `.glb`) | Kenney Furniture Kit 2.0, Kenney (www.kenney.nl) | CC0 (https://creativecommons.org/publicdomain/zero/1.0/), tải ngày 2026-10-23 |
+| `furniture-kit/` (98 mô hình `.glb`) | Kenney Furniture Kit 2.0, Kenney (www.kenney.nl) | CC0 (https://creativecommons.org/publicdomain/zero/1.0/), tải ngày 2026-10-23 |

@@ -1014,5 +1014,395 @@
     "icon": "🟦",
     "cat": "bath",
     "kind": "rug"
+  },
+  {
+    "id": "k_bedDouble",
+    "price": 380,
+    "level": 2,
+    "w": 2,
+    "d": 2,
+    "icon": "🛏️",
+    "cat": "bedroom",
+    "model": "kit/bedDouble",
+    "kind": "bed"
+  },
+  {
+    "id": "k_cabinetBed",
+    "price": 90,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "bedroom",
+    "model": "kit/cabinetBed"
+  },
+  {
+    "id": "k_pillow",
+    "price": 25,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🛋️",
+    "cat": "bedroom",
+    "model": "kit/pillow"
+  },
+  {
+    "id": "k_loungeSofaLong",
+    "price": 360,
+    "level": 3,
+    "w": 3,
+    "d": 1,
+    "icon": "🛋️",
+    "cat": "living",
+    "model": "kit/loungeSofaLong"
+  },
+  {
+    "id": "k_designChair",
+    "price": 170,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "💺",
+    "cat": "living",
+    "model": "kit/loungeDesignChair"
+  },
+  {
+    "id": "k_designSofaCorner",
+    "price": 420,
+    "level": 4,
+    "w": 2,
+    "d": 2,
+    "icon": "🛋️",
+    "cat": "living",
+    "model": "kit/loungeDesignSofaCorner"
+  },
+  {
+    "id": "k_chairModern",
+    "price": 75,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "living",
+    "model": "kit/chairModernCushion"
+  },
+  {
+    "id": "k_chairRounded",
+    "price": 65,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "living",
+    "model": "kit/chairRounded"
+  },
+  {
+    "id": "k_tableGlass",
+    "price": 210,
+    "level": 3,
+    "w": 2,
+    "d": 1,
+    "icon": "🪟",
+    "cat": "living",
+    "model": "kit/tableGlass"
+  },
+  {
+    "id": "k_coffeeSquare",
+    "price": 90,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "☕",
+    "cat": "living",
+    "model": "kit/tableCoffeeSquare"
+  },
+  {
+    "id": "k_tvVintage",
+    "price": 140,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "📺",
+    "cat": "living",
+    "model": "kit/televisionVintage"
+  },
+  {
+    "id": "k_radio",
+    "price": 55,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📻",
+    "cat": "living",
+    "model": "kit/radio"
+  },
+  {
+    "id": "k_tableLampSq",
+    "price": 60,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "💡",
+    "cat": "living",
+    "model": "kit/lampSquareTable"
+  },
+  {
+    "id": "k_rugRounded",
+    "price": 170,
+    "level": 2,
+    "w": 2,
+    "d": 2,
+    "icon": "🟤",
+    "cat": "living",
+    "model": "kit/rugRounded",
+    "kind": "rug"
+  },
+  {
+    "id": "k_bookcaseClosed",
+    "price": 150,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "📚",
+    "cat": "study",
+    "model": "kit/bookcaseClosed"
+  },
+  {
+    "id": "k_books",
+    "price": 30,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📚",
+    "cat": "study",
+    "model": "kit/books"
+  },
+  {
+    "id": "k_laptop",
+    "price": 160,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "💻",
+    "cat": "study",
+    "model": "kit/laptop"
+  },
+  {
+    "id": "k_computer",
+    "price": 200,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🖥️",
+    "cat": "study",
+    "model": "kit/computerScreen"
+  },
+  {
+    "id": "k_chairPlain",
+    "price": 55,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "kitchen",
+    "model": "kit/chair"
+  },
+  {
+    "id": "k_table",
+    "price": 130,
+    "level": 1,
+    "w": 2,
+    "d": 1,
+    "icon": "🍽️",
+    "cat": "kitchen",
+    "model": "kit/table"
+  },
+  {
+    "id": "k_tableCross",
+    "price": 160,
+    "level": 2,
+    "w": 2,
+    "d": 1,
+    "icon": "🍽️",
+    "cat": "kitchen",
+    "model": "kit/tableCrossCloth"
+  },
+  {
+    "id": "k_blender",
+    "price": 45,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🥤",
+    "cat": "kitchen",
+    "model": "kit/kitchenBlender"
+  },
+  {
+    "id": "k_coffeeMachine",
+    "price": 95,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "☕",
+    "cat": "kitchen",
+    "model": "kit/kitchenCoffeeMachine"
+  },
+  {
+    "id": "k_microwave",
+    "price": 85,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "📟",
+    "cat": "kitchen",
+    "model": "kit/kitchenMicrowave"
+  },
+  {
+    "id": "k_toaster",
+    "price": 40,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🍞",
+    "cat": "kitchen",
+    "model": "kit/toaster"
+  },
+  {
+    "id": "k_fridgeStd",
+    "price": 210,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🧊",
+    "cat": "kitchen",
+    "model": "kit/kitchenFridge"
+  },
+  {
+    "id": "k_fridgeBuiltIn",
+    "price": 230,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🧊",
+    "cat": "kitchen",
+    "model": "kit/kitchenFridgeBuiltIn"
+  },
+  {
+    "id": "k_toilet",
+    "price": 110,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🚽",
+    "cat": "bath",
+    "model": "kit/toilet"
+  },
+  {
+    "id": "k_dryer",
+    "price": 140,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🧺",
+    "cat": "bath",
+    "model": "kit/dryer"
+  },
+  {
+    "id": "k_plantS1",
+    "price": 35,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪴",
+    "cat": "decor",
+    "model": "kit/plantSmall1"
+  },
+  {
+    "id": "k_plantS2",
+    "price": 35,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪴",
+    "cat": "decor",
+    "model": "kit/plantSmall2"
+  },
+  {
+    "id": "k_plantS3",
+    "price": 35,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🌿",
+    "cat": "decor",
+    "model": "kit/plantSmall3"
+  },
+  {
+    "id": "k_boxClosed",
+    "price": 20,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📦",
+    "cat": "decor",
+    "model": "kit/cardboardBoxClosed"
+  },
+  {
+    "id": "k_hoodLarge",
+    "price": 180,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🍳",
+    "cat": "wall",
+    "model": "kit/hoodLarge",
+    "kind": "wall",
+    "y": 1.6
+  },
+  {
+    "id": "k_hoodModern",
+    "price": 150,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🍳",
+    "cat": "wall",
+    "model": "kit/hoodModern",
+    "kind": "wall",
+    "y": 1.6
+  },
+  {
+    "id": "k_upperCorner",
+    "price": 130,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "wall",
+    "model": "kit/kitchenCabinetUpperCorner",
+    "kind": "wall",
+    "y": 1.5
+  },
+  {
+    "id": "k_upperLow",
+    "price": 110,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "wall",
+    "model": "kit/kitchenCabinetUpperLow",
+    "kind": "wall",
+    "y": 1.5
+  },
+  {
+    "id": "k_tvAntenna",
+    "price": 100,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📺",
+    "cat": "living",
+    "model": "kit/televisionAntenna"
   }
 ]
