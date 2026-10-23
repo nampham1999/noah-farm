@@ -6,6 +6,7 @@ import { balance, type AnimalType, type MachineId, type TreeId } from '../data/i
 import { blockCells, greenhouseCells, SPAWN } from './world.ts'
 import type { Look } from './look.ts'
 import { randomFarmerName } from './names.ts'
+import { emptyPlan, type HousePlan } from './housePlan.ts'
 
 export type Lang = 'vi' | 'en'
 export type Quality = 'auto' | 'low' | 'high'
@@ -216,8 +217,8 @@ export interface GameState {
   /** Ô đất đang bị sâu ("cột,hàng"): cây ở đó ngừng lớn tới khi bắt sâu. */
   pests: string[]
   /** level: cấp nhà 1..5 (nhà to hơn, phòng rộng hơn). */
-  /** shifted: đồ đã dịch xuống khi nhà có dãy phía bắc (từ cấp 3). */
-  house: { level: number; furniture: PlacedFurniture[]; shifted?: boolean }
+  /** plans: bản vẽ từng tầng (tường, cửa, loại phòng, sàn, màu tường) do người chơi tự thiết kế. */
+  house: { level: number; furniture: PlacedFurniture[]; plans: HousePlan[] }
   /**
    * Nhật ký (GDD mục 3.7): sổ cá và sổ cây ghi số con đã câu / cây đã thu của từng loài;
    * achievements là các thành tựu đã đạt (để chỉ báo một lần).
@@ -279,7 +280,7 @@ export function createInitialState(): GameState {
     stats: { harvest: 0, fish: 0, goldEarned: 0, shared: 0, forage: 0 },
     orders: { nextId: 1, list: [], firstGiven: false, lastRefill: -1 },
     // Nhà mới có sẵn một giường đơn ở góc tây bắc.
-    house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }] },
+    house: { level: 1, furniture: [{ id: 'bed_single', cx: 0, cz: 0, rot: 0 }], plans: [emptyPlan()] },
     settings: { volume: 0.7, musicVolume: 0.5, quality: 'auto', lang: detectLang(), zoom: 1, notify: false },
   }
 }

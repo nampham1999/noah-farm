@@ -4,6 +4,7 @@ import type { PlotState, Season, Weather } from './core/state.ts'
 import { addItem, countItem } from './systems/inventory.ts'
 import { blockPlots, greenhousePlots } from './core/state.ts'
 import { ANIMAL_BY_ID, animalData, CROPS, DAY_MS, FRUIT_TREES, MACHINES, ORCHARD, type AnimalType } from './data/index.ts'
+import { presetPlan } from './core/housePlan.ts'
 import { HOUSE_LAYOUTS, inGreenhouse, LAND_BLOCKS } from './core/world.ts'
 import { NPCS } from './systems/orders.ts'
 import { applyWeather, setWeather, WEATHERS } from './systems/weather.ts'
@@ -17,7 +18,7 @@ import { machinePanel } from './ui/machines.ts'
 import { bus, type GameAction, type Progress } from './core/events.ts'
 import { createInitialState, type GameState } from './core/state.ts'
 import { now, TIME_SPEED } from './core/time.ts'
-import { plotAt, roomCellAt } from './core/world.ts'
+import { plotAt } from './core/world.ts'
 import { balance } from './data/index.ts'
 import { setLang, t, tKey } from './i18n/index.ts'
 import { Input } from './input/input.ts'
@@ -490,9 +491,8 @@ async function start(): Promise<void> {
     if (state.player.indoors) {
       const hit = pickGround(followCam.camera, x, y)
       if (!hit) return
-      const cell = roomCellAt(hit.x, hit.z)
       if (decorUi.active) {
-        if (cell) decorUi.tapCell(cell.cx, cell.cz)
+        decorUi.tapWorld(hit.x, hit.z)
         return
       }
       return interaction.tapWorld(hit.x, hit.z, false)
@@ -827,12 +827,11 @@ async function start(): Promise<void> {
     fishingView.update(state.player, clock.getElapsed(), farmer.rodTip?.(rodTip) ? rodTip : null)
     fishingUi.update()
     audio.update()
-    houseView?.update(state, decorUi.ghost, decorUi.active)
+    houseView?.update(state, decorUi.ghost, decorUi.active, decorUi.design)
     decorUi.update()
     if (decorUi.active && input.hover) {
       const h = pickGround(followCam.camera, input.hover.x, input.hover.y)
-      const cell = h && roomCellAt(h.x, h.z)
-      if (cell) decorUi.hoverCell(cell.cx, cell.cz)
+      if (h) decorUi.hoverWorld(h.x, h.z)
     }
 
     // Trang trí trong nhà: camera lùi ra thấy trọn căn phòng; nút chat/biểu cảm ẩn cho khỏi che khay đồ.
@@ -1131,6 +1130,8 @@ function maxOut(state: GameState): void {
   if (state.house.level < HOUSE_LAYOUTS.length) {
     state.house.level = HOUSE_LAYOUTS.length
     setRoomSize(state.house.level)
+    // Thử nghiệm: nhà cấp tối đa dùng bố cục mẫu (phòng khách, ngủ, bếp, vệ sinh, làm việc) ở mọi tầng.
+    state.house.plans = Array.from({ length: HOUSE_LAYOUTS[HOUSE_LAYOUTS.length - 1].floors }, () => presetPlan(state.house.level))
     reconcileHouse(state)
   }
 

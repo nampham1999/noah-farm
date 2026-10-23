@@ -1,6 +1,7 @@
 import { bus } from '../core/events.ts'
 import type { GameState, PlacedFurniture } from '../core/state.ts'
-import { HOUSE_DOOR, layoutOf, MAIN_W, NORTH_D, ROOM, ROOM_ENTRY, roomCorner, setRoomSize, solidRanges, stairLink, stairsOf } from '../core/world.ts'
+import { edgeBetween, edgesBetween, emptyPlan, hKey, parseEdge, roomCellsAt, ROOM_DEFAULTS, vKey, cellKey, type CellStyle, type HousePlan, type RoomType } from '../core/housePlan.ts'
+import { ENTRY_X, HOUSE_DOOR, layoutOf, ROOM, ROOM_ENTRY, roomCorner, setRoomSize, stairLink, stairsOf } from '../core/world.ts'
 import { FURNITURE_BY_ID, type FurnitureDef } from '../data/index.ts'
 import { advanceClock, GAME_MINUTES_PER_SECOND } from './clock.ts'
 import { addItem, canFit, countItem, removeItem } from './inventory.ts'
@@ -29,9 +30,14 @@ export function floorCount(state: GameState): number {
   return layoutOf(state.house.level).floors
 }
 
-/** Hai ô giữa cạnh nam của phòng chính là lối ra cửa (chỉ ở tầng trệt), không được đặt đồ chắn. */
+/** Bản vẽ của một tầng (tầng chưa có bản vẽ thì trống). */
+export function planOf(state: GameState, floor: number): HousePlan {
+  return (state.house.plans[floor] ??= emptyPlan())
+}
+
+/** Hai ô giữa cạnh nam (ở tầng trệt) là lối ra cửa, không được đặt đồ hay dựng tường chắn. */
 function doorCells(floor: number): { cx: number; cz: number }[] {
-  return floor === 0 ? [{ cx: MAIN_W / 2 - 1, cz: ROOM.d - 1 }, { cx: MAIN_W / 2, cz: ROOM.d - 1 }] : []
+  return floor === 0 ? [{ cx: ENTRY_X - 1, cz: ROOM.d - 1 }, { cx: ENTRY_X, cz: ROOM.d - 1 }] : []
 }
 
 /** Các ô cầu thang có ở tầng này (lên nếu còn tầng trên, xuống nếu không phải tầng trệt). */
@@ -46,28 +52,24 @@ function stairCells(level: number, floor: number): { cx: number; cz: number }[] 
   return out
 }
 
-/** Ô của đồ cố định (bếp, nhà vệ sinh): chỉ ở tầng trệt. */
-function fixtureCells(level: number, floor: number): { cx: number; cz: number }[] {
-  if (floor !== 0) return []
-  return layoutOf(level).fixtures.flatMap((f) => Array.from({ length: f.w * f.d }, (_, i) => ({ cx: f.cx + (i % f.w), cz: f.cz + Math.floor(i / f.w) })))
+/** Ô giữ chỗ (cửa ra vào, cầu thang): không đặt đồ chắn, không dựng tường sát. */
+function reservedCells(level: number, floor: number): { cx: number; cz: number }[] {
+  return [...doorCells(floor), ...stairCells(level, floor)]
 }
 
-/** Hình chữ nhật chặn đường (toạ độ thế giới): vách đặc (chừa lối đi) và đồ cố định. */
-export function wallRects(level: number, floor: number): Rect[] {
+/** Hình chữ nhật chặn đường (toạ độ thế giới) của các đoạn tường (cửa thì để thông). */
+export function wallRects(plan: HousePlan): Rect[] {
   const c = roomCorner()
-  const layout = layoutOf(level)
   const out: Rect[] = []
-  for (const w of layout.walls) {
-    for (const [a, b] of solidRanges(w)) {
-      out.push(
-        w.axis === 'z'
-          ? { x0: c.x + w.at - 0.1, x1: c.x + w.at + 0.1, z0: c.z + a, z1: c.z + b }
-          : { x0: c.x + a, x1: c.x + b, z0: c.z + w.at - 0.1, z1: c.z + w.at + 0.1 },
-      )
-    }
-  }
-  if (floor === 0) {
-    for (const f of layout.fixtures) out.push({ x0: c.x + f.cx, x1: c.x + f.cx + f.w, z0: c.z + f.cz, z1: c.z + f.cz + f.d })
+  for (const [k, v] of Object.entries(plan.walls)) {
+    if (v !== 1) continue
+    const e = parseEdge(k, ROOM.w, ROOM.d)
+    if (!e) continue
+    out.push(
+      e.axis === 'h'
+        ? { x0: c.x + e.cx, x1: c.x + e.cx + 1, z0: c.z + e.cz - 0.1, z1: c.z + e.cz + 0.1 }
+        : { x0: c.x + e.cx - 0.1, x1: c.x + e.cx + 0.1, z0: c.z + e.cz, z1: c.z + e.cz + 1 },
+    )
   }
   return out
 }
@@ -88,22 +90,21 @@ function cells(id: string, cx: number, cz: number, rot: number): { cx: number; c
   return out
 }
 
-/** Đặt được không (thuần): trong tầng, không chắn cửa / cầu thang, không bắc ngang vách ngăn, không chồng lên đồ cùng lớp. */
-function fitsOn(list: PlacedFurniture[], level: number, floor: number, id: string, cx: number, cz: number, rot: number, ignore = -1): boolean {
+/** Đặt được không (thuần): trong nhà, không chắn cửa / cầu thang, không bắc ngang tường hay cửa, không chồng lên đồ cùng lớp. */
+function fitsOn(list: PlacedFurniture[], plan: HousePlan, level: number, floor: number, id: string, cx: number, cz: number, rot: number, ignore = -1): boolean {
   const rug = furnitureDef(id).kind === 'rug'
   const mine = cells(id, cx, cz, rot)
   if (mine.some((c) => c.cx < 0 || c.cz < 0 || c.cx >= ROOM.w || c.cz >= ROOM.d)) return false
+  const reserved = reservedCells(level, floor)
   if (!rug && mine.some((c) => doorCells(floor).some((d) => d.cx === c.cx && d.cz === c.cz))) return false
   if (mine.some((c) => stairCells(level, floor).some((d) => d.cx === c.cx && d.cz === c.cz))) return false
-  if (mine.some((c) => fixtureCells(level, floor).some((d) => d.cx === c.cx && d.cz === c.cz))) return false
-  // Thảm được trải ngang vách (lối đi), đồ khác thì không bắc ngang vách.
+  void reserved
+  // Thảm được trải ngang tường/cửa (lối đi), đồ khác thì không bắc ngang.
   if (!rug) {
-    for (const w of layoutOf(level).walls) {
-      const inRange = (v: number) => v >= w.from && v < w.to
-      const cross = w.axis === 'z'
-        ? mine.some((c) => inRange(c.cz)) && mine.some((c) => c.cx < w.at) && mine.some((c) => c.cx >= w.at)
-        : mine.some((c) => inRange(c.cx)) && mine.some((c) => c.cz < w.at) && mine.some((c) => c.cz >= w.at)
-      if (cross) return false
+    const has = (x: number, z: number) => mine.some((c) => c.cx === x && c.cz === z)
+    for (const c of mine) {
+      if (has(c.cx + 1, c.cz) && edgeBetween(plan, ROOM.w, ROOM.d, c.cx, c.cz, 'e') !== 0) return false
+      if (has(c.cx, c.cz + 1) && edgeBetween(plan, ROOM.w, ROOM.d, c.cx, c.cz, 's') !== 0) return false
     }
   }
   return list.every((f, i) => {
@@ -114,7 +115,7 @@ function fitsOn(list: PlacedFurniture[], level: number, floor: number, id: strin
 }
 
 export function canPlace(state: GameState, id: string, cx: number, cz: number, rot: number, ignore = -1): boolean {
-  return fitsOn(state.house.furniture, state.house.level, state.player.floor, id, cx, cz, rot, ignore)
+  return fitsOn(state.house.furniture, planOf(state, state.player.floor), state.house.level, state.player.floor, id, cx, cz, rot, ignore)
 }
 
 /** Món đồ ở ô (cx, cz); ưu tiên đồ đặt trên thảm. -1 nếu trống. */
@@ -161,7 +162,7 @@ export function blockedRects(state: GameState): Rect[] {
         const { w, d } = footprint(furnitureDef(f.id), f.rot)
         return { x0: c.x + f.cx, z0: c.z + f.cz, x1: c.x + f.cx + w, z1: c.z + f.cz + d }
       }),
-    ...wallRects(state.house.level, state.player.floor),
+    ...wallRects(planOf(state, state.player.floor)),
   ]
 }
 
@@ -247,20 +248,14 @@ export function changeFloor(state: GameState, dir: 'up' | 'down'): void {
  * Sau khi nhà đổi bố cục (nâng cấp, hoặc bản lưu từ trước khi có phòng phụ và cầu thang): đồ nằm ngoài tầng, đè cầu thang,
  * chắn cửa hoặc bắc ngang vách ngăn thì cất lại vào túi. Trả về số món đã cất.
  */
-/** Nhà từ cấp 3 có thêm dãy phía bắc: đồ đã đặt dịch xuống NORTH_D hàng một lần (ô tính từ góc tây bắc). */
-export function ensureNorthShift(state: GameState): void {
-  if (state.house.level < 3 || state.house.shifted) return
-  for (const f of state.house.furniture) f.cz += NORTH_D
-  state.house.shifted = true
-}
-
 export function reconcileHouse(state: GameState): number {
-  ensureNorthShift(state)
   const layout = layoutOf(state.house.level)
+  // Đủ bản vẽ cho mọi tầng (tầng mới còn trống).
+  while (state.house.plans.length < layout.floors) state.house.plans.push(emptyPlan())
   const keep: PlacedFurniture[] = []
   let moved = 0
   for (const f of state.house.furniture) {
-    const ok = floorOf(f) < layout.floors && fitsOn(keep, state.house.level, floorOf(f), f.id, f.cx, f.cz, f.rot)
+    const ok = floorOf(f) < layout.floors && fitsOn(keep, state.house.plans[floorOf(f)], state.house.level, floorOf(f), f.id, f.cx, f.cz, f.rot)
     if (ok || !canFit(state.inventory, `furn_${f.id}`, 1)) keep.push(f)
     else {
       addItem(state.inventory, `furn_${f.id}`, 1)
@@ -330,3 +325,116 @@ function fail(key: string, params?: Record<string, string | number>): false {
   bus.emit('notify', { key, params })
   return false
 }
+
+// ───────────── Thiết kế nhà: dựng tường, cửa, sơn phòng ─────────────
+
+export const WALL_COST = 8
+export const DOOR_COST = 40
+
+/** Cạnh này có bị đồ nội thất đang đặt bắc ngang không (đã đặt đồ thì không dựng tường lên được). */
+function edgeCrossedByFurniture(state: GameState, floor: number, key: string): boolean {
+  const e = parseEdge(key, ROOM.w, ROOM.d)
+  if (!e) return false
+  // Hai ô kề nhau hai bên cạnh.
+  const a = e.axis === 'h' ? { cx: e.cx, cz: e.cz - 1 } : { cx: e.cx - 1, cz: e.cz }
+  const b = { cx: e.cx, cz: e.cz }
+  return state.house.furniture.some((f) => {
+    if (floorOf(f) !== floor || furnitureDef(f.id).kind === 'rug') return false
+    const own = cells(f.id, f.cx, f.cz, f.rot)
+    return own.some((c) => c.cx === a.cx && c.cz === a.cz) && own.some((c) => c.cx === b.cx && c.cz === b.cz)
+  })
+}
+
+/** Cạnh sát ô giữ chỗ (cửa ra vào, cầu thang) thì không dựng được. */
+function edgeBlocked(state: GameState, floor: number, key: string): boolean {
+  const e = parseEdge(key, ROOM.w, ROOM.d)
+  if (!e) return true
+  const a = e.axis === 'h' ? { cx: e.cx, cz: e.cz - 1 } : { cx: e.cx - 1, cz: e.cz }
+  const b = { cx: e.cx, cz: e.cz }
+  return reservedCells(state.house.level, floor).some((r) => (r.cx === a.cx && r.cz === a.cz) || (r.cx === b.cx && r.cz === b.cz))
+}
+
+/** Dựng tường dọc theo đường thẳng từ đỉnh lưới a tới b; trả về số đoạn mới dựng. Hết vàng thì dựng tới đâu hay tới đó. */
+export function buildWall(state: GameState, a: { x: number; z: number }, b: { x: number; z: number }): number {
+  const floor = state.player.floor
+  const plan = planOf(state, floor)
+  let built = 0
+  let blocked = false
+  for (const key of edgesBetween(a, b, ROOM.w, ROOM.d)) {
+    if (plan.walls[key]) continue
+    if (edgeBlocked(state, floor, key) || edgeCrossedByFurniture(state, floor, key)) {
+      blocked = true
+      continue
+    }
+    if (state.player.gold < WALL_COST) {
+      bus.emit('notify', { key: 'notice.noGold' })
+      break
+    }
+    state.player.gold -= WALL_COST
+    plan.walls[key] = 1
+    built++
+  }
+  if (blocked) bus.emit('notify', { key: 'house.wallBlocked' })
+  if (built) {
+    bus.emit('sfx', 'place')
+    bus.emit('saveRequest', undefined)
+  }
+  return built
+}
+
+/** Đổi một đoạn tường thành cửa (mất DOOR_COST), hoặc cửa về lại tường. Không có tường ở đó thì không làm gì. */
+export function toggleDoor(state: GameState, key: string): boolean {
+  const plan = planOf(state, state.player.floor)
+  const cur = plan.walls[key]
+  if (!cur) return false
+  if (cur === 1) {
+    if (state.player.gold < DOOR_COST) return fail('notice.noGold')
+    state.player.gold -= DOOR_COST
+    plan.walls[key] = 2
+  } else plan.walls[key] = 1
+  bus.emit('sfx', 'place')
+  bus.emit('saveRequest', undefined)
+  return true
+}
+
+/** Phá một đoạn tường hoặc cửa, hoàn lại nửa tiền dựng tường. */
+export function eraseWall(state: GameState, key: string): boolean {
+  const plan = planOf(state, state.player.floor)
+  if (!plan.walls[key]) return false
+  delete plan.walls[key]
+  state.player.gold += Math.floor(WALL_COST / 2)
+  bus.emit('sfx', 'place')
+  bus.emit('saveRequest', undefined)
+  return true
+}
+
+/** Sơn cả phòng chứa ô (cx, cz): đổi loại phòng, sàn hoặc màu tường (chỉ các trường có trong patch). Trả về số ô đã đổi. */
+export function paintRoom(state: GameState, cx: number, cz: number, patch: Partial<CellStyle>): number {
+  const plan = planOf(state, state.player.floor)
+  const cellsOfRoom = roomCellsAt(plan, ROOM.w, ROOM.d, cx, cz)
+  for (const c of cellsOfRoom) {
+    const k = cellKey(c.cx, c.cz)
+    const next: CellStyle = { ...(plan.cells[k] ?? { t: 'living', f: 'plank', w: 'cream' }), ...patch }
+    if (patch.t && !patch.f) next.f = ROOM_DEFAULTS[patch.t].f
+    if (patch.t && !patch.w) next.w = ROOM_DEFAULTS[patch.t].w
+    if (next.t === 'living' && next.f === 'plank' && next.w === 'cream') delete plan.cells[k]
+    else plan.cells[k] = next
+  }
+  if (cellsOfRoom.length) {
+    bus.emit('sfx', 'place')
+    bus.emit('saveRequest', undefined)
+  }
+  return cellsOfRoom.length
+}
+
+/** Áp bố cục mẫu theo cấp nhà vào tầng đang đứng (thay tường, cửa và loại phòng; đồ vướng được cất về túi). */
+export function applyPreset(state: GameState, preset: HousePlan): void {
+  state.house.plans[state.player.floor] = JSON.parse(JSON.stringify(preset)) as HousePlan
+  const moved = reconcileHouse(state)
+  if (moved) bus.emit('notify', { key: 'house.movedBack', params: { n: moved } })
+  bus.emit('saveRequest', undefined)
+}
+
+export type { RoomType }
+void hKey
+void vKey

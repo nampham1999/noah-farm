@@ -2,7 +2,8 @@ import { normalizeLook } from '../core/look.ts'
 import { WEATHERS } from '../systems/weather.ts'
 import { HOUSE_UPGRADES } from '../systems/house.ts'
 import { blockPlots, createInitialState, greenhousePlots, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
-import { FARM_HALF, isWater, LAND_BLOCKS, SPAWN } from '../core/world.ts'
+import { FARM_HALF, isWater, LAND_BLOCKS, layoutOf, SPAWN } from '../core/world.ts'
+import { emptyPlan, normalizePlan, presetPlan, type HousePlan } from '../core/housePlan.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, MACHINE_BY_ID, ORCHARD, TREE_BY_ID, type AnimalType, type MachineId, type TreeId } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
 
@@ -214,18 +215,7 @@ function normalize(data: Record<string, unknown>): GameState {
       const output = typeof m.output === 'string' && ITEMS.has(m.output) ? m.output : null
       return [{ id: m.id as MachineId, output, qty: output ? Math.max(1, Math.floor(num(m.qty, 1))) : 0, readyAt: num(m.readyAt, 0) }]
     }).filter((m, i, all) => all.findIndex((o) => o.id === m.id) === i),
-    house: Array.isArray(obj(data.house).furniture)
-      ? {
-          level: Math.max(1, Math.min(HOUSE_UPGRADES.length + 1, Math.floor(num(obj(data.house).level, 1)))),
-          shifted: obj(data.house).shifted === true,
-          furniture: (obj(data.house).furniture as unknown[]).flatMap((raw) => {
-            const f = obj(raw)
-            return typeof f.id === 'string' && FURNITURE_BY_ID.has(f.id)
-              ? [{ id: f.id, cx: Math.floor(num(f.cx, 0)), cz: Math.floor(num(f.cz, 0)), rot: Math.floor(num(f.rot, 0)) & 3, ...(num(f.fl, 0) > 0 ? { fl: Math.min(2, Math.floor(num(f.fl, 0))) } : {}) }]
-              : []
-          }),
-        }
-      : base.house,
+    house: normalizeHouse(obj(data.house), base.house),
     journal: {
       fish: counts(obj(obj(data.journal).fish)),
       crops: counts(obj(obj(data.journal).crops)),
@@ -322,4 +312,48 @@ function normalizePet(v: unknown): GameState['pet'] {
     pettedDay: typeof p.pettedDay === 'number' ? p.pettedDay : -1,
     gift,
   }
+}
+
+
+type FurnitureList = GameState['house']['furniture']
+
+/** Đồ cố định của bếp và nhà vệ sinh ở bản cũ (có bố cục sẵn) nay là đồ nội thất thường: đặt đúng chỗ cũ. */
+const LEGACY_FIXTURES: { id: string; cx: number; cz: number; rot: number }[] = [
+  { id: 'cabinet_low', cx: 0, cz: 0, rot: 0 },
+  { id: 'basin', cx: 2, cz: 0, rot: 0 },
+  { id: 'stove', cx: 3, cz: 0, rot: 0 },
+  { id: 'cabinet_low', cx: 4, cz: 0, rot: 0 },
+  { id: 'fridge', cx: 6, cz: 0, rot: 0 },
+  { id: 'toilet', cx: 8, cz: 0, rot: 0 },
+  { id: 'basin', cx: 9, cz: 0, rot: 0 },
+  { id: 'bathtub', cx: 10, cz: 0, rot: 0 },
+]
+
+/**
+ * Nhà: đồ nội thất và bản vẽ từng tầng. Bản lưu cũ chưa có bản vẽ (bố cục phòng cố định theo cấp) được chuyển thành bản vẽ tương đương:
+ * phòng, vách và cửa thành tường do người chơi sửa được, đồ cố định thành đồ nội thất thường, đồ đặt trước khi có dãy phía bắc dịch xuống.
+ */
+function normalizeHouse(h: Record<string, unknown>, fallback: GameState['house']): GameState['house'] {
+  const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
+  const num = (v: unknown, fb: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fb)
+  if (!Array.isArray(h.furniture)) return fallback
+  const level = Math.max(1, Math.min(HOUSE_UPGRADES.length + 1, Math.floor(num(h.level, 1))))
+  const layout = layoutOf(level)
+  let furniture: FurnitureList = (h.furniture as unknown[]).flatMap((raw) => {
+    const f = obj(raw)
+    return typeof f.id === 'string' && FURNITURE_BY_ID.has(f.id)
+      ? [{ id: f.id, cx: Math.floor(num(f.cx, 0)), cz: Math.floor(num(f.cz, 0)), rot: Math.floor(num(f.rot, 0)) & 3, ...(num(f.fl, 0) > 0 ? { fl: Math.min(2, Math.floor(num(f.fl, 0))) } : {}) }]
+      : []
+  })
+  let plans: HousePlan[]
+  if (Array.isArray(h.plans)) {
+    plans = (h.plans as unknown[]).slice(0, layout.floors).map((p) => normalizePlan(p, layout.w, layout.d))
+  } else {
+    // Bản cũ: đồ đặt trước khi nhà có dãy phía bắc (cấp 3 trở lên) nằm lệch 5 hàng so với bản vẽ hiện tại.
+    if (level >= 3 && h.shifted !== true) furniture = furniture.map((f) => (f.fl ? f : { ...f, cz: f.cz + 5 }))
+    if (level >= 3) furniture = [...furniture, ...LEGACY_FIXTURES.filter((f) => FURNITURE_BY_ID.has(f.id))]
+    plans = []
+  }
+  while (plans.length < layout.floors) plans.push(Array.isArray(h.plans) ? emptyPlan() : presetPlan(level))
+  return { level, furniture, plans }
 }

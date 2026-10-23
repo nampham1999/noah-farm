@@ -1,10 +1,13 @@
 import * as THREE from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { parseEdge, roomsOf, styleAt, WALL_COLORS, type FloorId, type HousePlan, type WallPaint } from '../core/housePlan.ts'
 import type { GameState } from '../core/state.ts'
-import { HOUSE_NOW, MAIN_W, ROOM, roomCorner, solidRanges, stairsOf, type Fixture, type RoomDef } from '../core/world.ts'
-import { canPlace, floorCount, footprint, furnitureCenter, furnitureDef, STAIR_H } from '../systems/house.ts'
+import { ENTRY_X, HOUSE_NOW, ROOM, roomCorner, stairsOf } from '../core/world.ts'
+import { canPlace, floorCount, footprint, furnitureCenter, furnitureDef, planOf, STAIR_H } from '../systems/house.ts'
 
 const WALL_H = 2.6
+/** Chiều cao tường ngăn chạy ngang (cắt thấp để camera nhìn xuyên vào phòng phía sau). */
+const HALF_H = 1.15
 
 export interface Ghost {
   id: string
@@ -13,108 +16,125 @@ export interface Ghost {
   rot: number
 }
 
+/** Trạng thái công cụ thiết kế nhà: hiện các đỉnh lưới, đỉnh bắt đầu đang chọn và cạnh đang trỏ. */
+export interface DesignView {
+  tool: 'wall' | 'door' | 'erase' | 'paint'
+  start: { x: number; z: number } | null
+  hoverVertex: { x: number; z: number } | null
+  hoverEdge: string | null
+}
+
 export interface HouseView {
-  update(state: GameState, ghost: Ghost | null, decorating: boolean): void
+  update(state: GameState, ghost: Ghost | null, decorating: boolean, design?: DesignView | null): void
 }
 
 /**
- * Trong nhà: phòng kiểu cắt mở phía trước (thấy được bên trong từ camera), sàn gỗ,
- * tường giấy dán, cửa sổ, thảm cửa, đèn ấm; đồ nội thất từ mô hình của bản cũ.
+ * Trong nhà: kiểu cắt mở phía trước (thấy được bên trong từ camera). Sàn, tường, cửa, cầu thang dựng theo bản vẽ người chơi tự thiết kế;
+ * đồ nội thất từ mô hình của bản cũ.
  */
 export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel: THREE.Object3D | null): HouseView {
   const room = new THREE.Group()
-  // Vỏ nhà dựng theo bố cục (các phòng, vách, đồ cố định, cầu thang) và tầng đang đứng; nâng cấp nhà hay đổi tầng thì dựng lại.
   let grid = new THREE.Mesh()
   let builtKey = ''
-  const buildShell = (floor: number, floors: number) => {
-    room.clear()
-    const layout = HOUSE_NOW.layout
-    builtKey = `${HOUSE_NOW.level}|${ROOM.w}x${ROOM.d}|${floor}|${floors}`
-    const c = roomCorner()
-    const trimMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1 })
-    const stairSet = stairsOf(HOUSE_NOW.level, floor)
-    const livingStyle = roomStyle(layout.rooms.find((r) => r.id === 'living')!, floor)
+  let planJson = ''
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1 })
+  const wallMats = new Map<WallPaint, THREE.MeshStandardMaterial>()
+  const wallMat = (p: WallPaint) => {
+    let m = wallMats.get(p)
+    if (!m) wallMats.set(p, (m = new THREE.MeshStandardMaterial({ color: WALL_COLORS[p], roughness: 1 })))
+    return m
+  }
 
-    // Sàn từng phòng (mỗi phòng một kiểu) và tường ngoài (giấy dán theo phòng).
-    const floorTex = (st: Style) => (st.kind === 'tile' ? tileTexture(st) : st.kind === 'carpet' ? carpetTexture(st) : plankTexture(st))
-    const mkWall = (w: number, h: number, d: number, x: number, z: number, style: Style, y = h / 2) => {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ map: wallpaperTexture(style), roughness: 1 }))
-      wall.position.set(x, y, z)
-      wall.receiveShadow = true
-      wall.castShadow = h < WALL_H
-      room.add(wall)
-      return wall
-    }
-    for (const r of layout.rooms) {
-      const st = roomStyle(r, floor)
-      const w = r.x1 - r.x0
-      const dz = r.z1 - r.z0
-      // Phòng có cầu thang xuống: sàn khoét lỗ đúng chỗ cầu thang (nhân vật chìm dần xuống lỗ khi đi xuống).
-      const hole = r.id === 'living' && stairSet.down ? stairSet.down : null
-      const geo = hole ? floorWithHole(r, hole) : new THREE.PlaneGeometry(w, dz)
-      const f = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: floorTex(roomStyle(r, floor)), roughness: 0.9, side: THREE.DoubleSide }))
-      f.rotation.x = -Math.PI / 2
-      f.position.set(c.x + r.x0 + w / 2, 0.02, c.z + r.z0 + dz / 2)
-      f.receiveShadow = true
-      room.add(f)
-      // Tường bắc (mặt ngoài phía sau), tường tây và tường đông thuộc phòng này.
-      if (r.z0 === 0) mkWall(w + 0.2, WALL_H, 0.2, c.x + r.x0 + w / 2, c.z - 0.1, st)
-      if (r.x0 === 0) mkWall(0.2, WALL_H, dz, c.x - 0.1, c.z + r.z0 + dz / 2, st)
-      if (r.x1 === ROOM.w) mkWall(0.2, WALL_H, dz, c.x + ROOM.w + 0.1, c.z + r.z0 + dz / 2, st)
-      // Cửa sổ trên tường bắc, biển nhỏ ghi loại phòng.
-      if (windowModel && r.z0 === 0) {
-        const xs = w >= 8 ? [c.x + r.x0 + w * 0.28, c.x + r.x0 + w * 0.72] : [c.x + r.x0 + w / 2]
-        for (const x of xs) {
-          const win = windowModel.clone()
-          win.position.set(x, 1.0, c.z + 0.05)
-          room.add(win)
-        }
-      }
-    }
-    const base = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w + 0.4, 0.18, 0.24), trimMat)
-    base.position.set(ROOM.x, 0.09, c.z - 0.08)
-    room.add(base)
+  // Vỏ nhà dựng theo bản vẽ của tầng đang đứng; sửa bản vẽ, nâng cấp nhà hay đổi tầng thì dựng lại.
+  const buildShell = (floor: number, floors: number, plan: HousePlan) => {
+    room.clear()
+    const w = ROOM.w
+    const d = ROOM.d
+    builtKey = shellKey(floor, floors, planJson)
+    const c = roomCorner()
+    const stairSet = stairsOf(HOUSE_NOW.level, floor)
+
+    // Sàn: một tấm phủ cả nhà, mỗi ô vẽ kiểu sàn riêng (khoét lỗ ở chỗ cầu thang xuống).
+    const geo = stairSet.down ? floorWithHole(w, d, stairSet.down) : new THREE.PlaneGeometry(w, d)
+    const floorMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: floorTexture(plan, w, d), roughness: 0.9, side: THREE.DoubleSide }))
+    floorMesh.rotation.x = -Math.PI / 2
+    floorMesh.position.set(ROOM.x, 0.02, ROOM.z)
+    floorMesh.receiveShadow = true
+    room.add(floorMesh)
 
     grid = new THREE.Mesh(
-      new THREE.PlaneGeometry(ROOM.w, ROOM.d),
+      new THREE.PlaneGeometry(w, d),
       new THREE.MeshBasicMaterial({ map: gridTexture(), transparent: true, depthWrite: false }),
     )
     grid.rotation.x = -Math.PI / 2
     grid.position.set(ROOM.x, 0.03, ROOM.z)
     room.add(grid)
 
-    // Vách ngăn: đoạn đặc (chừa lối đi); vách thấp ở dãy phía bắc để camera nhìn xuyên qua được, vách cao ở các chỗ còn lại.
-    for (const wall of layout.walls) {
-      const h = wall.half ? 1.1 : WALL_H
-      for (const [a, b] of solidRanges(wall)) {
-        const len = b - a
-        if (wall.axis === 'z') mkWall(0.2, h, len, c.x + wall.at, c.z + a + len / 2, livingStyle)
-        else mkWall(len, h, 0.2, c.x + a + len / 2, c.z + wall.at, livingStyle)
-      }
-      // Khung cửa ở lối đi: xà ngang (vách cao) hoặc nẹp mép (vách thấp).
-      for (const [a, b] of wall.doors) {
-        const len = b - a
-        const lintel = wall.half
-          ? new THREE.Mesh(new THREE.BoxGeometry(wall.axis === 'x' ? len : 0.3, 0.06, wall.axis === 'x' ? 0.3 : len), trimMat)
-          : new THREE.Mesh(new THREE.BoxGeometry(wall.axis === 'x' ? len : 0.28, 0.5, wall.axis === 'x' ? 0.28 : len), trimMat)
-        const mid = a + len / 2
-        lintel.position.set(wall.axis === 'x' ? c.x + mid : c.x + wall.at, wall.half ? 0.03 : WALL_H - 0.25, wall.axis === 'x' ? c.z + wall.at : c.z + mid)
-        room.add(lintel)
+    const box = (bw: number, bh: number, bd: number, x: number, y: number, z: number, mat: THREE.Material, shadow = false) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat)
+      m.position.set(x, y, z)
+      m.receiveShadow = true
+      m.castShadow = shadow
+      room.add(m)
+      return m
+    }
+
+    // Tường ngoài: từng ô một màu theo sơn của ô sát tường.
+    for (let cx = 0; cx < w; cx++) box(1.001, WALL_H, 0.2, c.x + cx + 0.5, WALL_H / 2, c.z - 0.1, wallMat(styleAt(plan, cx, 0).w))
+    for (let cz = 0; cz < d; cz++) {
+      box(0.2, WALL_H, 1.001, c.x - 0.1, WALL_H / 2, c.z + cz + 0.5, wallMat(styleAt(plan, 0, cz).w))
+      box(0.2, WALL_H, 1.001, c.x + w + 0.1, WALL_H / 2, c.z + cz + 0.5, wallMat(styleAt(plan, w - 1, cz).w))
+    }
+    box(w + 0.4, 0.18, 0.24, ROOM.x, 0.09, c.z - 0.08, trimMat)
+
+    // Cửa sổ trên tường bắc, cách nhau, tránh góc có cầu thang.
+    if (windowModel) {
+      for (let cx = 2; cx < w - 2; cx += 4) {
+        const win = windowModel.clone()
+        win.position.set(c.x + cx + 0.5, 1.0, c.z + 0.05)
+        room.add(win)
       }
     }
 
-    // Đồ cố định của bếp và nhà vệ sinh (tầng trệt).
-    if (floor === 0) for (const f of layout.fixtures) room.add(buildFixture(f, c.x + f.cx + f.w / 2, c.z + f.cz + f.d / 2))
+    // Tường ngăn và cửa: mỗi mặt tường sơn theo ô ở phía đó. Tường chạy ngang thấp, tường chạy dọc cao.
+    for (const [key, kind] of Object.entries(plan.walls)) {
+      const e = parseEdge(key, w, d)
+      if (!e) continue
+      const horizontal = e.axis === 'h'
+      const a = horizontal ? { cx: e.cx, cz: e.cz - 1 } : { cx: e.cx - 1, cz: e.cz }
+      const b = { cx: e.cx, cz: e.cz }
+      const px = horizontal ? c.x + e.cx + 0.5 : c.x + e.cx
+      const pz = horizontal ? c.z + e.cz : c.z + e.cz + 0.5
+      if (kind === 2) {
+        // Cửa: ngưỡng gỗ trên sàn và hai cột khung ở hai đầu đoạn (chỉ vẽ nếu đoạn kế bên không phải cửa).
+        box(horizontal ? 1 : 0.22, 0.05, horizontal ? 0.22 : 1, px, 0.03, pz, trimMat)
+        for (const s of [-1, 1] as const) {
+          const nx = horizontal ? { cx: e.cx + s, cz: e.cz } : { cx: e.cx, cz: e.cz + s }
+          const nk = horizontal ? `h:${nx.cx},${nx.cz}` : `v:${nx.cx},${nx.cz}`
+          if (plan.walls[nk] === 2) continue
+          const postH = horizontal ? HALF_H : WALL_H
+          box(0.2, postH, 0.2, horizontal ? px + s * 0.5 : px, postH / 2, horizontal ? pz : pz + s * 0.5, trimMat)
+        }
+        continue
+      }
+      const h = horizontal ? HALF_H : WALL_H
+      for (const [cell, side] of [[a, -1], [b, 1]] as const) {
+        const off = side * 0.045
+        box(horizontal ? 1.001 : 0.09, h, horizontal ? 0.09 : 1.001, horizontal ? px : px + off, h / 2, horizontal ? pz + off : pz, wallMat(styleAt(plan, cell.cx, cell.cz).w), true)
+      }
+      // Nẹp gỗ trên đỉnh tường thấp.
+      if (horizontal) box(1.001, 0.05, 0.2, px, h + 0.025, pz, trimMat)
+    }
 
-    // Thảm cửa (chỉ tầng trệt, giữa cạnh nam của phòng khách).
+    // Thảm cửa (chỉ tầng trệt, ngay trong cửa ra vào).
     if (floor === 0) {
       const mat = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.8), new THREE.MeshStandardMaterial({ color: 0xb5532f, roughness: 1 }))
       mat.rotation.x = -Math.PI / 2
-      mat.position.set(c.x + MAIN_W / 2, 0.035, c.z + ROOM.d - 0.35)
+      mat.position.set(c.x + ENTRY_X, 0.035, c.z + d - 0.35)
       room.add(mat)
     }
 
-    // Cầu thang: lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt), kèm biển chỉ tầng.
+    // Cầu thang: lên (nếu còn tầng trên) và xuống (nếu không phải tầng trệt).
     const addStairs = (s: { cx: number; cz: number; w: number; d: number }, up: boolean) => {
       const stairs = new THREE.Group()
       const steps = 8
@@ -140,7 +160,6 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
         }
       }
       if (!up) {
-        // Thành lỗ cầu thang (tối) ở ba phía để không nhìn thấy khoảng trống.
         for (const dx of [-s.w / 2, s.w / 2]) {
           const wall = new THREE.Mesh(new THREE.BoxGeometry(0.06, STAIR_H + 0.3, s.d), dark)
           wall.position.set(dx, -(STAIR_H + 0.3) / 2, 0)
@@ -150,7 +169,6 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
         back.position.set(0, -(STAIR_H + 0.3) / 2, -s.d / 2)
         stairs.add(back)
       }
-      // Tay vịn hai bên (cầu thang lên) cao dần theo bậc.
       if (up) {
         for (const dx of [-s.w / 2, s.w / 2]) {
           const rail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, s.d), trimMat)
@@ -170,21 +188,88 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
     if (stairSet.up) addStairs(stairSet.up, true)
     if (stairSet.down) addStairs(stairSet.down, false)
 
-    // Đèn ấm: phòng khách, dãy phía bắc và phòng ngủ (ít đèn cho nhẹ máy).
-    const lampAt = (x: number, z: number, span: number) => {
-      const lamp = new THREE.PointLight(floor === 2 ? 0xffe2b0 : 0xffd6a0, 6, span * 1.5, 1.6)
-      lamp.position.set(x, 2.4, z)
+    // Đèn ấm: ở các phòng lớn nhất (tối đa 4 đèn cho nhẹ máy); nhà thông một phòng rộng thì chia hai đèn.
+    const rooms = roomsOf(plan, w, d).sort((x, y) => y.cells.length - x.cells.length).slice(0, 4)
+    const lamps = rooms.length === 1 && w > 14 ? [{ x: c.x + w * 0.27, z: ROOM.z }, { x: c.x + w * 0.73, z: ROOM.z }] : rooms.map((r) => ({
+      x: c.x + r.cells.reduce((s, q) => s + q.cx + 0.5, 0) / r.cells.length,
+      z: c.z + r.cells.reduce((s, q) => s + q.cz + 0.5, 0) / r.cells.length,
+    }))
+    for (const l of lamps) {
+      const lamp = new THREE.PointLight(floor === 2 ? 0xffe2b0 : 0xffd6a0, 6, Math.max(8, Math.sqrt(w * d / lamps.length) * 2), 1.6)
+      lamp.position.set(l.x, 2.4, l.z)
       room.add(lamp)
     }
-    const living = layout.rooms.find((r) => r.id === 'living')!
-    lampAt(c.x + (living.x0 + living.x1) / 2, c.z + (living.z0 + living.z1) / 2, Math.max(living.x1 - living.x0, living.z1 - living.z0))
-    const bed = layout.rooms.find((r) => r.id === 'bedroom')
-    if (bed) lampAt(c.x + (bed.x0 + bed.x1) / 2, c.z + (bed.z0 + bed.z1) / 2, Math.max(bed.x1 - bed.x0, bed.z1 - bed.z0))
-    if (layout.north > 0) lampAt(c.x + ROOM.w / 2, c.z + layout.north / 2, ROOM.w * 0.7)
   }
-  buildShell(0, 1)
+  buildShell(0, 1, { walls: {}, cells: {} })
   scene.add(room)
 
+  // Lớp phủ khi thiết kế: các đỉnh lưới, đỉnh bắt đầu, đường xem trước và cạnh đang trỏ.
+  const overlay = new THREE.Group()
+  scene.add(overlay)
+  let overlayKey = ''
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthTest: false })
+  const goldMat = new THREE.MeshBasicMaterial({ color: 0xffcd50, depthTest: false })
+  const redMat = new THREE.MeshBasicMaterial({ color: 0xe2483a, transparent: true, opacity: 0.8, depthTest: false })
+  const drawOverlay = (design: DesignView | null, w: number, d: number) => {
+    const key = design ? `${design.tool}|${design.start?.x},${design.start?.z}|${design.hoverVertex?.x},${design.hoverVertex?.z}|${design.hoverEdge}|${w}x${d}` : ''
+    if (key === overlayKey) return
+    overlayKey = key
+    overlay.clear()
+    if (!design) return
+    const c = roomCorner()
+    if (design.tool === 'wall') {
+      const dots = new THREE.InstancedMesh(new THREE.CircleGeometry(0.1, 10), dotMat, (w + 1) * (d + 1))
+      const m = new THREE.Matrix4()
+      let n = 0
+      for (let x = 0; x <= w; x++) {
+        for (let z = 0; z <= d; z++) {
+          m.makeRotationX(-Math.PI / 2)
+          m.setPosition(c.x + x, 0.06, c.z + z)
+          dots.setMatrixAt(n++, m)
+        }
+      }
+      dots.renderOrder = 10
+      overlay.add(dots)
+      const mark = (v: { x: number; z: number }, mat: THREE.Material, r: number) => {
+        const s = new THREE.Mesh(new THREE.CircleGeometry(r, 16), mat)
+        s.rotation.x = -Math.PI / 2
+        s.position.set(c.x + v.x, 0.08, c.z + v.z)
+        s.renderOrder = 11
+        overlay.add(s)
+      }
+      if (design.start) mark(design.start, goldMat, 0.22)
+      if (design.hoverVertex) mark(design.hoverVertex, design.start ? goldMat : dotMat, 0.17)
+      if (design.start && design.hoverVertex) {
+        const dx = Math.abs(design.hoverVertex.x - design.start.x)
+        const dz = Math.abs(design.hoverVertex.z - design.start.z)
+        const horizontal = dx >= dz
+        const len = horizontal ? dx : dz
+        if (len > 0) {
+          const line = new THREE.Mesh(new THREE.PlaneGeometry(horizontal ? len : 0.16, horizontal ? 0.16 : len), goldMat)
+          line.rotation.x = -Math.PI / 2
+          line.position.set(
+            c.x + (horizontal ? (design.start.x + design.hoverVertex.x) / 2 : design.start.x),
+            0.07,
+            c.z + (horizontal ? design.start.z : (design.start.z + design.hoverVertex.z) / 2),
+          )
+          line.renderOrder = 11
+          overlay.add(line)
+        }
+      }
+    }
+    if ((design.tool === 'door' || design.tool === 'erase') && design.hoverEdge) {
+      const e = parseEdge(design.hoverEdge, w, d)
+      if (e) {
+        const h = new THREE.Mesh(new THREE.PlaneGeometry(e.axis === 'h' ? 1 : 0.2, e.axis === 'h' ? 0.2 : 1), design.tool === 'erase' ? redMat : goldMat)
+        h.rotation.x = -Math.PI / 2
+        h.position.set(e.axis === 'h' ? c.x + e.cx + 0.5 : c.x + e.cx, 0.09, e.axis === 'h' ? c.z + e.cz : c.z + e.cz + 0.5)
+        h.renderOrder = 11
+        overlay.add(h)
+      }
+    }
+  }
+
+  // Đồ đã đặt: dựng lại cả nhóm khi danh sách thay đổi (vài chục món nên rẻ).
   // Đồ đã đặt: dựng lại cả nhóm khi danh sách thay đổi (vài chục món nên rẻ).
   const placed = new THREE.Group()
   scene.add(placed)
@@ -220,12 +305,17 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
   let ghostKey = ''
 
   return {
-    update(state, ghost, decorating) {
-      const shellKey = `${state.house.level}|${ROOM.w}x${ROOM.d}|${state.player.floor}|${floorCount(state)}`
-      if (shellKey !== builtKey) buildShell(state.player.floor, floorCount(state))
+    update(state, ghost, decorating, design = null) {
+      const floor = state.player.floor
+      const plan = planOf(state, floor)
+      // Bản vẽ chỉ đổi khi đang thiết kế (hoặc lúc tải, nâng cấp nhà): ngoài ra dùng lại bản chụp lần trước cho nhẹ.
+      if (decorating || planJson === '') planJson = JSON.stringify(plan)
+      if (shellKey(floor, floorCount(state), planJson) !== builtKey) buildShell(floor, floorCount(state), plan)
       const indoors = state.player.indoors
       room.visible = placed.visible = indoors
       grid.visible = indoors && decorating
+      overlay.visible = indoors && decorating
+      drawOverlay(indoors && decorating ? design : null, ROOM.w, ROOM.d)
 
       const sig = `${state.player.floor}|${JSON.stringify(state.house.furniture)}`
       if (sig !== signature) {
@@ -270,131 +360,119 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
   }
 }
 
-/** Bảng màu mỗi phòng: sàn gỗ, thảm, gạch men và giấy dán tường. */
-interface Style {
-  plank: [number, number, number]
-  carpet: [string, string]
-  tile: [string, string]
-  wall: [string, string]
-  /** Kiểu sàn: ván gỗ, thảm, hay gạch men. */
-  kind: 'plank' | 'carpet' | 'tile'
+function shellKey(floor: number, floors: number, planJson: string): string {
+  return `${HOUSE_NOW.level}|${ROOM.w}x${ROOM.d}|${floor}|${floors}|${planJson}`
 }
 
-const TILE_DEFAULT: [string, string] = ['#efe9dc', '#d8cfbd']
+const hash = (a: number, b: number): number => {
+  let h = (a * 73856093) ^ (b * 19349663)
+  h = (h ^ (h >>> 13)) * 1274126177
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295
+}
 
-/** Phong cách từng phòng ở tầng trệt (bếp lát gạch, vệ sinh gạch xanh, phòng ngủ trải thảm...). */
-function roomStyle(room: RoomDef, floor: number): Style {
-  if (floor === 0) {
-    switch (room.id) {
-      case 'bedroom':
-        return { kind: 'carpet', plank: [15, -30, -75], carpet: ['#9a5a56', '#8c4e4b'], tile: TILE_DEFAULT, wall: ['#dfe8f4', '#cddcee'] }
-      case 'kitchen':
-        return { kind: 'tile', plank: [15, -30, -75], carpet: ['#9a5a56', '#8c4e4b'], tile: ['#f4f1e6', '#86bd90'], wall: ['#fbf0c8', '#f3e3a8'] }
-      case 'bath':
-        return { kind: 'tile', plank: [15, -30, -75], carpet: ['#9a5a56', '#8c4e4b'], tile: ['#eaf5f8', '#9ccbd8'], wall: ['#d5eef2', '#c2e3ea'] }
-      case 'study':
-        return { kind: 'plank', plank: [-8, -42, -86], carpet: ['#9a5a56', '#8c4e4b'], tile: TILE_DEFAULT, wall: ['#e6efd9', '#d6e5c4'] }
-      default:
-        return { kind: 'plank', plank: [15, -30, -75], carpet: ['#9a5a56', '#8c4e4b'], tile: TILE_DEFAULT, wall: ['#f6e3c8', '#efd2c0'] }
+function shade(hex: string, k: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  const ch = (v: number) => Math.max(0, Math.min(255, Math.round(v * k)))
+  return `rgb(${ch((n >> 16) & 255)}, ${ch((n >> 8) & 255)}, ${ch(n & 255)})`
+}
+
+const SWATCH: Record<FloorId, string> = {
+  plank: '#b9794a', darkwood: '#7a4b2d', tile_white: '#ece8de', tile_green: '#86bd90', tile_blue: '#9ccbd8',
+  carpet_red: '#9a5a56', carpet_blue: '#6f81a8', carpet_purple: '#7f6aa5', stone: '#9a968e', marble: '#e4e0e6',
+}
+
+/** Vẽ một ô sàn kích thước s tại (x, y) trên canvas theo kiểu sàn. */
+function drawFloorCell(g: CanvasRenderingContext2D, id: FloorId, x: number, y: number, s: number, cx: number, cz: number): void {
+  const base = SWATCH[id]
+  if (id === 'plank' || id === 'darkwood') {
+    // Ván gỗ ngang so le, mỗi tấm hơi khác màu.
+    const rows = 4
+    const h = s / rows
+    for (let r = 0; r < rows; r++) {
+      const off = ((cz * rows + r) % 2) * (s * 0.4)
+      for (const seg of [[-s * 0.4 + off, s * 0.6], [s * 0.2 + off, s * 0.8]] as const) {
+        const k = 0.88 + hash(cx * 7 + r, cz * 5 + (seg[0] > 0 ? 1 : 0)) * 0.24
+        g.fillStyle = shade(base, k)
+        const x0 = Math.max(0, seg[0])
+        const x1 = Math.min(s, seg[0] + seg[1] + s * 0.4)
+        if (x1 > x0) g.fillRect(x + x0, y + r * h, x1 - x0 - 1.5, h - 1.5)
+      }
     }
+    return
   }
-  // Tầng trên: mỗi tầng một tông, phòng phía đông trải thảm.
-  const f = Math.min(floor, 2)
-  const wing = room.x0 >= MAIN_W
-  const planks: [number, number, number][] = [[15, -30, -75], [42, 8, -38], [4, -12, -34]]
-  const carpets: [string, string][] = [['#9a5a56', '#8c4e4b'], ['#5f9ea0', '#518f91'], ['#7f6aa5', '#715d96']]
-  const wallsMain: [string, string][] = [['#f6e3c8', '#efd2c0'], ['#e6efd9', '#d6e5c4'], ['#eadcc0', '#d9c4a0']]
-  const wallsWing: [string, string][] = [['#dfe8f4', '#cddcee'], ['#f3e0ee', '#e8cde1'], ['#d9d3ea', '#c7bfe0']]
-  return { kind: wing ? 'carpet' : 'plank', plank: planks[f], carpet: carpets[f], tile: TILE_DEFAULT, wall: wing ? wallsWing[f] : wallsMain[f] }
-}
-
-/** Sàn ván gỗ: các tấm dài so le, mỗi tấm hơi khác màu (màu theo tầng). */
-function plankTexture(style: Style): THREE.CanvasTexture {
-  const cv = document.createElement('canvas')
-  cv.width = 256
-  cv.height = 192
-  const g = cv.getContext('2d')!
-  const rows = 12
-  const h = cv.height / rows
-  const [dr, dg, db] = style.plank
-  for (let r = 0; r < rows; r++) {
-    let x = r % 2 ? -40 : 0
-    while (x < cv.width) {
-      const len = 70 + ((r * 37 + x) % 50)
-      const shade = 150 + ((r * 13 + x) % 25)
-      g.fillStyle = `rgb(${shade + dr}, ${shade + dg}, ${shade + db})`
-      g.fillRect(x, r * h, len - 2, h - 2)
-      x += len
+  if (id.startsWith('tile') || id === 'marble') {
+    const half = s / 2
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        const alt = (i + j + cx + cz) % 2
+        g.fillStyle = id === 'marble' ? shade(base, alt ? 1 : 0.95) : shade(base, alt ? 1.12 : 0.9)
+        g.fillRect(x + i * half, y + j * half, half - 1.5, half - 1.5)
+      }
     }
-  }
-  const tex = new THREE.CanvasTexture(cv)
-  tex.colorSpace = THREE.SRGBColorSpace
-  return tex
-}
-
-/** Thảm phòng phụ: nền màu có đường viền và ô kẻ nhỏ. */
-function carpetTexture(style: Style): THREE.CanvasTexture {
-  const cv = document.createElement('canvas')
-  cv.width = 128
-  cv.height = 128
-  const g = cv.getContext('2d')!
-  g.fillStyle = style.carpet[0]
-  g.fillRect(0, 0, 128, 128)
-  g.fillStyle = style.carpet[1]
-  for (let y = 0; y < 128; y += 16) for (let x = (y / 16) % 2 ? 0 : 16; x < 128; x += 32) g.fillRect(x, y, 16, 16)
-  const tex = new THREE.CanvasTexture(cv)
-  tex.colorSpace = THREE.SRGBColorSpace
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-  tex.repeat.set(3, 5)
-  return tex
-}
-
-/** Gạch men ô vuông hai màu xen kẽ. */
-function tileTexture(style: Style): THREE.CanvasTexture {
-  const cv = document.createElement('canvas')
-  cv.width = 128
-  cv.height = 128
-  const g = cv.getContext('2d')!
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 4; x++) {
-      g.fillStyle = (x + y) % 2 ? style.tile[1] : style.tile[0]
-      g.fillRect(x * 32, y * 32, 32, 32)
+    if (id === 'marble') {
+      g.strokeStyle = 'rgba(150,140,170,0.35)'
+      g.lineWidth = 1
+      g.beginPath()
+      g.moveTo(x + hash(cx, cz) * s, y)
+      g.lineTo(x + hash(cz, cx) * s, y + s)
+      g.stroke()
     }
+    return
   }
-  g.strokeStyle = 'rgba(255,255,255,0.7)'
-  g.lineWidth = 2
-  for (let i = 0; i <= 4; i++) {
-    g.beginPath()
-    g.moveTo(i * 32, 0)
-    g.lineTo(i * 32, 128)
-    g.moveTo(0, i * 32)
-    g.lineTo(128, i * 32)
-    g.stroke()
+  if (id === 'stone') {
+    const half = s / 2
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      g.fillStyle = shade(base, 0.85 + hash(cx * 2 + i, cz * 2 + j) * 0.3)
+      g.fillRect(x + i * half, y + j * half, half - 2, half - 2)
+    }
+    return
   }
+  // Thảm: nền màu có chấm dệt.
+  g.fillStyle = base
+  g.fillRect(x, y, s, s)
+  g.fillStyle = shade(base, 0.86)
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2 === 0) g.fillRect(x + i * (s / 4), y + j * (s / 4), s / 4, s / 4)
+}
+
+/** Một texture cho cả sàn nhà: mỗi ô vẽ theo kiểu sàn của nó. */
+function floorTexture(plan: HousePlan, w: number, d: number): THREE.CanvasTexture {
+  const S = 40
+  const cv = document.createElement('canvas')
+  cv.width = w * S
+  cv.height = d * S
+  const g = cv.getContext('2d')!
+  for (let cz = 0; cz < d; cz++) for (let cx = 0; cx < w; cx++) drawFloorCell(g, styleAt(plan, cx, cz).f, cx * S, cz * S, S, cx, cz)
   const tex = new THREE.CanvasTexture(cv)
   tex.colorSpace = THREE.SRGBColorSpace
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-  tex.repeat.set(2, 2)
+  tex.anisotropy = 4
   return tex
 }
 
-/** Giấy dán tường: sọc dọc hai tông màu, hoạ tiết chấm nhỏ. */
-function wallpaperTexture(style: Style): THREE.CanvasTexture {
-  const cv = document.createElement('canvas')
-  cv.width = 128
-  cv.height = 64
-  const g = cv.getContext('2d')!
-  for (let i = 0; i < 8; i++) {
-    g.fillStyle = i % 2 ? style.wall[0] : style.wall[1]
-    g.fillRect(i * 16, 0, 16, 64)
-  }
-  g.fillStyle = 'rgba(100,80,60,0.22)'
-  for (let i = 0; i < 8; i++) g.fillRect(i * 16 + 7, 28, 2, 2)
-  const tex = new THREE.CanvasTexture(cv)
-  tex.colorSpace = THREE.SRGBColorSpace
-  tex.wrapS = THREE.RepeatWrapping
-  tex.repeat.set(3, 1)
-  return tex
+/** Mặt sàn có khoét lỗ chữ nhật (cầu thang xuống), UV chuẩn hoá để vân sàn trải đều như tấm phẳng. */
+function floorWithHole(w: number, dz: number, hole: { cx: number; cz: number; w: number; d: number }): THREE.BufferGeometry {
+  const shape = new THREE.Shape()
+  shape.moveTo(-w / 2, -dz / 2)
+  shape.lineTo(w / 2, -dz / 2)
+  shape.lineTo(w / 2, dz / 2)
+  shape.lineTo(-w / 2, dz / 2)
+  shape.closePath()
+  // Sau khi xoay nằm ngang, trục y của hình thành -z của thế giới: lật dấu độ dời theo z.
+  const x0 = hole.cx - w / 2
+  const x1 = x0 + hole.w
+  const y1 = -(hole.cz - dz / 2)
+  const y0 = y1 - hole.d
+  const h = new THREE.Path()
+  h.moveTo(x0, y0)
+  h.lineTo(x0, y1)
+  h.lineTo(x1, y1)
+  h.lineTo(x1, y0)
+  h.closePath()
+  shape.holes.push(h)
+  const geo = new THREE.ShapeGeometry(shape)
+  const pos = geo.attributes.position
+  const uv = geo.attributes.uv
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + w / 2) / w, (pos.getY(i) + dz / 2) / dz)
+  return geo
 }
 
 /** Lưới ô khi trang trí. */
@@ -420,95 +498,4 @@ function gridTexture(): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(cv)
   tex.colorSpace = THREE.SRGBColorSpace
   return tex
-}
-
-/** Đồ cố định của bếp và nhà vệ sinh dựng từ khối đơn giản (tựa vào tường bắc). */
-function buildFixture(f: Fixture, x: number, z: number): THREE.Group {
-  const g = new THREE.Group()
-  const mat = (color: number, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough })
-  const box = (w: number, h: number, d: number, color: number, px: number, py: number, pz: number) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color))
-    m.position.set(px, py, pz)
-    m.castShadow = true
-    m.receiveShadow = true
-    g.add(m)
-    return m
-  }
-  const cyl = (rt: number, rb: number, h: number, color: number, px: number, py: number, pz: number) => {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 14), mat(color))
-    m.position.set(px, py, pz)
-    m.castShadow = true
-    g.add(m)
-    return m
-  }
-  const cabinet = (w: number, d: number) => {
-    box(w - 0.04, 0.8, d - 0.04, 0xe9e2d0, 0, 0.4, 0)
-    box(w, 0.06, d, 0xb9a37e, 0, 0.83, 0)
-  }
-  switch (f.id) {
-    case 'counter':
-      cabinet(f.w, f.d)
-      break
-    case 'sink':
-      cabinet(f.w, f.d)
-      box(0.55, 0.04, 0.4, 0x6fa3c4, 0, 0.87, 0.02)
-      cyl(0.03, 0.03, 0.3, 0xc9ced2, 0, 1.0, -0.25)
-      break
-    case 'stove':
-      cabinet(f.w, f.d)
-      box(f.w - 0.1, 0.05, f.d - 0.1, 0x3a3a3f, 0, 0.88, 0)
-      for (const [dx, dz] of [[-0.2, -0.18], [0.2, -0.18], [-0.2, 0.18], [0.2, 0.18]]) cyl(0.11, 0.11, 0.03, 0x1d1d20, dx, 0.92, dz)
-      break
-    case 'fridge':
-      box(0.9, 1.9, 0.85, 0xf2f4f5, 0, 0.95, 0)
-      box(0.04, 0.5, 0.04, 0x9aa3a8, 0.34, 1.2, 0.45)
-      box(0.8, 0.02, 0.02, 0xcfd6d9, 0, 1.45, 0.43)
-      break
-    case 'toilet':
-      cyl(0.26, 0.2, 0.4, 0xf7fbfc, 0, 0.2, 0.1)
-      box(0.5, 0.45, 0.2, 0xf7fbfc, 0, 0.62, -0.28)
-      cyl(0.24, 0.24, 0.06, 0xdfe9ec, 0, 0.43, 0.1)
-      break
-    case 'basin':
-      cyl(0.12, 0.12, 0.7, 0xf7fbfc, 0, 0.35, -0.1)
-      cyl(0.28, 0.2, 0.18, 0xf7fbfc, 0, 0.8, 0)
-      cyl(0.03, 0.03, 0.25, 0xc9ced2, 0, 1.0, -0.3)
-      break
-    case 'tub':
-      box(f.w - 0.1, 0.6, f.d - 0.1, 0xf7fbfc, 0, 0.3, 0)
-      box(f.w - 0.35, 0.05, f.d - 0.35, 0x8fd0e8, 0, 0.6, 0)
-      cyl(0.04, 0.04, 0.3, 0xc9ced2, 0, 0.75, -(f.d / 2) + 0.15)
-      break
-  }
-  g.position.set(x, 0, z)
-  return g
-}
-
-/** Mặt sàn một phòng có khoét lỗ chữ nhật (cầu thang xuống), UV chuẩn hoá để vân sàn trải đều như tấm phẳng. */
-function floorWithHole(r: RoomDef, hole: { cx: number; cz: number; w: number; d: number }): THREE.BufferGeometry {
-  const w = r.x1 - r.x0
-  const dz = r.z1 - r.z0
-  const shape = new THREE.Shape()
-  shape.moveTo(-w / 2, -dz / 2)
-  shape.lineTo(w / 2, -dz / 2)
-  shape.lineTo(w / 2, dz / 2)
-  shape.lineTo(-w / 2, dz / 2)
-  shape.closePath()
-  // Sau khi xoay nằm ngang, trục y của hình thành -z của thế giới: lật dấu độ dời theo z.
-  const x0 = hole.cx - (r.x0 + r.x1) / 2
-  const x1 = x0 + hole.w
-  const y1 = -(hole.cz - (r.z0 + r.z1) / 2)
-  const y0 = y1 - hole.d
-  const h = new THREE.Path()
-  h.moveTo(x0, y0)
-  h.lineTo(x0, y1)
-  h.lineTo(x1, y1)
-  h.lineTo(x1, y0)
-  h.closePath()
-  shape.holes.push(h)
-  const geo = new THREE.ShapeGeometry(shape)
-  const pos = geo.attributes.position
-  const uv = geo.attributes.uv
-  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + w / 2) / w, (pos.getY(i) + dz / 2) / dz)
-  return geo
 }

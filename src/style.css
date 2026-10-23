@@ -3144,3 +3144,37 @@ body.is-visiting .energy-pill {
     font-size: 12px;
   }
 }
+
+/* Thiết kế nhà: các tab công cụ và ô chọn phong cách. */
+.decor-tabs,
+.decor-subtabs,
+.decor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.decor-tabs {
+  margin: 4px 0;
+}
+
+.decor-chips {
+  margin: 6px 0;
+}
+
+.decor-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  border-radius: 4px;
+  border: 1px solid rgb(0 0 0 / 0.35);
+  vertical-align: -2px;
+}
+
+.decor-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
