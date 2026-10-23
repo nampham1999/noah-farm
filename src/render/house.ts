@@ -558,7 +558,7 @@ const MAX_KIT_SCALE = 2.8
  * Chuẩn hoá mô hình trong gói đồ nội thất: đặt chân mô hình xuống sàn, tâm vào giữa ô, phóng vừa khít chỗ chiếm
  * (mô hình gói nhỏ hơn đơn vị ô của game). Đồ treo tường thì lưng sát tường (z = 0) và tâm theo độ cao y của món.
  */
-function normalizeKit(src: THREE.Object3D, def: FurnitureDef): THREE.Object3D {
+export function normalizeKit(src: THREE.Object3D, def: FurnitureDef): THREE.Object3D {
   const obj = src.clone(true)
   obj.traverse((o) => {
     if (o instanceof THREE.Mesh) {

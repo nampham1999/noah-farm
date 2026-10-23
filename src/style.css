@@ -3178,3 +3178,11 @@ body.is-visiting .energy-pill {
   gap: 6px;
   width: 100%;
 }
+
+/* Icon đồ nội thất: ảnh chụp mô hình 3D. */
+.icon .furn-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.15));
+}

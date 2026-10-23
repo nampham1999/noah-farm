@@ -1,3 +1,4 @@
+import { furnIconUrl, img as furnImg, requestFurnIcon } from '../render/furnIcons.ts'
 import { CROP_BY_ID, item } from '../data/index.ts'
 
 /**
@@ -17,6 +18,12 @@ export function itemIconHtml(id: string): string {
   if (def.kind === 'seed') {
     const produce = CROP_BY_ID.get(def.cropId!)!.icon
     return `<span class="icon packet"><span class="packet-art"><span class="emoji">${produce}</span></span></span>`
+  }
+  if (id.startsWith('furn_')) {
+    const fid = id.slice(5)
+    const done = furnIconUrl(fid)
+    if (!done) requestFurnIcon(fid)
+    return `<span class="icon" data-furn="${fid}">${done ? furnImg(fid) : `<span class="emoji">${def.icon}</span>`}</span>`
   }
   return `<span class="icon">${ITEM_SVG[id] ?? `<span class="emoji">${def.icon}</span>`}</span>`
 }
