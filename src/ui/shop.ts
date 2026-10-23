@@ -1,5 +1,5 @@
 import type { GameState } from '../core/state.ts'
-import { animalData, CROP_BY_ID, FRUIT_TREES, FURNITURE, item, MACHINES } from '../data/index.ts'
+import { animalData, CROP_BY_ID, FRUIT_TREES, FURNITURE, FURNITURE_CATS, item, MACHINES, type FurnitureCat } from '../data/index.ts'
 import { buyFurniture, nextHouseUpgrade, upgradeHouse } from '../systems/house.ts'
 import { HOUSE_LAYOUTS } from '../core/world.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
@@ -20,6 +20,7 @@ type Tab = 'buy' | 'animals' | 'furniture' | 'sell'
 /** Cửa hàng ở quầy: tab Mua hạt giống và tab Bán nông sản. */
 export function createShopPanel(state: GameState): PanelSpec {
   let tab: Tab = 'buy'
+  let furnCat: FurnitureCat | 'all' = 'all'
 
   return {
     title: () => t('shop.title'),
@@ -188,12 +189,26 @@ export function createShopPanel(state: GameState): PanelSpec {
     hint.className = 'panel__hint'
     hint.textContent = t('shop.furnitureHint')
     list.append(hint)
-    for (const def of [...FURNITURE].sort((a, b) => a.level - b.level || a.price - b.price)) {
+    // Lọc theo nhóm: phòng ngủ, phòng khách, bếp, nhà tắm, làm việc, trang trí, treo tường.
+    const chips = document.createElement('div')
+    chips.className = 'decor-chips'
+    for (const c of ['all', ...FURNITURE_CATS] as const) {
+      const b = document.createElement('button')
+      b.className = 'btn small tab' + (furnCat === c ? ' is-active' : '')
+      b.textContent = tKey(`furn.cat.${c}`)
+      b.addEventListener('click', () => {
+        furnCat = c
+        refresh()
+      })
+      chips.append(b)
+    }
+    list.append(chips)
+    for (const def of [...FURNITURE].filter((f) => furnCat === 'all' || f.cat === furnCat).sort((a, b) => a.level - b.level || a.price - b.price)) {
       const id = `furn_${def.id}`
       const locked = p.level < def.level
       const sub = locked
         ? t('notice.locked', { level: def.level })
-        : `${def.w}×${def.d} · ${t('shop.owned', { n: countItem(state.inventory, id) + state.house.furniture.filter((f) => f.id === def.id).length })}`
+        : `${def.kind === 'wall' ? t('shop.wallItem') : `${def.w}×${def.d}`} · ${t('shop.owned', { n: countItem(state.inventory, id) + state.house.furniture.filter((f) => f.id === def.id).length })}`
       const row = shopRow(id, itemName(id), sub)
       if (locked) row.classList.add('locked')
       row.append(button(`${def.price}g`, 'btn small gold', () => buyFurniture(state, def.id) && refresh(), locked || p.gold < def.price))

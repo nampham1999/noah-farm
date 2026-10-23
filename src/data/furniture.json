@@ -6,7 +6,8 @@
     "w": 1,
     "d": 2,
     "icon": "🛏️",
-    "kind": "bed"
+    "kind": "bed",
+    "cat": "bedroom"
   },
   {
     "id": "bed_double",
@@ -15,7 +16,8 @@
     "w": 2,
     "d": 2,
     "icon": "🛏️",
-    "kind": "bed"
+    "kind": "bed",
+    "cat": "bedroom"
   },
   {
     "id": "armchair",
@@ -23,7 +25,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "💺"
+    "icon": "💺",
+    "cat": "living"
   },
   {
     "id": "sofa",
@@ -31,7 +34,8 @@
     "level": 2,
     "w": 2,
     "d": 1,
-    "icon": "🛋️"
+    "icon": "🛋️",
+    "cat": "living"
   },
   {
     "id": "chair_wood",
@@ -39,7 +43,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "🪑"
+    "icon": "🪑",
+    "cat": "kitchen"
   },
   {
     "id": "stool",
@@ -47,7 +52,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "🪑"
+    "icon": "🪑",
+    "cat": "kitchen"
   },
   {
     "id": "table_small",
@@ -55,7 +61,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "🟫"
+    "icon": "🟫",
+    "cat": "living"
   },
   {
     "id": "table_wood",
@@ -63,7 +70,8 @@
     "level": 2,
     "w": 2,
     "d": 1,
-    "icon": "🟫"
+    "icon": "🟫",
+    "cat": "kitchen"
   },
   {
     "id": "dining_set",
@@ -71,7 +79,8 @@
     "level": 4,
     "w": 2,
     "d": 2,
-    "icon": "🍽️"
+    "icon": "🍽️",
+    "cat": "kitchen"
   },
   {
     "id": "desk",
@@ -79,7 +88,8 @@
     "level": 2,
     "w": 1,
     "d": 1,
-    "icon": "🗄️"
+    "icon": "🗄️",
+    "cat": "study"
   },
   {
     "id": "bookcase",
@@ -87,7 +97,8 @@
     "level": 2,
     "w": 2,
     "d": 1,
-    "icon": "📚"
+    "icon": "📚",
+    "cat": "study"
   },
   {
     "id": "cabinet_low",
@@ -95,7 +106,8 @@
     "level": 1,
     "w": 2,
     "d": 1,
-    "icon": "🗄️"
+    "icon": "🗄️",
+    "cat": "living"
   },
   {
     "id": "wardrobe",
@@ -103,7 +115,8 @@
     "level": 2,
     "w": 1,
     "d": 1,
-    "icon": "🚪"
+    "icon": "🚪",
+    "cat": "bedroom"
   },
   {
     "id": "fireplace",
@@ -111,7 +124,8 @@
     "level": 6,
     "w": 2,
     "d": 1,
-    "icon": "🔥"
+    "icon": "🔥",
+    "cat": "living"
   },
   {
     "id": "floor_lamp",
@@ -119,7 +133,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "💡"
+    "icon": "💡",
+    "cat": "decor"
   },
   {
     "id": "lamp_table",
@@ -127,7 +142,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "💡"
+    "icon": "💡",
+    "cat": "decor"
   },
   {
     "id": "plant_big",
@@ -135,7 +151,8 @@
     "level": 2,
     "w": 1,
     "d": 1,
-    "icon": "🪴"
+    "icon": "🪴",
+    "cat": "decor"
   },
   {
     "id": "plant_small",
@@ -143,7 +160,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "🪴"
+    "icon": "🪴",
+    "cat": "decor"
   },
   {
     "id": "vase_flowers",
@@ -151,7 +169,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "💐"
+    "icon": "💐",
+    "cat": "decor"
   },
   {
     "id": "rug_round",
@@ -160,7 +179,8 @@
     "w": 2,
     "d": 2,
     "icon": "🟠",
-    "kind": "rug"
+    "kind": "rug",
+    "cat": "living"
   },
   {
     "id": "straw_rug",
@@ -169,7 +189,8 @@
     "w": 2,
     "d": 1,
     "icon": "🟨",
-    "kind": "rug"
+    "kind": "rug",
+    "cat": "living"
   },
   {
     "id": "piano",
@@ -177,7 +198,8 @@
     "level": 8,
     "w": 2,
     "d": 1,
-    "icon": "🎹"
+    "icon": "🎹",
+    "cat": "living"
   },
   {
     "id": "aquarium",
@@ -185,7 +207,8 @@
     "level": 5,
     "w": 2,
     "d": 1,
-    "icon": "🐠"
+    "icon": "🐠",
+    "cat": "decor"
   },
   {
     "id": "stove",
@@ -193,7 +216,8 @@
     "level": 3,
     "w": 1,
     "d": 1,
-    "icon": "♨️"
+    "icon": "♨️",
+    "cat": "kitchen"
   },
   {
     "id": "fridge",
@@ -201,7 +225,8 @@
     "level": 3,
     "w": 1,
     "d": 1,
-    "icon": "🧊"
+    "icon": "🧊",
+    "cat": "kitchen"
   },
   {
     "id": "oven",
@@ -209,7 +234,8 @@
     "level": 3,
     "w": 1,
     "d": 1,
-    "icon": "🍳"
+    "icon": "🍳",
+    "cat": "kitchen"
   },
   {
     "id": "pet_bed",
@@ -217,7 +243,8 @@
     "level": 2,
     "w": 1,
     "d": 1,
-    "icon": "🐾"
+    "icon": "🐾",
+    "cat": "decor"
   },
   {
     "id": "stone_pot",
@@ -225,7 +252,8 @@
     "level": 1,
     "w": 1,
     "d": 1,
-    "icon": "🏺"
+    "icon": "🏺",
+    "cat": "decor"
   },
   {
     "id": "toilet",
@@ -233,7 +261,8 @@
     "level": 2,
     "w": 1,
     "d": 1,
-    "icon": "🚽"
+    "icon": "🚽",
+    "cat": "bath"
   },
   {
     "id": "basin",
@@ -241,7 +270,8 @@
     "level": 2,
     "w": 1,
     "d": 1,
-    "icon": "🚰"
+    "icon": "🚰",
+    "cat": "bath"
   },
   {
     "id": "bathtub",
@@ -249,6 +279,740 @@
     "level": 3,
     "w": 1,
     "d": 2,
-    "icon": "🛁"
+    "icon": "🛁",
+    "cat": "bath"
+  },
+  {
+    "id": "k_bedBunk",
+    "price": 420,
+    "level": 3,
+    "w": 1,
+    "d": 2,
+    "icon": "🛏️",
+    "cat": "bedroom",
+    "model": "kit/bedBunk",
+    "kind": "bed"
+  },
+  {
+    "id": "k_nightstand",
+    "price": 80,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "bedroom",
+    "model": "kit/cabinetBedDrawerTable"
+  },
+  {
+    "id": "k_dresser",
+    "price": 160,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🚪",
+    "cat": "bedroom",
+    "model": "kit/bookcaseClosedDoors"
+  },
+  {
+    "id": "k_bear",
+    "price": 45,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🧸",
+    "cat": "bedroom",
+    "model": "kit/bear"
+  },
+  {
+    "id": "k_bench",
+    "price": 90,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "bedroom",
+    "model": "kit/benchCushion"
+  },
+  {
+    "id": "k_sofa",
+    "price": 520,
+    "level": 2,
+    "w": 2,
+    "d": 1,
+    "icon": "🛋️",
+    "cat": "living",
+    "model": "kit/loungeSofa"
+  },
+  {
+    "id": "k_sofaCorner",
+    "price": 760,
+    "level": 4,
+    "w": 2,
+    "d": 2,
+    "icon": "🛋️",
+    "cat": "living",
+    "model": "kit/loungeSofaCorner"
+  },
+  {
+    "id": "k_sofaDesign",
+    "price": 640,
+    "level": 5,
+    "w": 2,
+    "d": 1,
+    "icon": "🛋️",
+    "cat": "living",
+    "model": "kit/loungeDesignSofa"
+  },
+  {
+    "id": "k_chairLounge",
+    "price": 190,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "💺",
+    "cat": "living",
+    "model": "kit/loungeChair"
+  },
+  {
+    "id": "k_chairRelax",
+    "price": 260,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "💺",
+    "cat": "living",
+    "model": "kit/loungeChairRelax"
+  },
+  {
+    "id": "k_pouf",
+    "price": 110,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/loungeSofaOttoman"
+  },
+  {
+    "id": "k_coffeeTable",
+    "price": 130,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/tableCoffee"
+  },
+  {
+    "id": "k_coffeeTableGlass",
+    "price": 170,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/tableCoffeeGlassSquare"
+  },
+  {
+    "id": "k_tvCabinet",
+    "price": 280,
+    "level": 2,
+    "w": 2,
+    "d": 1,
+    "icon": "📺",
+    "cat": "living",
+    "model": "kit/cabinetTelevisionDoors"
+  },
+  {
+    "id": "k_sideTable",
+    "price": 100,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "living",
+    "model": "kit/sideTableDrawers"
+  },
+  {
+    "id": "k_bookshelf",
+    "price": 170,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📚",
+    "cat": "living",
+    "model": "kit/bookcaseOpen"
+  },
+  {
+    "id": "k_coatStand",
+    "price": 70,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🧥",
+    "cat": "living",
+    "model": "kit/coatRackStanding"
+  },
+  {
+    "id": "k_speaker",
+    "price": 120,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🔊",
+    "cat": "living",
+    "model": "kit/speaker"
+  },
+  {
+    "id": "k_rugRect",
+    "price": 150,
+    "level": 1,
+    "w": 2,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/rugRectangle",
+    "kind": "rug"
+  },
+  {
+    "id": "k_rugSquare",
+    "price": 70,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/rugSquare",
+    "kind": "rug"
+  },
+  {
+    "id": "k_rugRound",
+    "price": 80,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/rugRound",
+    "kind": "rug"
+  },
+  {
+    "id": "k_doormat",
+    "price": 40,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🟫",
+    "cat": "living",
+    "model": "kit/rugDoormat",
+    "kind": "rug"
+  },
+  {
+    "id": "k_kCabinet",
+    "price": 120,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "kitchen",
+    "model": "kit/kitchenCabinet"
+  },
+  {
+    "id": "k_kDrawer",
+    "price": 130,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "kitchen",
+    "model": "kit/kitchenCabinetDrawer"
+  },
+  {
+    "id": "k_kCorner",
+    "price": 140,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "kitchen",
+    "model": "kit/kitchenCabinetCornerInner"
+  },
+  {
+    "id": "k_kSink",
+    "price": 260,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🚰",
+    "cat": "kitchen",
+    "model": "kit/kitchenSink"
+  },
+  {
+    "id": "k_kStove",
+    "price": 320,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🍳",
+    "cat": "kitchen",
+    "model": "kit/kitchenStove"
+  },
+  {
+    "id": "k_kStoveElectric",
+    "price": 380,
+    "level": 4,
+    "w": 1,
+    "d": 1,
+    "icon": "🍳",
+    "cat": "kitchen",
+    "model": "kit/kitchenStoveElectric"
+  },
+  {
+    "id": "k_fridgeLarge",
+    "price": 520,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🧊",
+    "cat": "kitchen",
+    "model": "kit/kitchenFridgeLarge"
+  },
+  {
+    "id": "k_fridgeSmall",
+    "price": 240,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🧊",
+    "cat": "kitchen",
+    "model": "kit/kitchenFridgeSmall"
+  },
+  {
+    "id": "k_kBar",
+    "price": 150,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "kitchen",
+    "model": "kit/kitchenBar"
+  },
+  {
+    "id": "k_barStool",
+    "price": 80,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "kitchen",
+    "model": "kit/stoolBar"
+  },
+  {
+    "id": "k_diningTable",
+    "price": 340,
+    "level": 2,
+    "w": 2,
+    "d": 1,
+    "icon": "🍽️",
+    "cat": "kitchen",
+    "model": "kit/tableCloth"
+  },
+  {
+    "id": "k_roundTable",
+    "price": 210,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🍽️",
+    "cat": "kitchen",
+    "model": "kit/tableRound"
+  },
+  {
+    "id": "k_chair",
+    "price": 70,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "kitchen",
+    "model": "kit/chairCushion"
+  },
+  {
+    "id": "k_washer",
+    "price": 300,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🧺",
+    "cat": "kitchen",
+    "model": "kit/washer"
+  },
+  {
+    "id": "k_washerDryer",
+    "price": 420,
+    "level": 4,
+    "w": 1,
+    "d": 1,
+    "icon": "🧺",
+    "cat": "kitchen",
+    "model": "kit/washerDryerStacked"
+  },
+  {
+    "id": "k_trash",
+    "price": 30,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🗑️",
+    "cat": "kitchen",
+    "model": "kit/trashcan"
+  },
+  {
+    "id": "k_bathtub",
+    "price": 460,
+    "level": 3,
+    "w": 2,
+    "d": 1,
+    "icon": "🛁",
+    "cat": "bath",
+    "model": "kit/bathtub"
+  },
+  {
+    "id": "k_shower",
+    "price": 360,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "🚿",
+    "cat": "bath",
+    "model": "kit/shower"
+  },
+  {
+    "id": "k_showerRound",
+    "price": 380,
+    "level": 4,
+    "w": 1,
+    "d": 1,
+    "icon": "🚿",
+    "cat": "bath",
+    "model": "kit/showerRound"
+  },
+  {
+    "id": "k_toiletSquare",
+    "price": 210,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🚽",
+    "cat": "bath",
+    "model": "kit/toiletSquare"
+  },
+  {
+    "id": "k_bathSink",
+    "price": 190,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🚰",
+    "cat": "bath",
+    "model": "kit/bathroomSink"
+  },
+  {
+    "id": "k_bathSinkSquare",
+    "price": 210,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🚰",
+    "cat": "bath",
+    "model": "kit/bathroomSinkSquare"
+  },
+  {
+    "id": "k_bathCabinet",
+    "price": 130,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "bath",
+    "model": "kit/bathroomCabinetDrawer"
+  },
+  {
+    "id": "k_desk",
+    "price": 280,
+    "level": 2,
+    "w": 2,
+    "d": 1,
+    "icon": "🖥️",
+    "cat": "study",
+    "model": "kit/desk"
+  },
+  {
+    "id": "k_deskCorner",
+    "price": 420,
+    "level": 4,
+    "w": 2,
+    "d": 2,
+    "icon": "🖥️",
+    "cat": "study",
+    "model": "kit/deskCorner"
+  },
+  {
+    "id": "k_chairDesk",
+    "price": 150,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🪑",
+    "cat": "study",
+    "model": "kit/chairDesk"
+  },
+  {
+    "id": "k_bookcaseWide",
+    "price": 330,
+    "level": 3,
+    "w": 2,
+    "d": 1,
+    "icon": "📚",
+    "cat": "study",
+    "model": "kit/bookcaseClosedWide"
+  },
+  {
+    "id": "k_lampRound",
+    "price": 90,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "💡",
+    "cat": "decor",
+    "model": "kit/lampRoundFloor"
+  },
+  {
+    "id": "k_lampSquare",
+    "price": 85,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "💡",
+    "cat": "decor",
+    "model": "kit/lampSquareFloor"
+  },
+  {
+    "id": "k_lampTable",
+    "price": 60,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "💡",
+    "cat": "decor",
+    "model": "kit/lampRoundTable"
+  },
+  {
+    "id": "k_pottedPlant",
+    "price": 110,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪴",
+    "cat": "decor",
+    "model": "kit/pottedPlant"
+  },
+  {
+    "id": "k_box",
+    "price": 25,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📦",
+    "cat": "decor",
+    "model": "kit/cardboardBoxOpen"
+  },
+  {
+    "id": "k_lampWall",
+    "price": 70,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "💡",
+    "cat": "wall",
+    "model": "kit/lampWall",
+    "kind": "wall",
+    "y": 1.55
+  },
+  {
+    "id": "k_tvWall",
+    "price": 320,
+    "level": 3,
+    "w": 1,
+    "d": 1,
+    "icon": "📺",
+    "cat": "wall",
+    "model": "kit/televisionModern",
+    "kind": "wall",
+    "y": 1.1
+  },
+  {
+    "id": "k_mirror",
+    "price": 110,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🪞",
+    "cat": "wall",
+    "model": "kit/bathroomMirror",
+    "kind": "wall",
+    "y": 1.35
+  },
+  {
+    "id": "k_coatHooks",
+    "price": 80,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🧥",
+    "cat": "wall",
+    "model": "kit/coatRack",
+    "kind": "wall",
+    "y": 1.35
+  },
+  {
+    "id": "k_upperCabinet",
+    "price": 120,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "wall",
+    "model": "kit/kitchenCabinetUpper",
+    "kind": "wall",
+    "y": 1.5
+  },
+  {
+    "id": "k_upperCabinet2",
+    "price": 140,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🗄️",
+    "cat": "wall",
+    "model": "kit/kitchenCabinetUpperDouble",
+    "kind": "wall",
+    "y": 1.5
+  },
+  {
+    "id": "painting_big",
+    "price": 180,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🖼️",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.35
+  },
+  {
+    "id": "painting_small",
+    "price": 90,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🖼️",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.45
+  },
+  {
+    "id": "clock_wall",
+    "price": 110,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🕰️",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.7
+  },
+  {
+    "id": "curtains",
+    "price": 100,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🪟",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.25
+  },
+  {
+    "id": "wall_shelf",
+    "price": 120,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "📚",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.35
+  },
+  {
+    "id": "pot_rack",
+    "price": 140,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🍳",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.6
+  },
+  {
+    "id": "spice_rack",
+    "price": 100,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🧂",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.4
+  },
+  {
+    "id": "room_window",
+    "price": 150,
+    "level": 2,
+    "w": 1,
+    "d": 1,
+    "icon": "🪟",
+    "cat": "wall",
+    "kind": "wall",
+    "y": 1.0
+  },
+  {
+    "id": "pet_bowl",
+    "price": 40,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🥣",
+    "cat": "decor"
+  },
+  {
+    "id": "big_stove",
+    "price": 380,
+    "level": 4,
+    "w": 1,
+    "d": 1,
+    "icon": "🔥",
+    "cat": "kitchen"
+  },
+  {
+    "id": "room_bathmat",
+    "price": 50,
+    "level": 1,
+    "w": 1,
+    "d": 1,
+    "icon": "🟦",
+    "cat": "bath",
+    "kind": "rug"
   }
 ]

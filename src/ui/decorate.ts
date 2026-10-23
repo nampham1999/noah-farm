@@ -4,7 +4,7 @@ import type { GameState } from '../core/state.ts'
 import { ROOM, roomCorner } from '../core/world.ts'
 import { itemName, t, tKey } from '../i18n/index.ts'
 import type { DesignView, Ghost } from '../render/house.ts'
-import { applyPreset, buildWall, canPlace, DOOR_COST, eraseWall, furnitureAt, paintRoom, pickUp, place, planOf, toggleDoor, WALL_COST } from '../systems/house.ts'
+import { applyPreset, buildWall, canPlace, canPlaceWall, DOOR_COST, eraseWall, furnitureAt, furnitureDef, paintRoom, pickUp, place, planOf, toggleDoor, WALL_COST, wallItemAt } from '../systems/house.ts'
 import { countItem } from '../systems/inventory.ts'
 import { itemIconHtml } from './icons.ts'
 
@@ -40,6 +40,8 @@ export function createDecorUi(ui: HTMLElement, state: GameState): DecorUi {
   let brush: Brush = { kind: 'type', id: 'bedroom' }
   let paintTab: 'type' | 'floor' | 'wall' = 'type'
   let presetConfirm = false
+  /** Đồ treo tường đang ngắm: ô, cạnh (0 bắc, 1 tây, 3 đông) gần điểm chạm nhất mà treo được. */
+  let wallAim: { cx: number; cz: number; rot: number } | null = null
   let presetTimer = 0
 
   const tray = document.createElement('div')
@@ -228,12 +230,26 @@ export function createDecorUi(ui: HTMLElement, state: GameState): DecorUi {
     return hit ? hit[0] : null
   }
 
+  /** Chỗ treo gần điểm (x, z) nhất: ô chứa điểm, cạnh bắc/tây/đông còn treo được, chọn cạnh gần điểm nhất. */
+  const aimWall = (id: string, x: number, z: number): { cx: number; cz: number; rot: number } | null => {
+    const c = roomCorner()
+    const fx = x - c.x
+    const fz = z - c.z
+    const cx = Math.floor(fx)
+    const cz = Math.floor(fz)
+    const dists: [number, number][] = [[0, fz - cz], [1, fx - cx], [3, cx + 1 - fx]]
+    const ok = dists.filter(([rot]) => canPlaceWall(state, id, cx, cz, rot)).sort((a, b) => a[1] - b[1])
+    return ok.length ? { cx, cz, rot: ok[0][0] } : null
+  }
+
   const api: DecorUi = {
     get active() {
       return active
     },
     get ghost() {
-      return mode === 'furniture' && selected ? { id: selected, cx: cell.cx, cz: cell.cz, rot } : null
+      if (mode !== 'furniture' || !selected) return null
+      if (furnitureDef(selected).kind === 'wall') return { id: selected, ...(wallAim ?? { cx: cell.cx, cz: cell.cz, rot: 0 }) }
+      return { id: selected, cx: cell.cx, cz: cell.cz, rot }
     },
     get design() {
       return active && mode !== 'furniture' ? { tool: mode, start, hoverVertex, hoverEdge } : null
@@ -265,13 +281,21 @@ export function createDecorUi(ui: HTMLElement, state: GameState): DecorUi {
       if (mode === 'furniture') {
         if (!inside) return
         cell = { cx, cz }
+        if (selected && furnitureDef(selected).kind === 'wall') {
+          const aim = aimWall(selected, x, z)
+          if (!aim) return void bus.emit('notify', { key: 'decor.cantPlaceWall' })
+          place(state, selected, aim.cx, aim.cz, aim.rot)
+          drawn = ''
+          return
+        }
         if (selected) {
           if (!canPlace(state, selected, cx, cz, rot)) return void bus.emit('notify', { key: 'decor.cantPlace' })
           place(state, selected, cx, cz, rot)
           drawn = ''
           return
         }
-        const i = furnitureAt(state, cx, cz)
+        let i = furnitureAt(state, cx, cz)
+        if (i < 0) i = wallItemAt(state, cx, cz)
         if (i >= 0) {
           const id = state.house.furniture[i].id
           if (pickUp(state, i)) bus.emit('notify', { key: 'decor.pickedUp', params: { item: `furn_${id}` } })
@@ -306,6 +330,7 @@ export function createDecorUi(ui: HTMLElement, state: GameState): DecorUi {
       const cx = Math.floor(x - c.x)
       const cz = Math.floor(z - c.z)
       if (cx >= 0 && cx < ROOM.w && cz >= 0 && cz < ROOM.d) cell = { cx, cz }
+      wallAim = selected && mode === 'furniture' && furnitureDef(selected).kind === 'wall' ? aimWall(selected, x, z) : null
       hoverVertex = mode === 'wall' ? vertexAt(x, z) : null
       hoverEdge = mode === 'door' || mode === 'erase' ? wallEdgeAt(x, z) : null
     },

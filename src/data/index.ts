@@ -85,9 +85,20 @@ export interface FurnitureDef {
   w: number
   d: number
   icon: string
-  /** bed: ngủ được; rug: thảm, đi lên được và đặt đồ khác lên trên. */
-  kind?: 'bed' | 'rug'
+  /** bed: ngủ được; rug: thảm, đi lên được và đặt đồ khác lên trên; wall: treo tường (không chiếm ô sàn). */
+  kind?: 'bed' | 'rug' | 'wall'
+  /** Nhóm trong cửa hàng. */
+  cat: FurnitureCat
+  /** Mô hình trong gói đồ nội thất (kit/tên) thay vì furniture.glb. */
+  model?: string
+  /** Hệ số phóng thêm cho mô hình gói. */
+  scale?: number
+  /** Độ cao treo (m) của đồ treo tường. */
+  y?: number
 }
+
+export const FURNITURE_CATS = ['bedroom', 'living', 'kitchen', 'bath', 'study', 'decor', 'wall'] as const
+export type FurnitureCat = (typeof FURNITURE_CATS)[number]
 
 export const FURNITURE = furnitureJson as FurnitureDef[]
 export const FURNITURE_BY_ID = new Map(FURNITURE.map((f) => [f.id, f]))

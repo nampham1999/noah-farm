@@ -108,7 +108,7 @@ function fitsOn(list: PlacedFurniture[], plan: HousePlan, level: number, floor: 
     }
   }
   return list.every((f, i) => {
-    if (i === ignore || floorOf(f) !== floor || (furnitureDef(f.id).kind === 'rug') !== rug) return true
+    if (i === ignore || floorOf(f) !== floor || furnitureDef(f.id).kind === 'wall' || (furnitureDef(f.id).kind === 'rug') !== rug) return true
     const theirs = cells(f.id, f.cx, f.cz, f.rot)
     return !mine.some((a) => theirs.some((b) => a.cx === b.cx && a.cz === b.cz))
   })
@@ -118,12 +118,34 @@ export function canPlace(state: GameState, id: string, cx: number, cz: number, r
   return fitsOn(state.house.furniture, planOf(state, state.player.floor), state.house.level, state.player.floor, id, cx, cz, rot, ignore)
 }
 
+/**
+ * Treo được không: đồ treo tường dán vào một cạnh của ô (cx, cz), rot 0 là cạnh bắc, 1 là cạnh tây, 3 là cạnh đông.
+ * Chỉ treo lên tường ngoài và tường dọc (tường ngang ngăn phòng cắt thấp); không treo chỗ cầu thang, mỗi cạnh một món.
+ */
+function wallItemOk(list: PlacedFurniture[], plan: HousePlan, level: number, floor: number, id: string, cx: number, cz: number, rot: number, ignore = -1): boolean {
+  if (furnitureDef(id).kind !== 'wall' || (rot !== 0 && rot !== 1 && rot !== 3)) return false
+  if (cx < 0 || cz < 0 || cx >= ROOM.w || cz >= ROOM.d) return false
+  if (stairCells(level, floor).some((s) => s.cx === cx && s.cz === cz)) return false
+  const attached = rot === 0 ? cz === 0 : rot === 1 ? cx === 0 || plan.walls[vKey(cx, cz)] === 1 : cx === ROOM.w - 1 || plan.walls[vKey(cx + 1, cz)] === 1
+  if (!attached) return false
+  return list.every((f, i) => i === ignore || floorOf(f) !== floor || furnitureDef(f.id).kind !== 'wall' || f.cx !== cx || f.cz !== cz || f.rot !== rot)
+}
+
+export function canPlaceWall(state: GameState, id: string, cx: number, cz: number, rot: number): boolean {
+  return wallItemOk(state.house.furniture, planOf(state, state.player.floor), state.house.level, state.player.floor, id, cx, cz, rot)
+}
+
+/** Món treo tường gắn vào ô (cx, cz) (cạnh nào cũng được); -1 nếu không có. */
+export function wallItemAt(state: GameState, cx: number, cz: number): number {
+  return state.house.furniture.findIndex((f) => onFloor(state, f) && furnitureDef(f.id).kind === 'wall' && f.cx === cx && f.cz === cz)
+}
+
 /** Món đồ ở ô (cx, cz); ưu tiên đồ đặt trên thảm. -1 nếu trống. */
 export function furnitureAt(state: GameState, cx: number, cz: number): number {
   let rugHit = -1
   for (let i = state.house.furniture.length - 1; i >= 0; i--) {
     const f = state.house.furniture[i]
-    if (!onFloor(state, f)) continue
+    if (!onFloor(state, f) || furnitureDef(f.id).kind === 'wall') continue
     if (!cells(f.id, f.cx, f.cz, f.rot).some((c) => c.cx === cx && c.cz === cz)) continue
     if (furnitureDef(f.id).kind !== 'rug') return i
     if (rugHit < 0) rugHit = i
@@ -133,7 +155,8 @@ export function furnitureAt(state: GameState, cx: number, cz: number): number {
 
 /** Lấy món đồ trong túi ra đặt vào phòng. */
 export function place(state: GameState, id: string, cx: number, cz: number, rot: number): boolean {
-  if (!countItem(state.inventory, `furn_${id}`) || !canPlace(state, id, cx, cz, rot)) return false
+  const ok = furnitureDef(id).kind === 'wall' ? canPlaceWall(state, id, cx, cz, rot) : canPlace(state, id, cx, cz, rot)
+  if (!countItem(state.inventory, `furn_${id}`) || !ok) return false
   removeItem(state.inventory, `furn_${id}`, 1)
   state.house.furniture.push({ id, cx, cz, rot, ...(state.player.floor > 0 ? { fl: state.player.floor } : {}) })
   bus.emit('progress', { type: 'place', amount: 1, id })
@@ -157,7 +180,7 @@ export function blockedRects(state: GameState): Rect[] {
   const c = roomCorner()
   return [
     ...state.house.furniture
-      .filter((f) => onFloor(state, f) && furnitureDef(f.id).kind !== 'rug')
+      .filter((f) => onFloor(state, f) && furnitureDef(f.id).kind !== 'rug' && furnitureDef(f.id).kind !== 'wall')
       .map((f) => {
         const { w, d } = footprint(furnitureDef(f.id), f.rot)
         return { x0: c.x + f.cx, z0: c.z + f.cz, x1: c.x + f.cx + w, z1: c.z + f.cz + d }
@@ -255,7 +278,8 @@ export function reconcileHouse(state: GameState): number {
   const keep: PlacedFurniture[] = []
   let moved = 0
   for (const f of state.house.furniture) {
-    const ok = floorOf(f) < layout.floors && fitsOn(keep, state.house.plans[floorOf(f)], state.house.level, floorOf(f), f.id, f.cx, f.cz, f.rot)
+    const plan = state.house.plans[floorOf(f)]
+    const ok = floorOf(f) < layout.floors && (furnitureDef(f.id).kind === 'wall' ? wallItemOk(keep, plan, state.house.level, floorOf(f), f.id, f.cx, f.cz, f.rot) : fitsOn(keep, plan, state.house.level, floorOf(f), f.id, f.cx, f.cz, f.rot))
     if (ok || !canFit(state.inventory, `furn_${f.id}`, 1)) keep.push(f)
     else {
       addItem(state.inventory, `furn_${f.id}`, 1)
@@ -339,7 +363,7 @@ function edgeCrossedByFurniture(state: GameState, floor: number, key: string): b
   const a = e.axis === 'h' ? { cx: e.cx, cz: e.cz - 1 } : { cx: e.cx - 1, cz: e.cz }
   const b = { cx: e.cx, cz: e.cz }
   return state.house.furniture.some((f) => {
-    if (floorOf(f) !== floor || furnitureDef(f.id).kind === 'rug') return false
+    if (floorOf(f) !== floor || furnitureDef(f.id).kind === 'rug' || furnitureDef(f.id).kind === 'wall') return false
     const own = cells(f.id, f.cx, f.cz, f.rot)
     return own.some((c) => c.cx === a.cx && c.cz === a.cz) && own.some((c) => c.cx === b.cx && c.cz === b.cz)
   })
@@ -403,6 +427,9 @@ export function eraseWall(state: GameState, key: string): boolean {
   if (!plan.walls[key]) return false
   delete plan.walls[key]
   state.player.gold += Math.floor(WALL_COST / 2)
+  // Đồ treo trên đoạn tường vừa phá rơi về túi.
+  const moved = reconcileHouse(state)
+  if (moved) bus.emit('notify', { key: 'house.movedBack', params: { n: moved } })
   bus.emit('sfx', 'place')
   bus.emit('saveRequest', undefined)
   return true

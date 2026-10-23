@@ -197,8 +197,8 @@ export const WALL_COLORS: Record<WallPaint, string> = {
 }
 
 export const FLOOR_SWATCH: Record<FloorId, string> = {
-  plank: '#b9794a',
-  darkwood: '#7a4b2d',
+  plank: '#c28f5f',
+  darkwood: '#86553a',
   tile_white: '#ece8de',
   tile_green: '#86bd90',
   tile_blue: '#9ccbd8',

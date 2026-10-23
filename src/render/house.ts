@@ -3,7 +3,9 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { parseEdge, roomsOf, styleAt, WALL_COLORS, type FloorId, type HousePlan, type WallPaint } from '../core/housePlan.ts'
 import type { GameState } from '../core/state.ts'
 import { ENTRY_X, HOUSE_NOW, ROOM, roomCorner, stairsOf } from '../core/world.ts'
-import { canPlace, floorCount, footprint, furnitureCenter, furnitureDef, planOf, STAIR_H } from '../systems/house.ts'
+import { FURNITURE_BY_ID, type FurnitureDef } from '../data/index.ts'
+import { canPlace, canPlaceWall, floorCount, footprint, furnitureCenter, furnitureDef, planOf, STAIR_H } from '../systems/house.ts'
+import { loadKitModel } from './assets.ts'
 
 const WALL_H = 2.6
 /** Chiều cao tường ngăn chạy ngang (cắt thấp để camera nhìn xuyên vào phòng phía sau). */
@@ -276,19 +278,37 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
   let signature = ''
 
   const templates = new Map<string, THREE.Object3D>()
+  // Mô hình trong gói đồ nội thất tải dần: tải xong thì tăng phiên bản để dựng lại đồ đang hiện.
+  let kitVersion = 0
+  const kitLoading = new Set<string>()
   const template = (id: string) => {
     let t = templates.get(id)
-    if (!t) {
-      const root = furniture.scene.getObjectByName(`FurnRoot_${id}`)
-      t = root ? root.clone() : new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshStandardMaterial({ color: 0xcccccc }))
-      t.position.set(0, 0, 0)
-      t.rotation.set(0, 0, 0)
-      t.traverse((o) => {
-        if (o instanceof THREE.Mesh) {
-          o.castShadow = true
-          o.receiveShadow = true
+    const def = furnitureDef(id)
+    if (!t || (t.userData.pending && !kitLoading.has(id))) {
+      const kit = def.model?.startsWith('kit/') ? def.model.slice(4) : null
+      if (kit) {
+        t = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshStandardMaterial({ color: 0xd9c9a8 }))
+        t.userData.pending = true
+        t.position.y = 0.35
+        if (!kitLoading.has(id)) {
+          kitLoading.add(id)
+          void loadKitModel(kit).then((gltf) => {
+            templates.set(id, normalizeKit(gltf.scene, def))
+            kitVersion++
+          }).catch(() => kitLoading.delete(id))
         }
-      })
+      } else {
+        const root = furniture.scene.getObjectByName(`FurnRoot_${id}`)
+        t = root ? root.clone() : new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshStandardMaterial({ color: 0xcccccc }))
+        t.position.set(0, def.kind === 'wall' ? def.y ?? 1.4 : 0, 0)
+        t.rotation.set(0, 0, 0)
+        t.traverse((o) => {
+          if (o instanceof THREE.Mesh) {
+            o.castShadow = true
+            o.receiveShadow = true
+          }
+        })
+      }
       templates.set(id, t)
     }
     return t
@@ -317,16 +337,23 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
       overlay.visible = indoors && decorating
       drawOverlay(indoors && decorating ? design : null, ROOM.w, ROOM.d)
 
-      const sig = `${state.player.floor}|${JSON.stringify(state.house.furniture)}`
+      const sig = `${state.player.floor}|${kitVersion}|${JSON.stringify(state.house.furniture)}`
       if (sig !== signature) {
         signature = sig
         placed.clear()
         for (const f of state.house.furniture) {
           if ((f.fl ?? 0) !== state.player.floor) continue
           const obj = template(f.id).clone()
-          const p = furnitureCenter(f)
-          obj.position.set(p.x, furnitureDef(f.id).kind === 'rug' ? 0.01 : 0, p.z)
-          obj.rotation.y = (-f.rot * Math.PI) / 2
+          const fdef = furnitureDef(f.id)
+          if (fdef.kind === 'wall') {
+            const pose = wallPose(f.cx, f.cz, f.rot, plan)
+            obj.position.set(pose.x, obj.position.y, pose.z)
+            obj.rotation.y = pose.yaw
+          } else {
+            const p = furnitureCenter(f)
+            obj.position.set(p.x, fdef.kind === 'rug' ? 0.01 : 0, p.z)
+            obj.rotation.y = (-f.rot * Math.PI) / 2
+          }
           placed.add(obj)
         }
       }
@@ -334,7 +361,7 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
       const show = indoors && decorating && ghost !== null
       ghostRoot.visible = ghostCells.visible = show
       if (!show || !ghost) return
-      const key = `${ghost.id}|${ghost.rot}`
+      const key = `${ghost.id}|${ghost.rot}|${kitVersion}`
       if (key !== ghostKey) {
         ghostKey = key
         ghostRoot.clear()
@@ -347,9 +374,20 @@ export function createHouseView(scene: THREE.Scene, furniture: GLTF, windowModel
             o.castShadow = false
           }
         })
-        obj.rotation.y = (-ghost.rot * Math.PI) / 2
+        obj.rotation.y = furnitureDef(ghost.id).kind === 'wall' ? 0 : (-ghost.rot * Math.PI) / 2
         ghostRoot.add(obj)
       }
+      if (furnitureDef(ghost.id).kind === 'wall') {
+        // Đồ treo tường: bóng mờ dán vào cạnh tường; ô sàn trước tường tô xanh / đỏ.
+        const pose = wallPose(ghost.cx, ghost.cz, ghost.rot, plan)
+        ghostRoot.position.set(pose.x, 0.02, pose.z)
+        ghostRoot.rotation.y = pose.yaw
+        ghostCells.scale.set(1, 1, 1)
+        ghostCells.position.set(roomCorner().x + ghost.cx + 0.5, 0.04, roomCorner().z + ghost.cz + 0.5)
+        ;(ghostCells.material as THREE.MeshBasicMaterial).color.setHex(canPlaceWall(state, ghost.id, ghost.cx, ghost.cz, ghost.rot) ? 0x8fe04d : 0xe2483a)
+        return
+      }
+      ghostRoot.rotation.y = 0
       const center = furnitureCenter(ghost)
       ghostRoot.position.set(center.x, 0.02, center.z)
       const { w, d } = footprint(furnitureDef(ghost.id), ghost.rot)
@@ -377,7 +415,7 @@ function shade(hex: string, k: number): string {
 }
 
 const SWATCH: Record<FloorId, string> = {
-  plank: '#b9794a', darkwood: '#7a4b2d', tile_white: '#ece8de', tile_green: '#86bd90', tile_blue: '#9ccbd8',
+  plank: '#c28f5f', darkwood: '#86553a', tile_white: '#ece8de', tile_green: '#86bd90', tile_blue: '#9ccbd8',
   carpet_red: '#9a5a56', carpet_blue: '#6f81a8', carpet_purple: '#7f6aa5', stone: '#9a968e', marble: '#e4e0e6',
 }
 
@@ -499,3 +537,50 @@ function gridTexture(): THREE.CanvasTexture {
   tex.colorSpace = THREE.SRGBColorSpace
   return tex
 }
+
+/** Chỗ và hướng của đồ treo tường: rot 0 dán cạnh bắc (nhìn về nam), 1 cạnh tây (nhìn về đông), 3 cạnh đông (nhìn về tây). */
+function wallPose(cx: number, cz: number, rot: number, plan: HousePlan): { x: number; z: number; yaw: number } {
+  const c = roomCorner()
+  if (rot === 1) {
+    const inner = cx > 0 && plan.walls[`v:${cx},${cz}`] === 1
+    return { x: c.x + cx + (inner ? 0.12 : 0.03), z: c.z + cz + 0.5, yaw: Math.PI / 2 }
+  }
+  if (rot === 3) {
+    const inner = cx < ROOM.w - 1 && plan.walls[`v:${cx + 1},${cz}`] === 1
+    return { x: c.x + cx + 1 - (inner ? 0.12 : 0.03), z: c.z + cz + 0.5, yaw: -Math.PI / 2 }
+  }
+  return { x: c.x + cx + 0.5, z: c.z + cz + 0.03, yaw: 0 }
+}
+
+const MAX_KIT_SCALE = 2.8
+
+/**
+ * Chuẩn hoá mô hình trong gói đồ nội thất: đặt chân mô hình xuống sàn, tâm vào giữa ô, phóng vừa khít chỗ chiếm
+ * (mô hình gói nhỏ hơn đơn vị ô của game). Đồ treo tường thì lưng sát tường (z = 0) và tâm theo độ cao y của món.
+ */
+function normalizeKit(src: THREE.Object3D, def: FurnitureDef): THREE.Object3D {
+  const obj = src.clone(true)
+  obj.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.castShadow = true
+      o.receiveShadow = true
+    }
+  })
+  const box = new THREE.Box3().setFromObject(obj)
+  const size = box.getSize(new THREE.Vector3())
+  const center = box.getCenter(new THREE.Vector3())
+  const wall = def.kind === 'wall'
+  let s = wall ? 0.9 / Math.max(size.x, 0.01) : Math.min((def.w * 0.92) / Math.max(size.x, 0.01), (def.d * 0.92) / Math.max(size.z, 0.01))
+  s = Math.min(s, MAX_KIT_SCALE) * (def.scale ?? 1)
+  const wrapper = new THREE.Group()
+  if (wall) obj.position.set(-center.x, -center.y, -box.min.z)
+  else obj.position.set(-center.x, -box.min.y, -center.z)
+  const inner = new THREE.Group()
+  inner.add(obj)
+  inner.scale.setScalar(s)
+  if (wall) inner.position.y = def.y ?? 1.4
+  wrapper.add(inner)
+  return wrapper
+}
+
+void FURNITURE_BY_ID

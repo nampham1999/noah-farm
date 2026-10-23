@@ -88,6 +88,18 @@ export function loadFurniture(): Promise<GLTF> {
 const housePromises = new Map<number, Promise<GLTF>>()
 
 /** Nhà cấp 2..5 chỉ tải khi người chơi đã nâng cấp tới đó. */
+const kitCache = new Map<string, Promise<GLTF>>()
+
+/** Mô hình lẻ trong gói đồ nội thất (Kenney, CC0), tải khi cần và nhớ lại. */
+export function loadKitModel(name: string): Promise<GLTF> {
+  let p = kitCache.get(name)
+  if (!p) {
+    p = new GLTFLoader().loadAsync(`${BASE}furniture-kit/${name}.glb`)
+    kitCache.set(name, p)
+  }
+  return p
+}
+
 export function loadHouseModel(level: number): Promise<GLTF> {
   let p = housePromises.get(level)
   if (!p) {
