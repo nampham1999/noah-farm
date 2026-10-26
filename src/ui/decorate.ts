@@ -12,7 +12,7 @@ import { itemIconHtml } from './icons.ts'
 type Mode = 'furniture' | 'wall' | 'door' | 'erase' | 'paint'
 type Brush = { kind: 'type'; id: RoomType } | { kind: 'floor'; id: FloorId } | { kind: 'wall'; id: WallPaint }
 
-const ROOM_ICONS: Record<RoomType, string> = { living: '🛋️', bedroom: '🛏️', kitchen: '🍳', bath: '🛁', study: '📚', dining: '🍽️' }
+const ROOM_ICONS: Record<RoomType, string> = { living: '🛋️', bedroom: '🛏️', kitchen: '🍳', bath: '🛁', study: '📚', dining: '🍽️', restaurant: '🍴' }
 
 export interface DecorUi {
   readonly active: boolean

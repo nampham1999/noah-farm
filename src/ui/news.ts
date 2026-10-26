@@ -69,6 +69,8 @@ export function createNewsPanel(state: GameState): PanelSpec {
         list.append(r)
       }
 
+      const waiting = state.restaurant.guests.length
+      if (waiting) add('🍴', t('news.restaurant', { n: waiting }))
       const ripe = state.plots.filter(isRipe).length
       if (ripe) add('🌾', t('news.ripe', { n: ripe }))
       const orders = state.orders.list.filter((o) => canDeliver(state, o)).length

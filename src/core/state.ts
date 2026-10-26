@@ -94,6 +94,21 @@ export interface InventoryState {
   selected: number
 }
 
+/** Một vị khách ngồi ở ghế trong phòng Nhà hàng, chờ một món. */
+export interface RestaurantGuest {
+  id: number
+  /** Chỉ số kiểu dáng (trong danh sách dân làng). */
+  look: number
+  fl: number
+  /** Ô của ghế. */
+  cx: number
+  cz: number
+  /** Mã món (công thức) khách gọi. */
+  food: string
+  since: number
+  patience: number
+}
+
 export interface PlotState {
   /** Cột và hàng trong khu ô đất. */
   x: number
@@ -204,6 +219,16 @@ export interface GameState {
   festival: { stamp: number; progress: number; done: boolean } | null
   /** Điểm danh hằng ngày: day là số thứ tự ngày thật lần nhận gần nhất, streak là chuỗi ngày liên tiếp. */
   checkin: { day: number; streak: number }
+  /** Nhà hàng trong nhà: khách đang ngồi chờ món và thống kê. */
+  restaurant: {
+    guests: RestaurantGuest[]
+    /** Lúc (ms) khách kế tiếp tới. */
+    nextAt: number
+    served: number
+    earned: number
+    missed: number
+    seq: number
+  }
   /** Khu giải trí: tiền cọc đang giữ của ván bài chưa xong, và thành tích chơi bài. */
   cards: { escrow: { tid: string; round: number; amount: number } | null; played: number; won: number; net: number }
   /** Hái lượm trong rừng: stamp là dayStamp của lứa đang có, taken là các điểm đã hái. */
@@ -279,6 +304,7 @@ export function createInitialState(): GameState {
     orchard: [],
     festival: null,
     checkin: { day: -1, streak: 0 },
+    restaurant: { guests: [], nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
     cards: { escrow: null, played: 0, won: 0, net: 0 },
     forage: { stamp: -1, taken: [] },
     friends: {},

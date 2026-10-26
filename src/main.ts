@@ -36,6 +36,8 @@ import { createCharacterPanel } from './ui/character.ts'
 import { createSocialPanel } from './ui/social.ts'
 import { decodeFarm } from './save/share.ts'
 import { createBoardPanel, npcDialog } from './ui/orders.ts'
+import { createGuestsView } from './render/guests.ts'
+import { serveGuest, updateRestaurant } from './systems/restaurant.ts'
 import { createNpcsView } from './render/npcs.ts'
 import { npcPose, updateNpcs } from './systems/npcs.ts'
 import { refillOrders } from './systems/orders.ts'
@@ -314,6 +316,7 @@ async function start(): Promise<void> {
   applyQuality()
   bus.on('qualityChanged', applyQuality)
   const npcsView = createNpcsView(world.scene, models)
+  const guestsView = createGuestsView(world.scene)
 
   const autosaver = new AutoSaver(store, state)
   if (visiting) autosaver.suspend()
@@ -472,6 +475,8 @@ async function start(): Promise<void> {
   })
   // Thành tựu không gắn với một việc cụ thể (cấp, đất, vật nuôi): kiểm tra định kỳ.
   if (!visiting) window.setInterval(() => checkAchievements(state), 5000)
+  // Nhà hàng: khách tới và đi.
+  if (!visiting) window.setInterval(() => updateRestaurant(state, now()), 1000)
 
   bus.on('action', markActive)
   bus.on('tap', ({ x, y }) => {
@@ -494,6 +499,11 @@ async function start(): Promise<void> {
     // Đang câu: chạm là giật cần (sớm quá thì thu cần).
     if (isFishing()) return strike(state)
     if (state.player.indoors) {
+      const guest = decorUi.active ? null : guestsView.hitTest(followCam.camera, x, y)
+      if (guest !== null) {
+        serveGuest(state, guest, now())
+        return
+      }
       const hit = pickGround(followCam.camera, x, y)
       if (!hit) return
       if (decorUi.active) {
@@ -823,6 +833,7 @@ async function start(): Promise<void> {
     if (!visiting && !state.player.indoors) collectNearby(state, state.player.pos[0], state.player.pos[2])
     foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
+    guestsView.update(state, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {
       if (fishing.phase === 'waiting' && lastFishPhase === 'idle') farmer.playAction?.('cast')

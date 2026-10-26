@@ -6,7 +6,7 @@
  * (giữa cột cx - 1 và cột cx). Cạnh ngoài cùng của nhà luôn là tường ngoài, không lưu.
  */
 
-export const ROOM_TYPES = ['living', 'bedroom', 'kitchen', 'bath', 'study', 'dining'] as const
+export const ROOM_TYPES = ['living', 'bedroom', 'kitchen', 'bath', 'study', 'dining', 'restaurant'] as const
 export type RoomType = (typeof ROOM_TYPES)[number]
 
 export const FLOOR_IDS = ['plank', 'darkwood', 'tile_white', 'tile_green', 'tile_blue', 'carpet_red', 'carpet_blue', 'carpet_purple', 'stone', 'marble'] as const
@@ -38,6 +38,7 @@ export const ROOM_DEFAULTS: Record<RoomType, { f: FloorId; w: WallPaint }> = {
   bath: { f: 'tile_blue', w: 'white' },
   study: { f: 'darkwood', w: 'sage' },
   dining: { f: 'plank', w: 'blush' },
+  restaurant: { f: 'marble', w: 'butter' },
 }
 
 export const emptyPlan = (): HousePlan => ({ walls: {}, cells: {} })

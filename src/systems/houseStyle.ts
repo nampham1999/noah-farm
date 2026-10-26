@@ -24,6 +24,7 @@ const FIT: Record<RoomType, FurnitureCat[]> = {
   bath: ['bath'],
   study: ['study'],
   dining: ['kitchen', 'living'],
+  restaurant: ['kitchen', 'living'],
 }
 
 const has = (items: PlacedFurniture[], test: (id: string) => boolean): boolean => items.some((f) => test(f.id))
@@ -44,6 +45,7 @@ function anchors(type: RoomType, items: PlacedFurniture[]): boolean {
       return has(items, (id) => /desk/i.test(id))
     case 'living':
       return has(items, isSeat) && has(items, isTable)
+    case 'restaurant':
     case 'dining':
       return has(items, isTable) && count(items, (id) => /chair|stool/i.test(id)) >= 2
   }

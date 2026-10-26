@@ -84,6 +84,8 @@ export function footprint(def: FurnitureDef, rot: number): { w: number; d: numbe
   return rot % 2 === 0 ? { w: def.w, d: def.d } : { w: def.d, d: def.w }
 }
 
+export const coveredCells = (f: PlacedFurniture) => cells(f.id, f.cx, f.cz, f.rot)
+
 function cells(id: string, cx: number, cz: number, rot: number): { cx: number; cz: number }[] {
   const { w, d } = footprint(furnitureDef(id), rot)
   const out: { cx: number; cz: number }[] = []

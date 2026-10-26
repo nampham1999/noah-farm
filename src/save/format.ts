@@ -195,6 +195,16 @@ function normalize(data: Record<string, unknown>): GameState {
         net: Math.floor(num(c.net, 0)),
       }
     })(),
+    restaurant: (() => {
+      const r = obj(data.restaurant)
+      const guests = (Array.isArray(r.guests) ? r.guests : []).flatMap((raw): GameState['restaurant']['guests'] => {
+        const g = obj(raw)
+        if (typeof g.food !== 'string' || !ITEMS.has(`food_${g.food}`)) return []
+        return [{ id: Math.floor(num(g.id, 0)), look: Math.floor(num(g.look, 0)), fl: Math.floor(num(g.fl, 0)), cx: Math.floor(num(g.cx, 0)), cz: Math.floor(num(g.cz, 0)), food: g.food, since: num(g.since, 0), patience: num(g.patience, 180000) }]
+      })
+      const n = (v: unknown) => Math.max(0, Math.floor(num(v, 0)))
+      return { guests, nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
+    })(),
     checkin: (() => {
       const c = obj(data.checkin)
       return { day: num(c.day, -1), streak: Math.max(0, Math.floor(num(c.streak, 0))) }
