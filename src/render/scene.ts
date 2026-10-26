@@ -42,7 +42,12 @@ const BASE_VIEW_DISTANCE = 14.85
 const flat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 1 })
 
 export function createWorld(container: HTMLElement, models: Models): World {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: 'high-performance',
+    // ?capture: giữ khung hình đã vẽ để chụp từng khung khi quay video quảng bá.
+    preserveDrawingBuffer: /[?&]capture\b/.test(location.search),
+  })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
