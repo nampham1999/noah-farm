@@ -81,7 +81,6 @@ import { collectSales } from './online/market.ts'
 import { createLabels } from './render/labels.ts'
 import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, CARD_HOUSE, FOREST_ZONE, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, RESTAURANT, STALL } from './core/world.ts'
 import { GREENHOUSE_PRICE } from './systems/land.ts'
-import { HITCH } from './systems/riding.ts'
 import { racePanel } from './ui/race.ts'
 import { settleBet } from './systems/race.ts'
 import { createFestivalView } from './render/festival.ts'
@@ -274,20 +273,21 @@ async function start(): Promise<void> {
     { x: STALL.x, y: 3.9, z: STALL.z, text: () => `🛒 ${t('label.shop')}` },
     { x: ORDER_BOARD.x, y: 2.7, z: ORDER_BOARD.z, text: () => `📋 ${t('label.orders')}` },
     { x: HOUSE_DOOR.x, y: 3.6, z: HOUSE_DOOR.z - 0.6, text: () => `🏡 ${t('label.house')}` },
-    { x: COOP.x, y: 3.4, z: COOP.z, text: () => state.coopLevel ? `🐔 ${t('label.coop')}` : `🐔 ${t('label.buildCoop', { price: animalData.coopLevels[0].price })}` },
+    // Chỗ có thể mua: biển chỉ hiện khi chưa mua; mua rồi thì bỏ biển cho đỡ rối.
+    { x: COOP.x, y: 3.4, z: COOP.z, text: () => `🐔 ${t('label.buildCoop', { price: animalData.coopLevels[0].price })}`, visible: () => !state.coopLevel },
     { x: DOCK.x0 + 0.6, y: 1.9, z: DOCK.z, text: () => `🎣 ${t('label.fishing')}` },
     { x: FIELD_GATE_OUT.x, y: 2, z: FIELD_GATE_OUT.z, text: () => `🌱 ${t('label.field')}` },
-    { x: RESTAURANT.x, y: 6.2, z: RESTAURANT.z + 3.4, text: () => `🍴 ${t('restaurant.label')}`, visible: () => !visiting },
+    { x: RESTAURANT.x, y: 6.2, z: RESTAURANT.z + 3.4, text: () => `🍴 ${t('restaurant.label')}`, visible: () => !visiting && state.restaurant.level === 0 },
     { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
     { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
     { x: FOREST_ZONE.gateX, y: 2.6, z: FOREST_ZONE.z1 - 0.2, text: () => `🍄 ${t('forage.label')}`, visible: () => !visiting },
     { x: CARD_HOUSE.x, y: 3.7, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
     { x: MONUMENT.x, y: 4, z: MONUMENT.z, text: () => `🏘️ ${t('village.title')}`, visible: () => !visiting },
-    { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => state.greenhouse ? `🪴 ${t('shop.greenhouse')}` : `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g` },
-    { x: HITCH.x, y: 2.3, z: HITCH.z, text: () => `🐴 ${t('horse.shopName')}`, visible: () => state.horse && !ridingAnimal() },
+    { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g`, visible: () => !state.greenhouse },
     ...MACHINES.map((m) => ({
       x: m.x, y: 2.1, z: m.z,
-      text: () => (state.machines.some((x) => x.id === m.id) ? `${m.icon} ${tKey(`machine.${m.id}`)}` : `${m.icon} ${tKey(`machine.${m.id}`)} · ${m.price}g`),
+      text: () => `${m.icon} ${tKey(`machine.${m.id}`)} · ${m.price}g`,
+      visible: () => !state.machines.some((x) => x.id === m.id),
     })),
     ...ORCHARD.spots.map((o, i) => ({
       x: o.x, y: 1.5, z: o.z, text: () => `🌳 ${t('label.orchard')}`, visible: () => !state.orchard.some((tr) => tr.spot === i),
