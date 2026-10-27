@@ -18,7 +18,7 @@ export const FARM_HALF = 18
  */
 export const MAIN_ROAD_X = 5
 /** Nửa cạnh mặt đất hiển thị (gồm cả rừng bên ngoài hàng rào). */
-export const GROUND_HALF = 70
+export const GROUND_HALF = 110
 
 export interface Circle {
   x: number
