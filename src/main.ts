@@ -1,4 +1,5 @@
 import './style.css'
+import './viewport.ts'
 import * as THREE from 'three'
 import type { PlotState, Season, Weather } from './core/state.ts'
 import { addItem, countItem } from './systems/inventory.ts'

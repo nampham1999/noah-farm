@@ -45,6 +45,8 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
+  /* Không cho trình duyệt tự phóng to trang (chụm, chạm đúp): game tự xử lý zoom. */
+  touch-action: none;
   background: #9fd8f5;
   overscroll-behavior: none;
   -webkit-user-select: none;
