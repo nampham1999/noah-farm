@@ -99,6 +99,7 @@ export interface RestaurantGuest {
   id: number
   /** Chỉ số kiểu dáng (trong danh sách dân làng). */
   look: number
+  /** Tầng trong nhà của ghế; -1 là ghế ngoài sân nhà hàng (cx là số thứ tự ghế). */
   fl: number
   /** Ô của ghế. */
   cx: number
@@ -221,6 +222,8 @@ export interface GameState {
   checkin: { day: number; streak: number }
   /** Nhà hàng trong nhà: khách đang ngồi chờ món và thống kê. */
   restaurant: {
+    /** Cấp nhà hàng ngoài phố (0 là chưa mở, mỗi cấp mở thêm một bàn hai ghế). */
+    level: number
     guests: RestaurantGuest[]
     /** Lúc (ms) khách kế tiếp tới. */
     nextAt: number
@@ -304,7 +307,7 @@ export function createInitialState(): GameState {
     orchard: [],
     festival: null,
     checkin: { day: -1, streak: 0 },
-    restaurant: { guests: [], nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
+    restaurant: { level: 0, guests: [], nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
     cards: { escrow: null, played: 0, won: 0, net: 0 },
     forage: { stamp: -1, taken: [] },
     friends: {},

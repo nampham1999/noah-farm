@@ -2,7 +2,7 @@ import { normalizeLook } from '../core/look.ts'
 import { WEATHERS } from '../systems/weather.ts'
 import { HOUSE_UPGRADES } from '../systems/house.ts'
 import { blockPlots, createInitialState, greenhousePlots, type AnimalState, type GameState, type ItemStack, type Order, type PlotState, type QuestState } from '../core/state.ts'
-import { FARM_HALF, isWater, LAND_BLOCKS, layoutOf, SPAWN } from '../core/world.ts'
+import { FARM_HALF, inRestaurantZone, isWater, LAND_BLOCKS, layoutOf, SPAWN } from '../core/world.ts'
 import { emptyPlan, normalizePlan, presetPlan, type HousePlan } from '../core/housePlan.ts'
 import { ANIMAL_BY_ID, animalData, balance, CROP_BY_ID, FURNITURE_BY_ID, ITEMS, MACHINE_BY_ID, ORCHARD, TREE_BY_ID, type AnimalType, type MachineId, type TreeId } from '../data/index.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
@@ -203,7 +203,7 @@ function normalize(data: Record<string, unknown>): GameState {
         return [{ id: Math.floor(num(g.id, 0)), look: Math.floor(num(g.look, 0)), fl: Math.floor(num(g.fl, 0)), cx: Math.floor(num(g.cx, 0)), cz: Math.floor(num(g.cz, 0)), food: g.food, since: num(g.since, 0), patience: num(g.patience, 180000) }]
       })
       const n = (v: unknown) => Math.max(0, Math.floor(num(v, 0)))
-      return { guests, nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
+      return { level: Math.min(4, n(r.level)), guests, nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
     })(),
     checkin: (() => {
       const c = obj(data.checkin)
@@ -302,8 +302,7 @@ function outdoorPos(p: Record<string, unknown>): { pos?: [number, number, number
     Array.isArray(pos) &&
     pos.length === 3 &&
     pos.every((v) => typeof v === 'number' && Number.isFinite(v)) &&
-    Math.abs(pos[0]) < FARM_HALF - 0.5 &&
-    Math.abs(pos[2]) < FARM_HALF - 0.5 &&
+    ((Math.abs(pos[0]) < FARM_HALF - 0.5 && Math.abs(pos[2]) < FARM_HALF - 0.5) || (pos[0] > FARM_HALF + 0.5 && inRestaurantZone(pos[0], pos[2]))) &&
     !isWater(pos[0], pos[2], 0.3)
   return ok ? {} : { pos: [SPAWN.x, 0, SPAWN.z], rotY: SPAWN.rotY }
 }

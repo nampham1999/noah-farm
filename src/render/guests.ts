@@ -30,10 +30,11 @@ export function createGuestsView(scene: THREE.Scene): GuestsView {
 
   return {
     update(state, time) {
-      const show = state.player.indoors
       const live = new Set<number>()
       for (const g of state.restaurant.guests) {
-        const seat = show && g.fl === state.player.floor ? guestSeat(state, g) : undefined
+        // Ghế trong nhà (tầng >= 0) chỉ hiện khi đang ở trong nhà đúng tầng; ghế ngoài sân nhà hàng (-1) hiện khi ở ngoài.
+        const here = g.fl < 0 ? !state.player.indoors : state.player.indoors && g.fl === state.player.floor
+        const seat = here ? guestSeat(state, g) : undefined
         if (!seat) continue
         live.add(g.id)
         let rig = rigs.get(g.id)

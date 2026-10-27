@@ -173,12 +173,12 @@ export const PEN = { x: 11, z: -7.2, r: 3 }
 export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.6 }
 export const VILLAGE = { x: 10.8, z: 14.6, r: 2.2 }
 /** Quầy trường đua chó, góc đông nam cạnh làng. */
-export const RACE_BOOTH = { x: 15.2, z: 11.8, r: 0.6 }
+export const RACE_BOOTH = { x: 15.2, z: 10.7, r: 0.6 }
 /** Sạp chợ phiên của người chơi, cạnh đường chính gần cổng. */
 export const MARKET_STALL = { x: 7.9, z: 16.8, r: 0.9 }
 /** Quảng trường làng: công trình chung (đài phun nước, cối xay gió, tượng gà vàng). */
 /** Khu giải trí (chơi bài cùng bạn bè), góc đông nam, cạnh trường đua chó. */
-export const CARD_HOUSE = { x: 15.2, z: 16.1, r: 1.6 }
+export const CARD_HOUSE = { x: 13.8, z: 16.2, r: 1.6 }
 export const MONUMENT = { x: 1.9, z: 11.1, r: 1.3 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
 export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
@@ -210,6 +210,26 @@ export const STALL = { x: -4, z: 13.5, r: 2.2 }
 /** Nửa chiều rộng quầy, để chặn hai đầu quầy khi đi. */
 const STALL_HALF_WIDTH = 2.4
 
+/**
+ * Phố nhà hàng phía đông, đi vào qua cổng ở hàng rào đông (giữa trường đua chó và khu giải trí): nhà hàng lớn
+ * nằm phía bắc con đường, sân bàn ghế ngoài trời phía trước. Chỉ đi lại trong hình chữ nhật này; ra vào chỉ qua cổng.
+ */
+export const RESTAURANT_ZONE = { gateZ: 13.1, gateHalf: 1.5, x0: FARM_HALF, x1: FARM_HALF + 26, z0: -1, z1: 17 }
+/** Tòa nhà hàng (rộng w, sâu d), cửa ở mặt nam quay về phía camera. */
+export const RESTAURANT = { x: FARM_HALF + 14, z: 4.6, w: 10.4, d: 6 }
+/** Bốn bàn ngoài sân trước nhà hàng, hai bên lối vào; mỗi bàn mở khoá hai ghế khi nâng cấp. */
+export const RESTAURANT_TABLES: { x: number; z: number }[] = [
+  { x: FARM_HALF + 4.6, z: 10.2 },
+  { x: FARM_HALF + 9.2, z: 10.2 },
+  { x: FARM_HALF + 18.8, z: 10.2 },
+  { x: FARM_HALF + 23.4, z: 10.2 },
+]
+
+export function inRestaurantZone(x: number, z: number): boolean {
+  const r = RESTAURANT_ZONE
+  return x > r.x0 - 1 && x < r.x1 + 1 && z > r.z0 - 1 && z < r.z1 + 1
+}
+
 /** Đường đất: các đoạn thẳng nối cổng, chỗ xuất hiện, quầy hàng và nhà. */
 export const PATHS: { from: [number, number]; to: [number, number]; width: number }[] = [
   // Đường chính từ cổng nam lên tới ngang nhà.
@@ -223,6 +243,9 @@ export const PATHS: { from: [number, number]; to: [number, number]; width: numbe
   { from: [STALL.x - 2.5, 16.2], to: [MAIN_ROAD_X, 16.2], width: 2 },
   // Lối mòn từ đường chính qua cổng bắc vào rừng hái lượm.
   { from: [MAIN_ROAD_X, -6.8], to: [MAIN_ROAD_X, -FARM_HALF - 13], width: 2 },
+  // Phố nhà hàng: đường từ làng ra cổng đông, chạy dọc phố, rẽ lên cửa nhà hàng.
+  { from: [9.4, RESTAURANT_ZONE.gateZ], to: [FARM_HALF + 22, RESTAURANT_ZONE.gateZ], width: 2.4 },
+  { from: [RESTAURANT.x, RESTAURANT_ZONE.gateZ], to: [RESTAURANT.x, RESTAURANT.z + RESTAURANT.d / 2 + 0.2], width: 1.8 },
   // Lối ra cầu câu cá.
   { from: [MAIN_ROAD_X, DOCK.z], to: [DOCK.x0, DOCK.z], width: 1.6 },
 ]
@@ -366,6 +389,9 @@ export const OBSTACLES: Circle[] = [
   ...MACHINES.map((m) => ({ x: m.x, z: m.z, r: 0.55 })),
   ...PROPS.filter((p) => p.r > 0),
   ...[-1, 0, 1].map((k) => ({ x: STALL.x + k * (STALL_HALF_WIDTH - 1.1), z: STALL.z, r: 1.2 })),
+  // Nhà hàng: ba vòng chặn dọc mặt tiền, và các bàn ngoài sân.
+  ...[-4, -2, 0, 2, 4].map((k) => ({ x: RESTAURANT.x + k, z: RESTAURANT.z, r: 1.6 })),
+  ...RESTAURANT_TABLES.map((t) => ({ x: t.x, z: t.z, r: 0.85 })),
   ...BUSHES.map((b) => ({ x: b.x, z: b.z, r: 0.5 * b.scale })),
   ...ROCKS.map((b) => ({ x: b.x, z: b.z, r: 0.45 * b.scale })),
   ...TREES.filter((tr) => (Math.abs(tr.x) < FARM_HALF && Math.abs(tr.z) < FARM_HALF) || (tr.solid && inForest(tr.x, tr.z))).map((tr) => ({
@@ -385,8 +411,8 @@ function generateTrees(): Tree[] {
     const x = (rand() * 2 - 1) * band
     const z = (rand() * 2 - 1) * band
     if (Math.abs(x) < FARM_HALF + 2 && Math.abs(z) < FARM_HALF + 2) continue
-    // Khu rừng hái lượm để trống, cây ở đó được đặt riêng bên dưới.
-    if (inForest(x, z)) continue
+    // Khu rừng hái lượm và phố nhà hàng để trống, cây ở đó được đặt riêng bên dưới.
+    if (inForest(x, z) || inRestaurantZone(x, z)) continue
     trees.push({ x, z, r: 0, scale: 0.8 + rand() * 0.8, variant: rand(), rotY: rand() * Math.PI * 2 })
   }
   // Khu rừng hái lượm: viền cây dày quanh ba cạnh, vài cây lẻ giữa rừng (có va chạm).
@@ -406,6 +432,12 @@ function generateTrees(): Tree[] {
     trees.push({ x, z, r: 0, scale: 0.9 + rand() * 0.5, variant: rand(), rotY: rand() * Math.PI * 2, solid: true })
     placed++
   }
+  // Phố nhà hàng: hàng cây dày quanh cạnh bắc và đông (cạnh tây là hàng rào nông trại, cạnh nam để thoáng cho camera).
+  const rz = RESTAURANT_ZONE
+  for (let x = rz.x0 + 1; x <= rz.x1 + 1; x += 1.8) {
+    edge(x + rand(), rz.z0 - 0.8 - rand())
+  }
+  for (let z = rz.z0; z < rz.z1; z += 1.8) edge(rz.x1 + 0.9 + rand(), z + rand())
   // Vài cây trong nông trại, tránh nhà, hồ, khu ô đất và chỗ nhân vật xuất hiện.
   let placed = 0
   while (placed < 6) {

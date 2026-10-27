@@ -2,7 +2,7 @@ import { bus } from '../core/events.ts'
 import type { AnimalState, GameState, PlacedFurniture, PlotState } from '../core/state.ts'
 import { actOnAnimal, animalPose, holdStill } from './animals.ts'
 import {
-  FARM_HALF, FIELD, FIELD_GATE, FOREST_ZONE, RACE_BOOTH, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
+  FARM_HALF, FIELD, FIELD_GATE, FOREST_ZONE, RESTAURANT_ZONE, RACE_BOOTH, FIELD_GATE_IN, FIELD_GATE_OUT, HOUSE_DOOR, insideField, isWater, ORDER_BOARD, plotAt, plotCenter, roomCellAt, STALL,
 } from '../core/world.ts'
 import { faceTowards, npcPose, presentNpcs } from './npcs.ts'
 import { COOKER_IDS, roomTypeAt } from './houseStyle.ts'
@@ -274,6 +274,15 @@ export class Interaction {
       const mine = { x: fz.gateX, z: -FARM_HALF + side * 1.3 }
       const other = { x: fz.gateX, z: -FARM_HALF - side * 1.3 }
       const atGate = Math.abs(px - fz.gateX) < 0.7 && Math.abs(pz + FARM_HALF) < 1.6
+      if (atGate) return this.keepVia(other.x, other.z)
+      next = mine
+    } else if (!inside && px > FARM_HALF !== tx > FARM_HALF) {
+      // Đích ở phố nhà hàng (phía đông hàng rào): đi tới cổng đông, bước qua, rồi tới đích.
+      const rz = RESTAURANT_ZONE
+      const side = px > FARM_HALF ? 1 : -1
+      const mine = { x: FARM_HALF + side * 1.3, z: rz.gateZ }
+      const other = { x: FARM_HALF - side * 1.3, z: rz.gateZ }
+      const atGate = Math.abs(pz - rz.gateZ) < 0.7 && Math.abs(px - FARM_HALF) < 1.6
       if (atGate) return this.keepVia(other.x, other.z)
       next = mine
     } else if (inside !== insideField(tx, tz)) {

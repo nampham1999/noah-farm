@@ -1,5 +1,5 @@
 import type { PlayerState } from '../core/state.ts'
-import { FARM_HALF, FIELD_FENCE, FOREST_ZONE, isWater, OBSTACLES, ROOM, roomCorner } from '../core/world.ts'
+import { FARM_HALF, FIELD_FENCE, FOREST_ZONE, isWater, OBSTACLES, RESTAURANT_ZONE, ROOM, roomCorner } from '../core/world.ts'
 import type { Rect } from './house.ts'
 
 export const WALK_SPEED = 4.5
@@ -53,13 +53,23 @@ export function movePlayer(player: PlayerState, dir: Dir, speedMul: number, dt: 
   const fz = FOREST_ZONE
   const inGate = (px: number) => Math.abs(px - fz.gateX) < fz.gateHalf - PLAYER_RADIUS
   const toForest = z < -limit && (prevZ < -limit || inGate(x))
+  // Phố nhà hàng phía đông: cũng chỉ vào qua cổng đông.
+  const rz = RESTAURANT_ZONE
+  const inEastGate = (pz: number) => Math.abs(pz - rz.gateZ) < rz.gateHalf - PLAYER_RADIUS
+  const toEast = x > limit && (prevX > limit || inEastGate(z))
   z = Math.min(limit, Math.max(toForest ? fz.z0 + 0.5 : -limit, z))
+  if (toEast) z = Math.min(rz.z1 - 0.5, Math.max(rz.z0 + 0.5, z))
   if (z < -limit) x = Math.min(fz.x1 - PLAYER_RADIUS, Math.max(fz.x0 + PLAYER_RADIUS, x))
-  else x = Math.min(limit, Math.max(-limit, x))
+  else x = Math.min(toEast ? rz.x1 - PLAYER_RADIUS : limit, Math.max(-limit, x))
   // Dải hàng rào bắc: nằm ngoài cổng thì không bước xuyên rào.
   if (z < -limit - 0.01 && z > -FARM_HALF - 0.45 && !inGate(x)) {
     if (prevZ < -limit - 0.01 && prevZ > -FARM_HALF - 0.45) x = prevX
     else z = prevZ
+  }
+  // Dải hàng rào đông: nằm ngoài cổng thì không bước xuyên rào.
+  if (x > limit + 0.01 && x < FARM_HALF + 0.45 && !inEastGate(z)) {
+    if (prevX > limit + 0.01 && prevX < FARM_HALF + 0.45) z = prevZ
+    else x = prevX
   }
 
   // Rào ruộng: không đi xuyên, trượt dọc theo rào; vào ruộng qua cổng.

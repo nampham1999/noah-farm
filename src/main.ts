@@ -37,6 +37,8 @@ import { createSocialPanel } from './ui/social.ts'
 import { decodeFarm } from './save/share.ts'
 import { createBoardPanel, npcDialog } from './ui/orders.ts'
 import { createGuestsView } from './render/guests.ts'
+import { createRestaurantView } from './render/restaurant.ts'
+import { restaurantPanel } from './ui/restaurant.ts'
 import { serveGuest, updateRestaurant } from './systems/restaurant.ts'
 import { createNpcsView } from './render/npcs.ts'
 import { npcPose, updateNpcs } from './systems/npcs.ts'
@@ -77,7 +79,7 @@ import { villagePanel } from './ui/village.ts'
 import { stallPanel } from './ui/market.ts'
 import { collectSales } from './online/market.ts'
 import { createLabels } from './render/labels.ts'
-import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, CARD_HOUSE, FOREST_ZONE, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, STALL } from './core/world.ts'
+import { COOP, DOCK, FIELD_GATE_OUT, GREENHOUSE, HOUSE_DOOR, CARD_HOUSE, FOREST_ZONE, MARKET_STALL, MONUMENT, ORDER_BOARD, RACE_BOOTH, RESTAURANT, STALL } from './core/world.ts'
 import { GREENHOUSE_PRICE } from './systems/land.ts'
 import { HITCH } from './systems/riding.ts'
 import { racePanel } from './ui/race.ts'
@@ -275,6 +277,7 @@ async function start(): Promise<void> {
     { x: COOP.x, y: 3.4, z: COOP.z, text: () => state.coopLevel ? `🐔 ${t('label.coop')}` : `🐔 ${t('label.buildCoop', { price: animalData.coopLevels[0].price })}` },
     { x: DOCK.x0 + 0.6, y: 1.9, z: DOCK.z, text: () => `🎣 ${t('label.fishing')}` },
     { x: FIELD_GATE_OUT.x, y: 2, z: FIELD_GATE_OUT.z, text: () => `🌱 ${t('label.field')}` },
+    { x: RESTAURANT.x, y: 6.2, z: RESTAURANT.z + 3.4, text: () => `🍴 ${t('restaurant.label')}`, visible: () => !visiting },
     { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
     { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
     { x: FOREST_ZONE.gateX, y: 2.6, z: FOREST_ZONE.z1 - 0.2, text: () => `🍄 ${t('forage.label')}`, visible: () => !visiting },
@@ -317,6 +320,8 @@ async function start(): Promise<void> {
   bus.on('qualityChanged', applyQuality)
   const npcsView = createNpcsView(world.scene, models)
   const guestsView = createGuestsView(world.scene)
+  const restaurantView = createRestaurantView(world.scene)
+  const restaurantUi = restaurantPanel(state, now)
 
   const autosaver = new AutoSaver(store, state)
   if (visiting) autosaver.suspend()
@@ -512,6 +517,12 @@ async function start(): Promise<void> {
       }
       return interaction.tapWorld(hit.x, hit.z, false)
     }
+    const guest = guestsView.hitTest(followCam.camera, x, y)
+    if (guest !== null) {
+      serveGuest(state, guest, now())
+      return
+    }
+    if (restaurantView.hitTest(followCam.camera, x, y)) return openPanel(restaurantUi)
     const npc = npcsView.hitTest(followCam.camera, x, y)
     if (npc) return interaction.tapNpc(npc)
     const animal = animalsView.hitTest(followCam.camera, x, y)
@@ -834,6 +845,7 @@ async function start(): Promise<void> {
     foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
     guestsView.update(state, clock.getElapsed())
+    restaurantView.update(state)
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {
       if (fishing.phase === 'waiting' && lastFishPhase === 'idle') farmer.playAction?.('cast')

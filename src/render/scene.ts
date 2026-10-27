@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { mulberry32 } from '../core/random.ts'
 import type { ClockState, Season } from '../core/state.ts'
 import {
-  BUSHES, FARM_HALF, FIELD_FENCE, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, ROCKS, STALL, TREES, TUFTS, type Decor,
+  BUSHES, FARM_HALF, FIELD_FENCE, FLOWERS, GATE, GROUND_HALF, HOUSE, PATHS, PROPS, RESTAURANT_ZONE, ROCKS, STALL, TREES, TUFTS, type Decor,
 } from '../core/world.ts'
 import { loadHouseModel, type Models } from './assets.ts'
 import { instanceModel, placeMatrix, staticModel } from './instancing.ts'
@@ -513,7 +513,8 @@ function addFence(scene: THREE.Scene, models: Models): void {
     // Mô hình tấm rào nằm dọc trục Z; cạnh bắc/nam cần xoay 90 độ.
     if (Math.abs(a - GATE.x) > GATE.halfWidth) placements.push(placeMatrix(a, -FARM_HALF, Math.PI / 2, 1))
     if (Math.abs(a - GATE.x) > GATE.halfWidth) placements.push(placeMatrix(a, FARM_HALF, Math.PI / 2, 1))
-    placements.push(placeMatrix(-FARM_HALF, a, 0, 1), placeMatrix(FARM_HALF, a, 0, 1))
+    placements.push(placeMatrix(-FARM_HALF, a, 0, 1))
+    if (Math.abs(a - RESTAURANT_ZONE.gateZ) > RESTAURANT_ZONE.gateHalf) placements.push(placeMatrix(FARM_HALF, a, 0, 1))
   }
   for (const m of placements) m.scale(new THREE.Vector3(1, 1, step / panel))
   const fence = instanceModel(models.fence.scene, placements.length, { shadows: true })

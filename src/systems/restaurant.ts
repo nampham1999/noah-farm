@@ -3,6 +3,7 @@ import type { GameState, RestaurantGuest } from '../core/state.ts'
 import { RECIPES, FURNITURE_BY_ID } from '../data/index.ts'
 import { itemName } from '../i18n/index.ts'
 import { coveredCells, furnitureCenter } from './house.ts'
+import { RESTAURANT_TABLES } from '../core/world.ts'
 import { roomTypeAt } from './houseStyle.ts'
 import { countItem, removeItem } from './inventory.ts'
 import { gainXp } from './progress.ts'
@@ -20,6 +21,8 @@ const PRICE_MULT = 1.5
 const TIP_MULT = 0.3
 const ARRIVAL_MIN_MS = 35_000
 const ARRIVAL_SPAN_MS = 35_000
+const QUICK_MIN_MS = 10_000
+const QUICK_SPAN_MS = 10_000
 const MAX_SEATS = 8
 
 const isChair = (id: string): boolean => /chair|stool/i.test(id)
@@ -56,13 +59,56 @@ export function restaurantSeats(state: GameState): Seat[] {
   return out
 }
 
+/** Ghế ngoài sân nhà hàng: mỗi cấp mở một bàn, hai ghế đối diện nhau. */
+export function courtSeats(state: GameState): Seat[] {
+  const out: Seat[] = []
+  RESTAURANT_TABLES.slice(0, state.restaurant.level).forEach((t, i) => {
+    out.push({ fl: -1, cx: i * 2, cz: 0, x: t.x - 1.15, z: t.z, rotY: Math.PI / 2 })
+    out.push({ fl: -1, cx: i * 2 + 1, cz: 0, x: t.x + 1.15, z: t.z, rotY: -Math.PI / 2 })
+  })
+  return out
+}
+
+export const allSeats = (state: GameState): Seat[] => [...restaurantSeats(state), ...courtSeats(state)]
+
 export const guestSeat = (state: GameState, g: RestaurantGuest): Seat | undefined =>
-  restaurantSeats(state).find((s) => s.fl === g.fl && s.cx === g.cx && s.cz === g.cz)
+  allSeats(state).find((s) => s.fl === g.fl && s.cx === g.cx && s.cz === g.cz)
+
+/** Nâng cấp nhà hàng ngoài phố: giá và cấp người chơi cần cho mỗi cấp. */
+export const RESTAURANT_LEVELS = [
+  { price: 1200, level: 3 },
+  { price: 3000, level: 5 },
+  { price: 7000, level: 7 },
+  { price: 15000, level: 9 },
+]
+
+export function nextRestaurantLevel(state: GameState): { price: number; level: number } | null {
+  return RESTAURANT_LEVELS[state.restaurant.level] ?? null
+}
+
+export function upgradeRestaurant(state: GameState): boolean {
+  const next = nextRestaurantLevel(state)
+  if (!next) return false
+  if (state.player.level < next.level) {
+    bus.emit('notify', { key: 'notice.locked', params: { level: next.level } })
+    return false
+  }
+  if (state.player.gold < next.price) {
+    bus.emit('notify', { key: 'notice.noGold' })
+    return false
+  }
+  state.player.gold -= next.price
+  state.restaurant.level++
+  bus.emit('notify', { key: state.restaurant.level === 1 ? 'restaurant.opened' : 'restaurant.upgraded', params: { n: state.restaurant.level * 2 }, good: true })
+  bus.emit('sfx', 'levelUp')
+  bus.emit('saveRequest', undefined)
+  return true
+}
 
 /** Gọi thường xuyên (mỗi giây): khách hết kiên nhẫn hoặc mất ghế thì đi, ghế trống thì có khách mới. */
 export function updateRestaurant(state: GameState, now: number): void {
   const r = state.restaurant
-  const seats = restaurantSeats(state)
+  const seats = allSeats(state)
   const before = r.guests.length
   r.guests = r.guests.filter((g) => {
     if (!seats.some((s) => s.fl === g.fl && s.cx === g.cx && s.cz === g.cz)) return false
@@ -87,7 +133,8 @@ export function updateRestaurant(state: GameState, now: number): void {
       since: now,
       patience: PATIENCE_MS,
     })
-    r.nextAt = now + ARRIVAL_MIN_MS + Math.random() * ARRIVAL_SPAN_MS
+    // Vắng khách thì khách kế tiếp tới nhanh hơn, đông rồi thì thưa dần.
+    r.nextAt = now + (r.guests.length <= 1 ? QUICK_MIN_MS + Math.random() * QUICK_SPAN_MS : ARRIVAL_MIN_MS + Math.random() * ARRIVAL_SPAN_MS)
     bus.emit('notify', { key: 'restaurant.arrived', params: { dish: itemName(`food_${recipe.id}`) } })
     bus.emit('saveRequest', undefined)
   } else if (r.guests.length !== before) bus.emit('saveRequest', undefined)
