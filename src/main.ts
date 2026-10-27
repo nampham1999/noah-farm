@@ -849,7 +849,7 @@ async function start(): Promise<void> {
     npcsView.update(state, dt, clock.getElapsed())
     guestsView.update(state, clock.getElapsed(), now())
     restaurantView.update(state)
-    staffView.update(state, dt, clock.getElapsed(), now())
+    staffView.update(state, dt, clock.getElapsed())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {
       if (fishing.phase === 'waiting' && lastFishPhase === 'idle') farmer.playAction?.('cast')

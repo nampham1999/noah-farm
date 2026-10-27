@@ -223,6 +223,15 @@ const STALL_HALF_WIDTH = 2.4
 export const RESTAURANT_ZONE = { gateZ: STREET_Z, gateHalf: 1.5, x0: FARM_HALF, x1: FARM_HALF + 38, z0: 1, z1: 18.6 }
 /** Tòa nhà hàng (rộng w, sâu d), cửa ở mặt nam quay về phía camera. */
 export const RESTAURANT = { x: FARM_HALF + 26, z: 7.6, w: 10.4, d: 6 }
+/** Các điểm trong nhà hàng (cắt ngang, nhìn thấy bên trong): bếp, bàn sơ chế, tủ lạnh, quầy ra món và cửa. */
+export const RESTAURANT_SPOTS = {
+  stove: { x: RESTAURANT.x - 3.6, z: RESTAURANT.z - 1.9 },
+  prep: { x: RESTAURANT.x - 0.4, z: RESTAURANT.z - 0.9 },
+  fridge: { x: RESTAURANT.x + 3.7, z: RESTAURANT.z - 1.3 },
+  pass: { x: RESTAURANT.x - 2.4, z: RESTAURANT.z + 0.55 },
+  door: { x: RESTAURANT.x, z: RESTAURANT.z + RESTAURANT.d / 2 + 0.6 },
+}
+
 /** Bốn bàn ngoài sân trước nhà hàng, hai bên lối vào; mỗi bàn mở khoá hai ghế khi nâng cấp. */
 export const RESTAURANT_TABLES: { x: number; z: number }[] = [
   { x: RESTAURANT.x - 9.6, z: 13.2 },
