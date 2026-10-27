@@ -171,17 +171,23 @@ export const PEN = { x: 11, z: -7.2, r: 3 }
 
 /** Bảng đơn hàng của dân làng, cạnh lối vào; dân làng có đơn đi loanh quanh khu VILLAGE. */
 export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.6 }
-export const VILLAGE = { x: 10.8, z: 14.6, r: 2.2 }
+export const VILLAGE = { x: 9.4, z: 15.8, r: 2 }
 /** Quầy trường đua chó, góc đông nam cạnh làng. */
-export const RACE_BOOTH = { x: 15.2, z: 10.7, r: 0.6 }
+export const RACE_BOOTH = { x: 13.4, z: 12.7, r: 0.6 }
 /** Sạp chợ phiên của người chơi, cạnh đường chính gần cổng. */
-export const MARKET_STALL = { x: 7.9, z: 16.8, r: 0.9 }
+export const MARKET_STALL = { x: 10.2, z: 12.9, r: 0.9 }
 /** Quảng trường làng: công trình chung (đài phun nước, cối xay gió, tượng gà vàng). */
 /** Khu giải trí (chơi bài cùng bạn bè), góc đông nam, cạnh trường đua chó. */
-export const CARD_HOUSE = { x: 13.8, z: 16.2, r: 1.6 }
+export const CARD_HOUSE = { x: 15.4, z: 12.7, r: 1.6 }
 export const MONUMENT = { x: 1.9, z: 11.1, r: 1.3 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
 export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
+
+/**
+ * Phố chính chạy ngang phía nam từ quầy hàng tới cổng đông (z = STREET_Z): quầy, quảng trường, bảng đơn hàng, chợ phiên,
+ * trường đua và khu giải trí xếp thành một dãy ở phía bắc phố (không có gì chắn tầm nhìn từ phía nam).
+ */
+export const STREET_Z = 16
 
 /** Khu ruộng có rào: hình chữ nhật bao mọi khu (kể cả khu chưa mua), cổng ở cạnh đông. */
 export const FIELD = { x0: -16.7, x1: 2.7, z0: -4.5, z1: 8.9 }
@@ -214,15 +220,15 @@ const STALL_HALF_WIDTH = 2.4
  * Phố nhà hàng phía đông, đi vào qua cổng ở hàng rào đông (giữa trường đua chó và khu giải trí): nhà hàng lớn
  * nằm phía bắc con đường, sân bàn ghế ngoài trời phía trước. Chỉ đi lại trong hình chữ nhật này; ra vào chỉ qua cổng.
  */
-export const RESTAURANT_ZONE = { gateZ: 13.1, gateHalf: 1.5, x0: FARM_HALF, x1: FARM_HALF + 26, z0: -1, z1: 17 }
+export const RESTAURANT_ZONE = { gateZ: STREET_Z, gateHalf: 1.5, x0: FARM_HALF, x1: FARM_HALF + 26, z0: 1, z1: 18.6 }
 /** Tòa nhà hàng (rộng w, sâu d), cửa ở mặt nam quay về phía camera. */
-export const RESTAURANT = { x: FARM_HALF + 14, z: 4.6, w: 10.4, d: 6 }
+export const RESTAURANT = { x: FARM_HALF + 14, z: 7.6, w: 10.4, d: 6 }
 /** Bốn bàn ngoài sân trước nhà hàng, hai bên lối vào; mỗi bàn mở khoá hai ghế khi nâng cấp. */
 export const RESTAURANT_TABLES: { x: number; z: number }[] = [
-  { x: FARM_HALF + 4.6, z: 10.2 },
-  { x: FARM_HALF + 9.2, z: 10.2 },
-  { x: FARM_HALF + 18.8, z: 10.2 },
-  { x: FARM_HALF + 23.4, z: 10.2 },
+  { x: FARM_HALF + 4.6, z: 13.2 },
+  { x: FARM_HALF + 9.2, z: 13.2 },
+  { x: FARM_HALF + 18.8, z: 13.2 },
+  { x: FARM_HALF + 23.4, z: 13.2 },
 ]
 
 export function inRestaurantZone(x: number, z: number): boolean {
@@ -239,13 +245,11 @@ export const PATHS: { from: [number, number]; to: [number, number]; width: numbe
   { from: [HOUSE_DOOR.x, -6.8], to: [HOUSE_DOOR.x, HOUSE_DOOR.z], width: 2 },
   // Lối vào cổng ruộng.
   { from: [FIELD.x1, FIELD_GATE.z], to: [MAIN_ROAD_X, FIELD_GATE.z], width: 2 },
-  // Sân trước quầy hàng.
-  { from: [STALL.x - 2.5, 16.2], to: [MAIN_ROAD_X, 16.2], width: 2 },
   // Lối mòn từ đường chính qua cổng bắc vào rừng hái lượm.
   { from: [MAIN_ROAD_X, -6.8], to: [MAIN_ROAD_X, -FARM_HALF - 13], width: 2 },
-  // Phố nhà hàng: đường từ làng ra cổng đông, chạy dọc phố, rẽ lên cửa nhà hàng.
-  { from: [9.4, RESTAURANT_ZONE.gateZ], to: [FARM_HALF + 22, RESTAURANT_ZONE.gateZ], width: 2.4 },
-  { from: [RESTAURANT.x, RESTAURANT_ZONE.gateZ], to: [RESTAURANT.x, RESTAURANT.z + RESTAURANT.d / 2 + 0.2], width: 1.8 },
+  // Phố chính chạy ngang từ quầy hàng qua đường chính tới cổng đông, rồi dọc phố nhà hàng; rẽ lên cửa nhà hàng.
+  { from: [STALL.x - 2.5, STREET_Z], to: [FARM_HALF + 22, STREET_Z], width: 2.4 },
+  { from: [RESTAURANT.x, STREET_Z], to: [RESTAURANT.x, RESTAURANT.z + RESTAURANT.d / 2 + 0.2], width: 1.8 },
   // Lối ra cầu câu cá.
   { from: [MAIN_ROAD_X, DOCK.z], to: [DOCK.x0, DOCK.z], width: 1.6 },
 ]
