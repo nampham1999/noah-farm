@@ -209,7 +209,16 @@ function normalize(data: Record<string, unknown>): GameState {
       const stock: Record<string, number> = {}
       for (const [k, v] of Object.entries(obj(r.stock))) if (ITEMS.has(`food_${k}`)) stock[k] = Math.min(99, Math.max(0, Math.floor(num(v, 0))))
       const n = (v: unknown) => Math.max(0, Math.floor(num(v, 0)))
-      return { level: Math.min(4, n(r.level)), guests, stock, waiter: r.waiter === true, rep: n(r.rep), nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
+      // Bản lưu cũ chỉ có cờ "đã thuê một nhân viên phục vụ".
+      const staff = (Array.isArray(r.staff) ? r.staff : []).flatMap((raw): GameState['restaurant']['staff'] => {
+        const sf = obj(raw)
+        if (sf.role !== 'chef' && sf.role !== 'waiter') return []
+        const cooking = typeof sf.cooking === 'string' && ITEMS.has(`food_${sf.cooking}`) ? sf.cooking : null
+        return [{ id: Math.floor(num(sf.id, 0)), role: sf.role, look: Math.floor(num(sf.look, 0)), readyAt: num(sf.readyAt, 0), cooking }]
+      }).slice(0, 5)
+      if (!staff.length && r.waiter === true) staff.push({ id: 1, role: 'waiter', look: 0, readyAt: 0, cooking: null })
+      staff.forEach((sf, i) => (sf.id = sf.id || i + 1))
+      return { level: Math.min(4, n(r.level)), guests, stock, staff, autoCook: r.autoCook !== false, rep: n(r.rep), nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
     })(),
     checkin: (() => {
       const c = obj(data.checkin)

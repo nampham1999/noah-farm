@@ -3,8 +3,8 @@ import { RECIPES } from '../data/index.ts'
 import { itemName, t } from '../i18n/index.ts'
 import { countItem } from '../systems/inventory.ts'
 import {
-  dailySpecial, dishPay, ensureKitchen, guestMood, hireWaiter, isRush, nextRestaurantLevel, restaurantStars, serveGuest, STAR_AT, STOCK_MAX, stockDish,
-  upgradeRestaurant, WAITER_LEVEL, WAITER_PRICE,
+  dailySpecial, dishPay, ensureKitchen, guestMood, hireStaff, isRush, nextRestaurantLevel, restaurantStars, serveGuest, STAR_AT, STOCK_MAX, stockDish,
+  upgradeRestaurant, nextHire, staffCount, type StaffRole,
 } from '../systems/restaurant.ts'
 import { now as clockNow } from '../core/time.ts'
 import { collect, machineStatus } from '../systems/machines.ts'
@@ -73,10 +73,30 @@ export function restaurantPanel(state: GameState, now: () => number): PanelSpec 
         if (locked) body.append(text('p', 'panel__hint', t('notice.locked', { level: next.level })))
       }
 
-      if (r.level > 0 && !r.waiter) {
-        const locked = state.player.level < WAITER_LEVEL
-        body.append(button(t('restaurant.hire', { price: WAITER_PRICE }), 'btn gold', locked || state.player.gold < WAITER_PRICE, () => hireWaiter(state) && refresh()))
-        body.append(text('p', 'panel__hint', locked ? t('notice.locked', { level: WAITER_LEVEL }) : t('restaurant.hireHint')))
+      // Nhân viên: mỗi người một vị trí; thuê thêm người cho vị trí còn trống.
+      if (r.level > 0) {
+        body.append(text('h4', 'panel__hint', `🧑‍🍳 ${t('restaurant.staff')}`))
+        const crew = document.createElement('div')
+        crew.className = 'rows'
+        for (const sf of r.staff) {
+          const chef = sf.role === 'chef'
+          const sub = chef
+            ? sf.cooking ? t('restaurant.chefCooking', { dish: itemName(`food_${sf.cooking}`), s: Math.max(0, Math.ceil((sf.readyAt - now()) / 1000)) }) : r.autoCook ? t('restaurant.chefIdle') : t('restaurant.chefOff')
+            : t('restaurant.waiterSub')
+          crew.append(row(chef ? '👨‍🍳' : '🤵', chef ? t('restaurant.chef') : t('restaurant.waiter'), sub))
+        }
+        body.append(crew)
+        for (const role of ['chef', 'waiter'] as StaffRole[]) {
+          const nh = nextHire(state, role)
+          if (!nh) continue
+          const lockedLv = state.player.level < nh.level
+          body.append(button(t(role === 'chef' ? 'restaurant.hireChef' : 'restaurant.hireWaiter', { price: nh.price, n: staffCount(state, role) + 1 }), 'btn gold', lockedLv || state.player.gold < nh.price, () => hireStaff(state, role) && refresh()))
+          if (lockedLv) body.append(text('p', 'panel__hint', t('notice.locked', { level: nh.level })))
+        }
+        if (staffCount(state, 'chef')) {
+          body.append(button(r.autoCook ? t('restaurant.autoCookOn') : t('restaurant.autoCookOff'), 'btn small', false, () => ((r.autoCook = !r.autoCook), refresh())))
+          body.append(text('p', 'panel__hint', t('restaurant.autoCookHint')))
+        }
       }
 
       // Bếp nhà hàng: nấu ngay tại chỗ, xong thì lấy món ra túi.
@@ -93,8 +113,8 @@ export function restaurantPanel(state: GameState, now: () => number): PanelSpec 
       }
 
       // Kệ trưng bày: cất món trong túi lên kệ để nhân viên phục vụ tự mang ra.
-      if (r.waiter) {
-        body.append(text('h4', 'panel__hint', `🧑‍🍳 ${t('restaurant.shelf')}`))
+      if (r.staff.length) {
+        body.append(text('h4', 'panel__hint', `🍱 ${t('restaurant.shelf')}`))
         const shelf = document.createElement('div')
         shelf.className = 'rows'
         const dishes = RECIPES.filter((x) => countItem(state.inventory, `food_${x.id}`) > 0 || (r.stock[x.id] ?? 0) > 0)

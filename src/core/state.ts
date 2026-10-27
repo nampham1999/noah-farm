@@ -94,6 +94,18 @@ export interface InventoryState {
   selected: number
 }
 
+/** Nhân viên nhà hàng; mỗi người giữ một vị trí. */
+export interface RestaurantStaff {
+  id: number
+  role: 'chef' | 'waiter'
+  /** Chỉ số kiểu dáng (trong danh sách dân làng). */
+  look: number
+  /** Lúc (ms) làm xong việc hiện tại / lúc rảnh trở lại. */
+  readyAt: number
+  /** Đầu bếp: mã món đang nấu, null nếu đang rảnh. */
+  cooking: string | null
+}
+
 /** Một vị khách ngồi ở ghế trong phòng Nhà hàng, chờ một món. */
 export interface RestaurantGuest {
   id: number
@@ -231,8 +243,10 @@ export interface GameState {
     guests: RestaurantGuest[]
     /** Món đã cất trên kệ trưng bày (mã công thức → số lượng), nhân viên phục vụ lấy từ đây. */
     stock: Record<string, number>
-    /** Đã thuê nhân viên phục vụ. */
-    waiter: boolean
+    /** Nhân viên đã thuê: mỗi người một vị trí (đầu bếp tự nấu, phục vụ tự mang món ra). */
+    staff: RestaurantStaff[]
+    /** Cho đầu bếp tự lấy nguyên liệu trong túi để nấu theo nhu cầu khách. */
+    autoCook: boolean
     /** Điểm danh tiếng; quyết định số sao nhà hàng. */
     rep: number
     /** Lúc (ms) khách kế tiếp tới. */
@@ -317,7 +331,7 @@ export function createInitialState(): GameState {
     orchard: [],
     festival: null,
     checkin: { day: -1, streak: 0 },
-    restaurant: { level: 0, guests: [], stock: {}, waiter: false, rep: 0, nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
+    restaurant: { level: 0, guests: [], stock: {}, staff: [], autoCook: true, rep: 0, nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
     cards: { escrow: null, played: 0, won: 0, net: 0 },
     forage: { stamp: -1, taken: [] },
     friends: {},

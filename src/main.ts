@@ -38,6 +38,7 @@ import { decodeFarm } from './save/share.ts'
 import { createBoardPanel, npcDialog } from './ui/orders.ts'
 import { createGuestsView } from './render/guests.ts'
 import { createRestaurantView } from './render/restaurant.ts'
+import { createStaffView } from './render/restaurantStaff.ts'
 import { restaurantPanel } from './ui/restaurant.ts'
 import { serveGuest, updateRestaurant } from './systems/restaurant.ts'
 import { createNpcsView } from './render/npcs.ts'
@@ -321,6 +322,7 @@ async function start(): Promise<void> {
   const npcsView = createNpcsView(world.scene, models)
   const guestsView = createGuestsView(world.scene)
   const restaurantView = createRestaurantView(world.scene)
+  const staffView = createStaffView(world.scene)
   const restaurantUi = restaurantPanel(state, now)
 
   const autosaver = new AutoSaver(store, state)
@@ -847,6 +849,7 @@ async function start(): Promise<void> {
     npcsView.update(state, dt, clock.getElapsed())
     guestsView.update(state, clock.getElapsed(), now())
     restaurantView.update(state)
+    staffView.update(state, dt, clock.getElapsed(), now())
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {
       if (fishing.phase === 'waiting' && lastFishPhase === 'idle') farmer.playAction?.('cast')

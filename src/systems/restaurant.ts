@@ -1,5 +1,5 @@
 import { bus } from '../core/events.ts'
-import type { GameState, RestaurantGuest } from '../core/state.ts'
+import type { GameState, RestaurantGuest, RestaurantStaff } from '../core/state.ts'
 import { RECIPES, FURNITURE_BY_ID } from '../data/index.ts'
 import { absDay } from './clock.ts'
 import { itemName } from '../i18n/index.ts'
@@ -7,6 +7,7 @@ import { coveredCells, furnitureCenter } from './house.ts'
 import { RESTAURANT_TABLES } from '../core/world.ts'
 import { roomTypeAt } from './houseStyle.ts'
 import { countItem, removeItem } from './inventory.ts'
+import { jobsFor } from './machines.ts'
 import { gainXp } from './progress.ts'
 import { NPCS } from './orders.ts'
 
@@ -27,6 +28,10 @@ const TIP_BASE = 0.3
 const TIP_PER_STAR = 0.06
 /** Người phục vụ lấy món từ kệ: chậm hơn người chơi một chút, không có tiền boa và ăn 10% công. */
 export const WAITER_EVERY_MS = 7000
+/** Đầu bếp nấu một món mất chừng này thời gian (các đầu bếp nấu song song). */
+export const CHEF_COOK_MS = 90_000
+/** Số món đặc biệt đầu bếp giữ sẵn trên kệ khi có khách. */
+const SPECIAL_STOCK = 2
 const WAITER_CUT = 0.9
 export const STOCK_MAX = 20
 /** Điểm danh tiếng để lên 2, 3, 4, 5 sao. */
@@ -205,23 +210,62 @@ export function updateRestaurant(state: GameState, now: number): void {
     bus.emit('notify', { key: kind === 'vip' ? 'restaurant.arrivedVip' : kind === 'family' ? 'restaurant.arrivedFamily' : 'restaurant.arrived', params: { dish: itemName(`food_${foods[0]}`) } })
     bus.emit('saveRequest', undefined)
   } else if (r.guests.length !== before) bus.emit('saveRequest', undefined)
-  waiterTick(state, now)
+  staffTick(state, now)
 }
 
-let lastWaiter = 0
+/** Đường đi của người phục vụ (để vẽ): mã nhân viên → nơi đang tới và tới lúc nào. */
+export const staffWalk = new Map<number, { x: number; z: number; until: number }>()
 
-/** Nhân viên phục vụ: cứ vài giây mang một món có trên kệ ra cho khách đang chờ. */
-function waiterTick(state: GameState, now: number): void {
+/** Mỗi giây: đầu bếp nấu xong thì cất món lên kệ, rảnh thì nấu món khách đang chờ; người phục vụ mang món trên kệ ra. */
+function staffTick(state: GameState, now: number): void {
   const r = state.restaurant
-  if (!r.waiter || now - lastWaiter < WAITER_EVERY_MS) return
-  for (const g of r.guests) {
-    const food = g.foods.find((f) => (r.stock[f] ?? 0) > 0)
-    if (!food) continue
-    lastWaiter = now
-    r.stock[food]--
-    payDish(state, g, food, now, true)
-    return
+  const cooking = new Map<string, number>()
+  for (const sf of r.staff) if (sf.cooking) cooking.set(sf.cooking, (cooking.get(sf.cooking) ?? 0) + 1)
+  for (const sf of r.staff) {
+    if (sf.role === 'chef') {
+      if (sf.cooking) {
+        if (now < sf.readyAt) continue
+        r.stock[sf.cooking] = Math.min(STOCK_MAX, (r.stock[sf.cooking] ?? 0) + 1)
+        cooking.set(sf.cooking, Math.max(0, (cooking.get(sf.cooking) ?? 1) - 1))
+        sf.cooking = null
+        bus.emit('saveRequest', undefined)
+      }
+      if (!r.autoCook || !r.guests.length) continue
+      const food = nextToCook(state, cooking)
+      if (!food) continue
+      const job = jobsFor(state, 'stove').find((j) => j.output === `food_${food}` && j.take)
+      if (!job?.take) continue
+      for (const { id, qty } of job.take) removeItem(state.inventory, id, qty)
+      sf.cooking = food
+      sf.readyAt = now + CHEF_COOK_MS
+      cooking.set(food, (cooking.get(food) ?? 0) + 1)
+      bus.emit('saveRequest', undefined)
+    } else if (now >= sf.readyAt) {
+      for (const g of r.guests) {
+        const food = g.foods.find((f) => (r.stock[f] ?? 0) > 0)
+        if (!food) continue
+        const seat = guestSeat(state, g)
+        if (seat) staffWalk.set(sf.id, { x: seat.x, z: seat.z, until: now + 2600 })
+        sf.readyAt = now + WAITER_EVERY_MS
+        r.stock[food]--
+        payDish(state, g, food, now, true)
+        break
+      }
+    }
   }
+}
+
+/** Món đầu bếp nên nấu tiếp: món khách đang chờ mà kệ và các đầu bếp khác chưa lo đủ, rồi tới món đặc biệt. */
+function nextToCook(state: GameState, cooking: Map<string, number>): string | null {
+  const r = state.restaurant
+  const demand = new Map<string, number>()
+  for (const g of r.guests) for (const f of g.foods) demand.set(f, (demand.get(f) ?? 0) + 1)
+  const special = dailySpecial(state)
+  demand.set(special, Math.max(demand.get(special) ?? 0, SPECIAL_STOCK))
+  for (const [food, need] of demand) {
+    if ((r.stock[food] ?? 0) + (cooking.get(food) ?? 0) < need && jobsFor(state, 'stove').some((j) => j.output === `food_${food}` && j.take)) return food
+  }
+  return null
 }
 
 /** Trả tiền một món và xử lý khách (bớt món, hoặc rời đi khi đủ món). */
@@ -278,24 +322,34 @@ export function stockDish(state: GameState, food: string, qty: number): number {
   return n
 }
 
-export const WAITER_PRICE = 2500
-export const WAITER_LEVEL = 5
+export type StaffRole = RestaurantStaff['role']
 
-/** Thuê nhân viên phục vụ: tự lấy món trên kệ mang ra cho khách. */
-export function hireWaiter(state: GameState): boolean {
+/** Giá và cấp người chơi cần để thuê người thứ 1, 2, 3 của từng vị trí. */
+export const STAFF_HIRE: Record<StaffRole, { price: number; level: number }[]> = {
+  chef: [{ price: 3000, level: 6 }, { price: 7500, level: 8 }],
+  waiter: [{ price: 2500, level: 5 }, { price: 4500, level: 7 }, { price: 9000, level: 9 }],
+}
+
+export const staffCount = (state: GameState, role: StaffRole): number => state.restaurant.staff.filter((x) => x.role === role).length
+
+export const nextHire = (state: GameState, role: StaffRole): { price: number; level: number } | null => STAFF_HIRE[role][staffCount(state, role)] ?? null
+
+/** Thuê một nhân viên cho vị trí còn trống. */
+export function hireStaff(state: GameState, role: StaffRole): boolean {
   const r = state.restaurant
-  if (r.waiter || r.level < 1) return false
-  if (state.player.level < WAITER_LEVEL) {
-    bus.emit('notify', { key: 'notice.locked', params: { level: WAITER_LEVEL } })
+  const next = nextHire(state, role)
+  if (!next || r.level < 1) return false
+  if (state.player.level < next.level) {
+    bus.emit('notify', { key: 'notice.locked', params: { level: next.level } })
     return false
   }
-  if (state.player.gold < WAITER_PRICE) {
+  if (state.player.gold < next.price) {
     bus.emit('notify', { key: 'notice.noGold' })
     return false
   }
-  state.player.gold -= WAITER_PRICE
-  r.waiter = true
-  bus.emit('notify', { key: 'restaurant.hired', good: true })
+  state.player.gold -= next.price
+  r.staff.push({ id: Math.max(0, ...r.staff.map((x) => x.id)) + 1, role, look: Math.floor(Math.random() * NPCS.length), readyAt: 0, cooking: null })
+  bus.emit('notify', { key: role === 'chef' ? 'restaurant.hiredChef' : 'restaurant.hired', good: true })
   bus.emit('sfx', 'levelUp')
   bus.emit('saveRequest', undefined)
   return true
