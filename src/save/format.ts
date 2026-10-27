@@ -199,11 +199,17 @@ function normalize(data: Record<string, unknown>): GameState {
       const r = obj(data.restaurant)
       const guests = (Array.isArray(r.guests) ? r.guests : []).flatMap((raw): GameState['restaurant']['guests'] => {
         const g = obj(raw)
-        if (typeof g.food !== 'string' || !ITEMS.has(`food_${g.food}`)) return []
-        return [{ id: Math.floor(num(g.id, 0)), look: Math.floor(num(g.look, 0)), fl: Math.floor(num(g.fl, 0)), cx: Math.floor(num(g.cx, 0)), cz: Math.floor(num(g.cz, 0)), food: g.food, since: num(g.since, 0), patience: num(g.patience, 180000) }]
+        // Bản lưu cũ chỉ có một món (food).
+        const list = Array.isArray(g.foods) ? g.foods : typeof g.food === 'string' ? [g.food] : []
+        const foods = list.filter((f): f is string => typeof f === 'string' && ITEMS.has(`food_${f}`))
+        if (!foods.length) return []
+        const kind = g.kind === 'vip' || g.kind === 'family' ? g.kind : 'regular'
+        return [{ id: Math.floor(num(g.id, 0)), look: Math.floor(num(g.look, 0)), fl: Math.floor(num(g.fl, 0)), cx: Math.floor(num(g.cx, 0)), cz: Math.floor(num(g.cz, 0)), foods, kind, special: g.special === true, since: num(g.since, 0), patience: num(g.patience, 180000) }]
       })
+      const stock: Record<string, number> = {}
+      for (const [k, v] of Object.entries(obj(r.stock))) if (ITEMS.has(`food_${k}`)) stock[k] = Math.min(99, Math.max(0, Math.floor(num(v, 0))))
       const n = (v: unknown) => Math.max(0, Math.floor(num(v, 0)))
-      return { level: Math.min(4, n(r.level)), guests, nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
+      return { level: Math.min(4, n(r.level)), guests, stock, waiter: r.waiter === true, rep: n(r.rep), nextAt: num(r.nextAt, 0), served: n(r.served), earned: n(r.earned), missed: n(r.missed), seq: n(r.seq) }
     })(),
     checkin: (() => {
       const c = obj(data.checkin)

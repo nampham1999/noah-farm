@@ -1,6 +1,7 @@
 import { bus } from '../core/events.ts'
 import type { GameState, RestaurantGuest } from '../core/state.ts'
 import { RECIPES, FURNITURE_BY_ID } from '../data/index.ts'
+import { absDay } from './clock.ts'
 import { itemName } from '../i18n/index.ts'
 import { coveredCells, furnitureCenter } from './house.ts'
 import { RESTAURANT_TABLES } from '../core/world.ts'
@@ -16,9 +17,20 @@ import { NPCS } from './orders.ts'
  */
 
 export const PATIENCE_MS = 180_000
+const VIP_PATIENCE_MS = 110_000
 const FAST_SHARE = 0.4
 const PRICE_MULT = 1.5
-const TIP_MULT = 0.3
+const SPECIAL_MULT = 1.5
+const VIP_MULT = 2.2
+const FAMILY_BONUS = 1.15
+const TIP_BASE = 0.3
+const TIP_PER_STAR = 0.06
+/** Người phục vụ lấy món từ kệ: chậm hơn người chơi một chút, không có tiền boa và ăn 10% công. */
+export const WAITER_EVERY_MS = 7000
+const WAITER_CUT = 0.9
+export const STOCK_MAX = 20
+/** Điểm danh tiếng để lên 2, 3, 4, 5 sao. */
+export const STAR_AT = [40, 120, 300, 650]
 const ARRIVAL_MIN_MS = 35_000
 const ARRIVAL_SPAN_MS = 35_000
 const QUICK_MIN_MS = 10_000
@@ -105,7 +117,40 @@ export function upgradeRestaurant(state: GameState): boolean {
   return true
 }
 
-/** Gọi thường xuyên (mỗi giây): khách hết kiên nhẫn hoặc mất ghế thì đi, ghế trống thì có khách mới. */
+/** Số sao nhà hàng (1..5) theo điểm danh tiếng. */
+export function restaurantStars(state: GameState): number {
+  return 1 + STAR_AT.filter((v) => state.restaurant.rep >= v).length
+}
+
+/** Món đặc biệt của ngày (đổi mỗi ngày trong game): khách gọi món này trả thêm 50%. */
+export function dailySpecial(state: GameState): string {
+  return RECIPES[(absDay(state.clock) * 7 + 3) % RECIPES.length].id
+}
+
+/** Giờ cao điểm (bữa trưa và bữa tối): khách tới nhanh gấp đôi. */
+export function isRush(state: GameState): boolean {
+  const m = state.clock.minuteOfDay
+  return (m >= 11 * 60 && m < 13.5 * 60) || (m >= 18 * 60 && m < 20.5 * 60)
+}
+
+const recipeOf = (id: string) => RECIPES.find((r) => r.id === id)
+const priceOf = (id: string): number => recipeOf(id)?.sellPrice ?? 50
+
+/** Tiền một món khách trả (chưa tính tiền boa): đã nhân giá nhà hàng, món đặc biệt và loại khách. */
+export function dishPay(state: GameState, g: RestaurantGuest, food: string): number {
+  let mult = PRICE_MULT
+  if (g.special && food === dailySpecial(state)) mult *= SPECIAL_MULT
+  if (g.kind === 'vip') mult *= VIP_MULT
+  return Math.round(priceOf(food) * mult)
+}
+
+/** Tâm trạng khách theo thời gian đã chờ: 0 vui, 1 hơi sốt ruột, 2 bực. */
+export function guestMood(g: RestaurantGuest, now: number): 0 | 1 | 2 {
+  const used = (now - g.since) / g.patience
+  return used < 0.4 ? 0 : used < 0.75 ? 1 : 2
+}
+
+/** Gọi thường xuyên (mỗi giây): khách hết kiên nhẫn hoặc mất ghế thì đi, ghế trống thì có khách mới, nhân viên phục vụ làm việc. */
 export function updateRestaurant(state: GameState, now: number): void {
   const r = state.restaurant
   const seats = allSeats(state)
@@ -114,7 +159,8 @@ export function updateRestaurant(state: GameState, now: number): void {
     if (!seats.some((s) => s.fl === g.fl && s.cx === g.cx && s.cz === g.cz)) return false
     if (now - g.since > g.patience) {
       r.missed++
-      bus.emit('notify', { key: 'restaurant.left', params: { dish: itemName(`food_${g.food}`) } })
+      r.rep = Math.max(0, r.rep - (g.kind === 'vip' ? 12 : 6))
+      bus.emit('notify', { key: 'restaurant.left', params: { dish: itemName(`food_${g.foods[0]}`) } })
       return false
     }
     return true
@@ -122,48 +168,129 @@ export function updateRestaurant(state: GameState, now: number): void {
   const free = seats.filter((s) => !r.guests.some((g) => g.fl === s.fl && g.cx === s.cx && g.cz === s.cz))
   if (free.length && now >= r.nextAt) {
     const seat = free[Math.floor(Math.random() * free.length)]
-    const recipe = RECIPES[Math.floor(Math.random() * RECIPES.length)]
+    const stars = restaurantStars(state)
+    const roll = Math.random()
+    const pool = [...RECIPES].sort((a, b) => b.sellPrice - a.sellPrice)
+    let kind: RestaurantGuest['kind'] = 'regular'
+    // Khách sành ăn chỉ ghé khi nhà hàng từ 2 sao; gia đình cần thêm một ghế trống.
+    if (stars >= 2 && roll < 0.1 + 0.02 * stars) kind = 'vip'
+    else if (free.length >= 2 && roll < 0.35) kind = 'family'
+    const special = kind !== 'vip' && Math.random() < 0.35
+    const pick = (): string =>
+      kind === 'vip' ? pool[Math.floor(Math.random() * Math.ceil(pool.length / 3))].id : special && !r.guests.length ? dailySpecial(state) : RECIPES[Math.floor(Math.random() * RECIPES.length)].id
+    const foods = [pick()]
+    if (kind === 'family') foods.push(RECIPES[Math.floor(Math.random() * RECIPES.length)].id)
+    if (special && kind === 'regular') foods[0] = dailySpecial(state)
     r.guests.push({
       id: ++r.seq,
       look: Math.floor(Math.random() * NPCS.length),
       fl: seat.fl,
       cx: seat.cx,
       cz: seat.cz,
-      food: recipe.id,
+      foods,
+      kind,
+      special,
       since: now,
-      patience: PATIENCE_MS,
+      patience: kind === 'vip' ? VIP_PATIENCE_MS : PATIENCE_MS,
     })
-    // Vắng khách thì khách kế tiếp tới nhanh hơn, đông rồi thì thưa dần.
-    r.nextAt = now + (r.guests.length <= 1 ? QUICK_MIN_MS + Math.random() * QUICK_SPAN_MS : ARRIVAL_MIN_MS + Math.random() * ARRIVAL_SPAN_MS)
-    bus.emit('notify', { key: 'restaurant.arrived', params: { dish: itemName(`food_${recipe.id}`) } })
+    // Giờ cao điểm và nhiều sao thì khách tới dồn dập hơn; vắng khách thì tới nhanh hơn.
+    const gap = r.guests.length <= 1 ? QUICK_MIN_MS + Math.random() * QUICK_SPAN_MS : ARRIVAL_MIN_MS + Math.random() * ARRIVAL_SPAN_MS
+    r.nextAt = now + gap * (isRush(state) ? 0.5 : 1) * (1 - 0.06 * (stars - 1))
+    bus.emit('notify', { key: kind === 'vip' ? 'restaurant.arrivedVip' : kind === 'family' ? 'restaurant.arrivedFamily' : 'restaurant.arrived', params: { dish: itemName(`food_${foods[0]}`) } })
     bus.emit('saveRequest', undefined)
   } else if (r.guests.length !== before) bus.emit('saveRequest', undefined)
+  waiterTick(state, now)
 }
 
-/** Mang món ra cho khách: trừ món trong túi, nhận tiền (và tiền boa nếu nhanh). */
+let lastWaiter = 0
+
+/** Nhân viên phục vụ: cứ vài giây mang một món có trên kệ ra cho khách đang chờ. */
+function waiterTick(state: GameState, now: number): void {
+  const r = state.restaurant
+  if (!r.waiter || now - lastWaiter < WAITER_EVERY_MS) return
+  for (const g of r.guests) {
+    const food = g.foods.find((f) => (r.stock[f] ?? 0) > 0)
+    if (!food) continue
+    lastWaiter = now
+    r.stock[food]--
+    payDish(state, g, food, now, true)
+    return
+  }
+}
+
+/** Trả tiền một món và xử lý khách (bớt món, hoặc rời đi khi đủ món). */
+function payDish(state: GameState, g: RestaurantGuest, food: string, now: number, byWaiter: boolean): void {
+  const r = state.restaurant
+  const fast = now - g.since < g.patience * FAST_SHARE
+  const stars = restaurantStars(state)
+  const base = dishPay(state, g, food)
+  const tip = !byWaiter && fast ? Math.round(base * (TIP_BASE + TIP_PER_STAR * (stars - 1)) / PRICE_MULT) : 0
+  let pay = Math.round(byWaiter ? base * WAITER_CUT : base) + tip
+  g.foods.splice(g.foods.indexOf(food), 1)
+  const done = g.foods.length === 0
+  if (done && g.kind === 'family') pay = Math.round(pay * FAMILY_BONUS)
+  state.player.gold += pay
+  state.stats.goldEarned += pay
+  r.earned += pay
+  r.rep += (g.kind === 'vip' ? 6 : 2) + (fast ? 1 : 0)
+  if (done) {
+    r.served++
+    r.guests = r.guests.filter((x) => x.id !== g.id)
+    gainXp(state, g.kind === 'vip' ? 8 : 4)
+  }
+  const star = restaurantStars(state)
+  if (star > stars) bus.emit('notify', { key: 'restaurant.star', params: { n: star }, good: true })
+  bus.emit('notify', { key: byWaiter ? 'restaurant.servedByWaiter' : tip ? 'restaurant.servedTip' : 'restaurant.served', params: { gold: pay, tip }, good: true })
+  bus.emit('sfx', 'coin')
+  bus.emit('progress', { type: 'sellGold', amount: pay })
+  bus.emit('saveRequest', undefined)
+}
+
+/** Mang món ra cho khách: lấy món trong túi mà khách đang chờ (khách gia đình gọi nhiều món, phục vụ từng món). */
 export function serveGuest(state: GameState, id: number, now: number): boolean {
   const r = state.restaurant
   const g = r.guests.find((x) => x.id === id)
   if (!g) return false
-  const dish = `food_${g.food}`
-  const base = RECIPES.find((x) => x.id === g.food)?.sellPrice ?? 50
-  if (countItem(state.inventory, dish) < 1) {
-    bus.emit('notify', { key: 'restaurant.need', params: { dish: itemName(dish) } })
+  const food = g.foods.find((f) => countItem(state.inventory, `food_${f}`) > 0)
+  if (!food) {
+    bus.emit('notify', { key: 'restaurant.need', params: { dish: itemName(`food_${g.foods[0]}`) } })
     return false
   }
-  removeItem(state.inventory, dish, 1)
-  const fast = now - g.since < g.patience * FAST_SHARE
-  const tip = fast ? Math.round(base * TIP_MULT) : 0
-  const pay = Math.round(base * PRICE_MULT) + tip
-  state.player.gold += pay
-  state.stats.goldEarned += pay
-  r.served++
-  r.earned += pay
-  r.guests = r.guests.filter((x) => x.id !== id)
-  gainXp(state, 4)
-  bus.emit('notify', { key: tip ? 'restaurant.servedTip' : 'restaurant.served', params: { gold: pay, tip }, good: true })
-  bus.emit('sfx', 'coin')
-  bus.emit('progress', { type: 'sellGold', amount: pay })
+  removeItem(state.inventory, `food_${food}`, 1)
+  payDish(state, g, food, now, false)
+  return true
+}
+
+/** Cất món trong túi lên kệ trưng bày của nhà hàng (tối đa STOCK_MAX mỗi món). */
+export function stockDish(state: GameState, food: string, qty: number): number {
+  const r = state.restaurant
+  const n = Math.min(qty, countItem(state.inventory, `food_${food}`), STOCK_MAX - (r.stock[food] ?? 0))
+  if (n <= 0) return 0
+  removeItem(state.inventory, `food_${food}`, n)
+  r.stock[food] = (r.stock[food] ?? 0) + n
+  bus.emit('saveRequest', undefined)
+  return n
+}
+
+export const WAITER_PRICE = 2500
+export const WAITER_LEVEL = 5
+
+/** Thuê nhân viên phục vụ: tự lấy món trên kệ mang ra cho khách. */
+export function hireWaiter(state: GameState): boolean {
+  const r = state.restaurant
+  if (r.waiter || r.level < 1) return false
+  if (state.player.level < WAITER_LEVEL) {
+    bus.emit('notify', { key: 'notice.locked', params: { level: WAITER_LEVEL } })
+    return false
+  }
+  if (state.player.gold < WAITER_PRICE) {
+    bus.emit('notify', { key: 'notice.noGold' })
+    return false
+  }
+  state.player.gold -= WAITER_PRICE
+  r.waiter = true
+  bus.emit('notify', { key: 'restaurant.hired', good: true })
+  bus.emit('sfx', 'levelUp')
   bus.emit('saveRequest', undefined)
   return true
 }

@@ -844,7 +844,7 @@ async function start(): Promise<void> {
     if (!visiting && !state.player.indoors) collectNearby(state, state.player.pos[0], state.player.pos[2])
     foxView.update(state, clock.getElapsed(), dt)
     npcsView.update(state, dt, clock.getElapsed())
-    guestsView.update(state, clock.getElapsed())
+    guestsView.update(state, clock.getElapsed(), now())
     restaurantView.update(state)
     // Câu cá: quăng cần lúc thả, cầm cần chờ cá, rung cần lúc kéo.
     if (fishing.phase !== lastFishPhase) {

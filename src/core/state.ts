@@ -104,8 +104,12 @@ export interface RestaurantGuest {
   /** Ô của ghế. */
   cx: number
   cz: number
-  /** Mã món (công thức) khách gọi. */
-  food: string
+  /** Các món (mã công thức) khách còn chờ; phục vụ xong món nào thì bỏ món đó. */
+  foods: string[]
+  /** Loại khách: thường, gia đình (nhiều món) hoặc sành ăn (trả cao, ít kiên nhẫn). */
+  kind: 'regular' | 'family' | 'vip'
+  /** Gọi đúng món đặc biệt trong ngày (trả thêm). */
+  special: boolean
   since: number
   patience: number
 }
@@ -225,6 +229,12 @@ export interface GameState {
     /** Cấp nhà hàng ngoài phố (0 là chưa mở, mỗi cấp mở thêm một bàn hai ghế). */
     level: number
     guests: RestaurantGuest[]
+    /** Món đã cất trên kệ trưng bày (mã công thức → số lượng), nhân viên phục vụ lấy từ đây. */
+    stock: Record<string, number>
+    /** Đã thuê nhân viên phục vụ. */
+    waiter: boolean
+    /** Điểm danh tiếng; quyết định số sao nhà hàng. */
+    rep: number
     /** Lúc (ms) khách kế tiếp tới. */
     nextAt: number
     served: number
@@ -307,7 +317,7 @@ export function createInitialState(): GameState {
     orchard: [],
     festival: null,
     checkin: { day: -1, streak: 0 },
-    restaurant: { level: 0, guests: [], nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
+    restaurant: { level: 0, guests: [], stock: {}, waiter: false, rep: 0, nextAt: 0, served: 0, earned: 0, missed: 0, seq: 0 },
     cards: { escrow: null, played: 0, won: 0, net: 0 },
     forage: { stamp: -1, taken: [] },
     friends: {},
