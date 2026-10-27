@@ -431,8 +431,9 @@ async function start(): Promise<void> {
   const input = new Input()
   attachKeyboard(input)
   attachPointer(input, canvas, ui)
-  // Mức zoom đã lưu quá xa (lỡ chụm tay) thì kéo về mức hợp lý, để mở lại game không bị nhỏ xíu.
-  followCam.zoom = Math.min(1.8, Math.max(0.7, state.settings.zoom || 1))
+  // Mỗi lần mở game (tải lại trang) zoom về mặc định, để lỡ chụm tay quá xa thì tải lại là hết.
+  state.settings.zoom = 1
+  followCam.zoom = 1
   let lastZoomSaved = followCam.zoom
   const hud = createHud(ui, state, {
     eat: () => eat(state),
