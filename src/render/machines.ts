@@ -27,6 +27,7 @@ export function createMachinesView(scene: THREE.Scene, models: Models): Machines
   const slots = new Map<MachineId, Slot>()
   for (const def of MACHINES) {
     const sign = createSign(def.icon)
+    if (def.inRestaurant) sign.visible = false
     sign.position.set(def.x, 0, def.z)
     scene.add(sign)
     const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
@@ -57,7 +58,23 @@ export function createMachinesView(scene: THREE.Scene, models: Models): Machines
         const slot = slots.get(def.id)!
         const status = machineStatus(state, def.id, t)
         const owned = status !== 'missing'
-        slot.sign.visible = !owned
+        slot.sign.visible = !owned && !def.inRestaurant
+        if (def.inRestaurant) {
+          // Bếp trong nhà hàng: chỉ hiện bong bóng đang nấu / xong ở trước cửa.
+          const m0 = state.machines.find((x) => x.id === def.id)
+          const icon0 = status === 'ready' && m0?.output ? item(m0.output).icon : status === 'working' ? '⏳' : ''
+          if (icon0 !== slot.icon) {
+            slot.icon = icon0
+            slot.bubble.visible = icon0 !== ''
+            if (icon0) {
+              const mat0 = slot.bubble.material as THREE.SpriteMaterial
+              mat0.map = emojiTexture(icon0)
+              mat0.needsUpdate = true
+            }
+          }
+          slot.bubble.position.set(def.x, 2.4 + Math.sin(time * 3) * 0.05, def.z)
+          continue
+        }
         if (owned && !slot.model) {
           if (def.id === 'preserves') place('preserves', models.jamJar.scene)
           else if (def.id === 'beehive') place('beehive', models.beehive.scene)

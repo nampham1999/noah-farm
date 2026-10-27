@@ -14,9 +14,10 @@
       "price": 500,
       "level": 3,
       "icon": "🍳",
-      "x": 52.6,
-      "z": 5.2,
-      "minutes": 3
+      "x": 40.9,
+      "z": 10.3,
+      "minutes": 3,
+      "inRestaurant": true
     },
     {
       "id": "beehive",

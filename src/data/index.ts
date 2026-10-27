@@ -138,6 +138,8 @@ export interface MachineDef {
   z: number
   /** Thời gian làm một mẻ (phút thật); tổ ong: một lần cho mật. */
   minutes: number
+  /** Máy nằm trong nhà hàng (bếp): không có mô hình hay biển riêng ngoài trời, dùng qua bảng nhà hàng. */
+  inRestaurant?: boolean
 }
 
 /** Nguyên liệu: một vật phẩm cụ thể (id), hoặc bất kỳ vật phẩm nào thuộc loại (kind). */

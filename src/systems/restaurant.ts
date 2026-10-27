@@ -98,6 +98,11 @@ export function nextRestaurantLevel(state: GameState): { price: number; level: n
   return RESTAURANT_LEVELS[state.restaurant.level] ?? null
 }
 
+/** Bếp nhà hàng đi kèm nhà hàng, không phải mua riêng. */
+export function ensureKitchen(state: GameState): void {
+  if (state.restaurant.level > 0 && !state.machines.some((m) => m.id === 'stove')) state.machines.push({ id: 'stove', output: null, qty: 0, readyAt: 0 })
+}
+
 export function upgradeRestaurant(state: GameState): boolean {
   const next = nextRestaurantLevel(state)
   if (!next) return false
@@ -111,6 +116,7 @@ export function upgradeRestaurant(state: GameState): boolean {
   }
   state.player.gold -= next.price
   state.restaurant.level++
+  ensureKitchen(state)
   bus.emit('notify', { key: state.restaurant.level === 1 ? 'restaurant.opened' : 'restaurant.upgraded', params: { n: state.restaurant.level * 2 }, good: true })
   bus.emit('sfx', 'levelUp')
   bus.emit('saveRequest', undefined)

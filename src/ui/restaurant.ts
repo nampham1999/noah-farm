@@ -3,9 +3,12 @@ import { RECIPES } from '../data/index.ts'
 import { itemName, t } from '../i18n/index.ts'
 import { countItem } from '../systems/inventory.ts'
 import {
-  dailySpecial, dishPay, guestMood, hireWaiter, isRush, nextRestaurantLevel, restaurantStars, serveGuest, STAR_AT, STOCK_MAX, stockDish,
+  dailySpecial, dishPay, ensureKitchen, guestMood, hireWaiter, isRush, nextRestaurantLevel, restaurantStars, serveGuest, STAR_AT, STOCK_MAX, stockDish,
   upgradeRestaurant, WAITER_LEVEL, WAITER_PRICE,
 } from '../systems/restaurant.ts'
+import { now as clockNow } from '../core/time.ts'
+import { collect, machineStatus } from '../systems/machines.ts'
+import { machinePanel } from './machines.ts'
 import type { PanelSpec } from './panel.ts'
 
 const MOODS = ['😊', '😐', '😠']
@@ -40,10 +43,14 @@ function button(label: string, cls: string, disabled: boolean, on: () => void): 
 
 /** Nhà hàng ngoài phố: sao và danh tiếng, món đặc biệt, nâng cấp bàn, thuê nhân viên, kệ trưng bày và khách đang chờ. */
 export function restaurantPanel(state: GameState, now: () => number): PanelSpec {
+  // Bếp nhà hàng dùng lại cửa sổ máy chế biến (bếp), nhúng vào bảng nhà hàng.
+  const kitchen = machinePanel(state, 'stove')
   return {
     title: () => `🍴 ${t('restaurant.title')}`,
+    onClose: () => kitchen.onClose?.(),
     render(body, refresh) {
       const r = state.restaurant
+      ensureKitchen(state)
       const stars = restaurantStars(state)
       const next = nextRestaurantLevel(state)
 
@@ -70,6 +77,19 @@ export function restaurantPanel(state: GameState, now: () => number): PanelSpec 
         const locked = state.player.level < WAITER_LEVEL
         body.append(button(t('restaurant.hire', { price: WAITER_PRICE }), 'btn gold', locked || state.player.gold < WAITER_PRICE, () => hireWaiter(state) && refresh()))
         body.append(text('p', 'panel__hint', locked ? t('notice.locked', { level: WAITER_LEVEL }) : t('restaurant.hireHint')))
+      }
+
+      // Bếp nhà hàng: nấu ngay tại chỗ, xong thì lấy món ra túi.
+      if (r.level > 0) {
+        body.append(text('h4', 'panel__hint', `🍳 ${t('restaurant.kitchen')}`))
+        const box = document.createElement('div')
+        box.className = 'restaurant-kitchen'
+        if (machineStatus(state, 'stove', clockNow()) === 'ready') {
+          const out = state.machines.find((m) => m.id === 'stove')?.output
+          box.append(row(out ? '🍽️' : '✅', out ? itemName(out) : t('restaurant.kitchenReady'), t('restaurant.kitchenReadySub'),
+            button(t('restaurant.collect'), 'btn small primary', false, () => (collect(state, 'stove', clockNow()), refresh()))))
+        } else kitchen.render(box, refresh)
+        body.append(box)
       }
 
       // Kệ trưng bày: cất món trong túi lên kệ để nhân viên phục vụ tự mang ra.

@@ -284,7 +284,7 @@ async function start(): Promise<void> {
     { x: CARD_HOUSE.x, y: 3.7, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
     { x: MONUMENT.x, y: 4, z: MONUMENT.z, text: () => `🏘️ ${t('village.title')}`, visible: () => !visiting },
     { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g`, visible: () => !state.greenhouse },
-    ...MACHINES.map((m) => ({
+    ...MACHINES.filter((m) => !m.inRestaurant).map((m) => ({
       x: m.x, y: 2.1, z: m.z,
       text: () => `${m.icon} ${tKey(`machine.${m.id}`)} · ${m.price}g`,
       visible: () => !state.machines.some((x) => x.id === m.id),
@@ -412,6 +412,7 @@ async function start(): Promise<void> {
     openBoard: () => openPanel(boardPanel),
     openRace: () => openPanel(racePanelSpec),
     openMachine: (id) => {
+      if (id === 'stove' && state.restaurant.level > 0) return openPanel(restaurantUi)
       if (machineStatus(state, id, now()) === 'ready') collect(state, id, now())
       else openPanel(machinePanel(state, id))
     },
