@@ -170,15 +170,15 @@ export const COOP = { x: 11.5, z: -14, r: 2.3 }
 export const PEN = { x: 11, z: -7.2, r: 3 }
 
 /** Bảng đơn hàng của dân làng, cạnh lối vào; dân làng có đơn đi loanh quanh khu VILLAGE. */
-export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.6 }
+export const ORDER_BOARD = { x: 7.6, z: 13.4, r: 0.9 }
 export const VILLAGE = { x: 9.4, z: 15.8, r: 2 }
 /** Quầy trường đua chó, góc đông nam cạnh làng. */
-export const RACE_BOOTH = { x: FARM_HALF + 4.5, z: 12.4, r: 0.6 }
+export const RACE_BOOTH = { x: FARM_HALF + 4.5, z: 12.4, r: 0.9 }
 /** Sạp chợ phiên của người chơi, cạnh đường chính gần cổng. */
 export const MARKET_STALL = { x: 12.2, z: 12.8, r: 0.9 }
 /** Quảng trường làng: công trình chung (đài phun nước, cối xay gió, tượng gà vàng). */
 /** Khu giải trí (chơi bài cùng bạn bè), góc đông nam, cạnh trường đua chó. */
-export const CARD_HOUSE = { x: FARM_HALF + 10, z: 12.2, r: 1.6 }
+export const CARD_HOUSE = { x: FARM_HALF + 10, z: 12.2, r: 2.1 }
 export const MONUMENT = { x: 1.9, z: 11.1, r: 1.3 }
 /** Chỗ Ông Tom đứng câu cá: đầu cầu gỗ, quay ra hồ. */
 export const TOM_SPOT = { x: 9.1, z: 4.1, rotY: Math.PI / 2 }
@@ -389,7 +389,7 @@ export const OBSTACLES: Circle[] = [
   RACE_BOOTH,
   MARKET_STALL,
   MONUMENT,
-  { x: CARD_HOUSE.x, z: CARD_HOUSE.z, r: 1.2 },
+  { x: CARD_HOUSE.x, z: CARD_HOUSE.z, r: 1.7 },
   // Gốc cây ăn quả ở các ô vườn.
   ...ORCHARD.spots.map((o) => ({ x: o.x, z: o.z, r: 0.45 })),
   // Chái phía tây của nhà cấp 4, 5.

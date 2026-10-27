@@ -272,21 +272,21 @@ async function start(): Promise<void> {
   // Bảng tên nổi trên các chỗ có chức năng, để người chơi biết chỗ nào làm gì.
   const labels = createLabels(world.scene, [
     { x: STALL.x, y: 3.9, z: STALL.z, text: () => `🛒 ${t('label.shop')}` },
-    { x: ORDER_BOARD.x, y: 2.7, z: ORDER_BOARD.z, text: () => `📋 ${t('label.orders')}` },
+    { x: ORDER_BOARD.x, y: 3.6, z: ORDER_BOARD.z, text: () => `📋 ${t('label.orders')}` },
     { x: HOUSE_DOOR.x, y: 3.6, z: HOUSE_DOOR.z - 0.6, text: () => `🏡 ${t('label.house')}` },
     // Chỗ có thể mua: biển chỉ hiện khi chưa mua; mua rồi thì bỏ biển cho đỡ rối.
     { x: COOP.x, y: 3.4, z: COOP.z, text: () => `🐔 ${t('label.buildCoop', { price: animalData.coopLevels[0].price })}`, visible: () => !state.coopLevel },
     { x: DOCK.x0 + 0.6, y: 1.9, z: DOCK.z, text: () => `🎣 ${t('label.fishing')}` },
     { x: FIELD_GATE_OUT.x, y: 2, z: FIELD_GATE_OUT.z, text: () => `🌱 ${t('label.field')}` },
     { x: RESTAURANT.x, y: 6.2, z: RESTAURANT.z + 3.4, text: () => `🍴 ${t('restaurant.label')}`, visible: () => !visiting && state.restaurant.level === 0 },
-    { x: RACE_BOOTH.x, y: 2.9, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
-    { x: MARKET_STALL.x, y: 2.5, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
+    { x: RACE_BOOTH.x, y: 3.6, z: RACE_BOOTH.z, text: () => `🐕 ${t('race.title')}` },
+    { x: MARKET_STALL.x, y: 3.3, z: MARKET_STALL.z, text: () => `🏪 ${t('market.label')}` },
     { x: FOREST_ZONE.gateX, y: 2.6, z: FOREST_ZONE.z1 - 0.2, text: () => `🍄 ${t('forage.label')}`, visible: () => !visiting },
-    { x: CARD_HOUSE.x, y: 3.7, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
+    { x: CARD_HOUSE.x, y: 4.8, z: CARD_HOUSE.z, text: () => `🃏 ${t('cards.label')}`, visible: () => !visiting },
     { x: MONUMENT.x, y: 4, z: MONUMENT.z, text: () => `🏘️ ${t('village.title')}`, visible: () => !visiting },
     { x: GREENHOUSE.x, y: 3.9, z: GREENHOUSE.z, text: () => `🪴 ${t('shop.greenhouse')} · ${GREENHOUSE_PRICE}g`, visible: () => !state.greenhouse },
     ...MACHINES.filter((m) => !m.inRestaurant).map((m) => ({
-      x: m.x, y: 2.1, z: m.z,
+      x: m.x, y: 3.0, z: m.z,
       text: () => `${m.icon} ${tKey(`machine.${m.id}`)} · ${m.price}g`,
       visible: () => !state.machines.some((x) => x.id === m.id),
     })),

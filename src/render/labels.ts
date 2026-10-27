@@ -14,10 +14,10 @@ export interface LabelsView {
 }
 
 /** Rõ khi lại gần (trong NEAR m), mờ dần tới FAR m thì ẩn hẳn, để nhìn xa không rối mắt. */
-const NEAR = 7
-const FAR = 15
+const NEAR = 10
+const FAR = 20
 /** Chiều cao bảng tên (m). */
-const LABEL_H = 0.55
+const LABEL_H = 0.72
 /** Kiểm tra chữ có đổi không (ngôn ngữ, trạng thái mua) mỗi chừng này giây. */
 const TEXT_CHECK_S = 0.5
 

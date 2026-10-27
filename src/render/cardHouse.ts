@@ -42,7 +42,7 @@ export function createCardHouse(scene: THREE.Scene): CardHouseView {
     if (o instanceof THREE.Mesh) o.castShadow = true
   })
   group.position.set(CARD_HOUSE.x, 0, CARD_HOUSE.z)
-  group.scale.setScalar(0.78)
+  group.scale.setScalar(1.05)
   scene.add(group)
   const v = new THREE.Vector3()
   return {

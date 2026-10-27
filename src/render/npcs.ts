@@ -28,6 +28,7 @@ export function createNpcsView(scene: THREE.Scene, _models: Models): NpcsView {
   const boardMesh = staticModel(board)
   boardMesh.position.copy(board.position)
   boardMesh.rotation.copy(board.rotation)
+  boardMesh.scale.setScalar(1.45)
   scene.add(boardMesh)
   const v = new THREE.Vector3()
 

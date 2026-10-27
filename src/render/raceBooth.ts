@@ -25,13 +25,14 @@ export function createRaceBooth(scene: THREE.Scene): RaceBoothView {
     if (o instanceof THREE.Mesh) o.castShadow = true
   })
   group.position.set(RACE_BOOTH.x, 0, RACE_BOOTH.z)
+  group.scale.setScalar(1.5)
   scene.add(group)
   const v = new THREE.Vector3()
   return {
     hitTest(camera, x, y) {
       v.set(RACE_BOOTH.x, 1, RACE_BOOTH.z).project(camera)
       if (v.z > 1) return false
-      return Math.hypot(((v.x + 1) / 2) * window.innerWidth - x, ((1 - v.y) / 2) * window.innerHeight - y) < 60
+      return Math.hypot(((v.x + 1) / 2) * window.innerWidth - x, ((1 - v.y) / 2) * window.innerHeight - y) < 80
     },
   }
 }
@@ -68,13 +69,14 @@ export function createMarketStall(scene: THREE.Scene, at: { x: number; z: number
     if (o instanceof THREE.Mesh) o.castShadow = true
   })
   group.position.set(at.x, 0, at.z)
+  group.scale.setScalar(1.35)
   scene.add(group)
   const v = new THREE.Vector3()
   return {
     hitTest(camera, x, y) {
       v.set(at.x, 1, at.z).project(camera)
       if (v.z > 1) return false
-      return Math.hypot(((v.x + 1) / 2) * window.innerWidth - x, ((1 - v.y) / 2) * window.innerHeight - y) < 60
+      return Math.hypot(((v.x + 1) / 2) * window.innerWidth - x, ((1 - v.y) / 2) * window.innerHeight - y) < 80
     },
   }
 }

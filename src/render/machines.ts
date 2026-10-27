@@ -13,7 +13,7 @@ export interface MachinesView {
 }
 
 /** Chiều cao mong muốn của từng máy (m), để mô hình nào cũng vừa cỡ nhân vật. */
-const HEIGHT: Record<MachineId, number> = { preserves: 0.9, stove: 1.0, beehive: 1.2 }
+const HEIGHT: Record<MachineId, number> = { preserves: 1.9, stove: 1.0, beehive: 1.7 }
 
 interface Slot {
   sign: THREE.Group
@@ -104,9 +104,9 @@ export function createMachinesView(scene: THREE.Scene, models: Models): Machines
     },
     hitTest(camera, x, y) {
       let best: MachineId | null = null
-      let bestD = 50
+      let bestD = 70
       for (const def of MACHINES) {
-        v.set(def.x, 0.6, def.z).project(camera)
+        v.set(def.x, 0.9, def.z).project(camera)
         if (v.z > 1) continue
         const d = Math.hypot(((v.x + 1) / 2) * window.innerWidth - x, ((1 - v.y) / 2) * window.innerHeight - y)
         if (d < bestD) {
